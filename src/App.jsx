@@ -195,7 +195,7 @@ export default function App() {
     setSignupError('');
     if (!signupData.fullName || !signupData.displayName || !signupData.email || !signupData.phone || !signupData.password) { setSignupError(lang === 'ar' ? 'يرجى ملء جميع الحقول' : 'Please fill all fields'); return; }
     if (signupData.password !== signupData.confirmPassword) { setSignupError(lang === 'ar' ? 'كلمات المرور غير متطابقة' : 'Passwords do not match'); return; }
-    if (!receiptUploaded || !receiptFile) { setSignupError(lang === 'ar' ? 'يرجى إرفاق إيصال التحويل (إنستا باي)' : 'Please upload the InstaPay receipt'); return; }
+    if (!receiptUploaded || !receiptFile) { setSignupError(lang === 'ar' ? 'يرجى إرفاق إيصال التحويل' : 'Please upload the receipt'); return; }
     if (!fbUser) return;
 
     setIsUploading(true); 
@@ -219,11 +219,20 @@ export default function App() {
       await setDoc(doc(db, 'users', fbUser.uid), newProfile);
       await setDoc(doc(db, 'profiles', fbUser.uid), newProfile);
 
-      setUserProfile(newProfile); setIsAppLoggedIn(true); 
-      setReceiptUploaded(false); setReceiptFile(null);
+      setUserProfile(newProfile); 
+      setIsAppLoggedIn(true); 
+      setReceiptUploaded(false); 
+      setReceiptFile(null);
       setSignupData({ fullName: '', displayName: '', email: '', phone: '', password: '', confirmPassword: '' });
-      setIsUploading(false); navigateTo('signup-success');
-    } catch (error) { setIsUploading(false); setSignupError(lang === 'ar' ? 'حدث خطأ أثناء الاتصال' : 'Connection error'); console.error(error); }
+      
+      setIsUploading(false); 
+      setAppAlert(lang === 'ar' ? 'تم إنشاء حسابك بنجاح! الإدارة تراجع الإيصال الآن.' : 'Account created! Admin is reviewing your receipt.');
+      navigateTo('landing');
+    } catch (error) { 
+      setIsUploading(false); 
+      setSignupError(lang === 'ar' ? 'حدث خطأ أثناء الاتصال' : 'Connection error'); 
+      console.error(error); 
+    }
   };
 
   const handleLoginSubmit = async () => {
@@ -559,38 +568,41 @@ export default function App() {
 
         {/* --- LOGIN & SIGNUP --- */}
         {activeView === 'login' && (
-          <div className="w-full max-w-md animate-fade-in"><button onClick={goBack} className="mb-4 text-gray-400">رجوع</button><div className={`${cardBg} p-8 rounded-2xl`}><h2 className="text-3xl font-bold mb-6 text-center">دخول</h2><input type="text" placeholder="البريد الإلكتروني" value={loginData.identifier} onChange={e => setLoginData({...loginData, identifier: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 mb-4 text-white" /><input type="password" placeholder="كلمة المرور" value={loginData.password} onChange={e => setLoginData({...loginData, password: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 mb-4 text-white" /><button onClick={handleLoginSubmit} className="w-full bg-emerald-500 text-white font-bold rounded-lg py-3">دخول</button></div></div>
-        )}
-
-        {activeView === 'signup' && (
-          <div className="w-full max-w-2xl animate-fade-in"><button onClick={goBack} className="mb-4 text-gray-400">رجوع</button><div className={`${cardBg} p-8 rounded-2xl`}><h2 className="text-3xl font-bold mb-6 text-center">اشتراك جديد</h2>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input type="text" placeholder="الاسم الكامل" value={signupData.fullName} onChange={e => setSignupData({...signupData, fullName: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white" />
-                <input type="text" placeholder="الاسم المعروض" value={signupData.displayName} onChange={e => setSignupData({...signupData, displayName: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white" />
-                <input type="email" placeholder="البريد الإلكتروني" value={signupData.email} onChange={e => setSignupData({...signupData, email: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white col-span-2" />
-                <input type="tel" placeholder="رقم الهاتف" value={signupData.phone} onChange={e => setSignupData({...signupData, phone: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white col-span-2" />
-                <input type="password" placeholder="كلمة المرور" value={signupData.password} onChange={e => setSignupData({...signupData, password: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white" />
-                <input type="password" placeholder="تأكيد كلمة المرور" value={signupData.confirmPassword} onChange={e => setSignupData({...signupData, confirmPassword: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white" />
-                <label className="col-span-2 border border-dashed border-gray-600 p-4 rounded-xl text-center cursor-pointer text-gray-400 hover:border-emerald-500"><Upload className="mx-auto mb-2" /> {receiptUploaded ? 'تم الإرفاق' : 'إرفاق إيصال الدفع'}<input type="file" className="hidden" accept="image/*" onChange={(e) => { if(e.target.files[0]) { setReceiptUploaded(true); setReceiptFile(e.target.files[0]); } }} /></label>
-                <button onClick={handleSignupSubmit} className="col-span-2 bg-emerald-500 text-white font-bold rounded-lg py-4 mt-2">إنشاء الحساب</button>
-             </div>
+          <div className="w-full max-w-md animate-fade-in"><button onClick={goBack} className="mb-4 text-gray-400">رجوع</button><div className={`${cardBg} p-8 rounded-2xl`}><h2 className="text-3xl font-bold mb-6 text-center">دخول</h2>
+            <input type="text" placeholder="البريد الإلكتروني أو الهاتف" value={loginData.identifier} onChange={e => setLoginData({...loginData, identifier: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 mb-4 text-white outline-none focus:border-emerald-500" />
+            <div className="relative mb-6">
+              <input type={showPassword ? "text" : "password"} placeholder="كلمة المرور" value={loginData.password} onChange={e => setLoginData({...loginData, password: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-emerald-500" />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-3 top-3 text-gray-400 hover:text-white">{showPassword ? <EyeOff size={20} /> : <Eye size={20} />}</button>
+            </div>
+            {loginError && <p className="text-red-500 text-sm mb-4">{loginError}</p>}
+            <button onClick={handleLoginSubmit} className="w-full bg-emerald-500 text-white font-bold rounded-lg py-3 hover:bg-emerald-600">دخول</button>
           </div></div>
         )}
 
         {/* --- ADMIN DASHBOARD --- */}
-        {activeView === 'admin-dashboard' && (
-          <div className="w-full animate-fade-in"><div className="w-full flex justify-between items-center mb-6"><h2 className="text-2xl font-bold text-emerald-400">لوحة الإدارة</h2><button onClick={goBack} className="bg-[#1f2937] px-4 py-2 rounded-full">رجوع</button></div>
-            <div className="bg-[#1f2937] p-6 rounded-3xl"><h3 className="text-xl font-bold mb-4">طلبات الاشتراك المعلقة</h3>
-              <div className="space-y-4">
-                {allProfiles.filter(p => p.subscriptionStatus === 'Pending').map(user => (
-                  <div key={user.uid} className="bg-[#111827] border border-yellow-500/30 p-4 rounded-xl flex justify-between items-center">
-                    <div><span className="text-white font-bold block">{user.fullName}</span><span className="text-gray-400 text-sm">{user.phone}</span></div>
-                    <button onClick={() => setAdminReviewUser(user)} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">مراجعة</button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+        {activeView === 'signup' && (
+          <div className="w-full max-w-2xl animate-fade-in"><button onClick={goBack} className="mb-4 text-gray-400">رجوع</button><div className={`${cardBg} p-8 rounded-2xl`}><h2 className="text-3xl font-bold mb-6 text-center">اشتراك جديد</h2>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input type="text" placeholder="الاسم الكامل" value={signupData.fullName} onChange={e => setSignupData({...signupData, fullName: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-emerald-500" />
+                <input type="text" placeholder="الاسم المعروض (يظهر للناس)" value={signupData.displayName} onChange={e => setSignupData({...signupData, displayName: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-emerald-500" />
+                <input type="email" placeholder="البريد الإلكتروني" value={signupData.email} onChange={e => setSignupData({...signupData, email: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white col-span-2 outline-none focus:border-emerald-500" />
+                <input type="tel" placeholder="رقم الهاتف" value={signupData.phone} onChange={e => setSignupData({...signupData, phone: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white col-span-2 outline-none focus:border-emerald-500" />
+                
+                <div className="relative">
+                  <input type={showSignupPass ? "text" : "password"} placeholder="كلمة المرور" value={signupData.password} onChange={e => setSignupData({...signupData, password: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-emerald-500" />
+                  <button type="button" onClick={() => setShowSignupPass(!showSignupPass)} className="absolute left-3 top-3 text-gray-400 hover:text-white">{showSignupPass ? <EyeOff size={20} /> : <Eye size={20} />}</button>
+                </div>
+                <div className="relative">
+                  <input type={showSignupConfirm ? "text" : "password"} placeholder="تأكيد كلمة المرور" value={signupData.confirmPassword} onChange={e => setSignupData({...signupData, confirmPassword: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-emerald-500" />
+                  <button type="button" onClick={() => setShowSignupConfirm(!showSignupConfirm)} className="absolute left-3 top-3 text-gray-400 hover:text-white">{showSignupConfirm ? <EyeOff size={20} /> : <Eye size={20} />}</button>
+                </div>
+
+                <label className="col-span-2 border border-dashed border-gray-600 p-4 rounded-xl text-center cursor-pointer text-gray-400 hover:border-emerald-500 transition-colors"><Upload className="mx-auto mb-2" /> {receiptUploaded ? 'تم الإرفاق بنجاح' : 'إرفاق إيصال الدفع (إنستا باي)'}<input type="file" className="hidden" accept="image/*" onChange={(e) => { if(e.target.files[0]) { setReceiptUploaded(true); setReceiptFile(e.target.files[0]); } }} /></label>
+                
+                {signupError && <p className="col-span-2 text-red-500 text-sm text-center">{signupError}</p>}
+                <button onClick={handleSignupSubmit} className="col-span-2 bg-emerald-500 text-white font-bold rounded-lg py-4 mt-2 hover:bg-emerald-600">إنشاء الحساب</button>
+             </div>
+          </div></div>
         )}
       </main>
 
