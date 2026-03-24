@@ -10,7 +10,7 @@ import {
   UserPlus, Filter, ImagePlus, Bell, User, ShieldAlert, ArrowRight, 
   CheckCircle, AlertTriangle, Send, MessageSquareX, Minus, MessageSquare, 
   Megaphone, Edit, Trash2, Save, Activity, Info, Loader, Plus, ChevronDown, Clock,
-  Facebook, Youtube, UserSearch, Ban, MessageCircleWarning, Link as LinkIcon
+  Facebook, Youtube, UserSearch, Ban, MessageCircleWarning, Link as LinkIcon, Camera
 } from 'lucide-react';
 
 // ==========================================
@@ -91,6 +91,8 @@ export default function App() {
   const [editYoutube, setEditYoutube] = useState('');
   const [profileImageFile, setProfileImageFile] = useState(null); 
   const [profileImagePreview, setProfileImagePreview] = useState(null);
+  const [coverImageFile, setCoverImageFile] = useState(null);
+  const [coverImagePreview, setCoverImagePreview] = useState(null);
 
   // New Features States
   const [viewedProfile, setViewedProfile] = useState(null);
@@ -193,6 +195,12 @@ export default function App() {
       const profs = [];
       snapshot.forEach(doc => profs.push({ uid: doc.id, ...doc.data() }));
       setAllProfiles(profs);
+      
+      // Update viewed profile if it changes remotely (like changing cover/pic)
+      if (viewedProfile) {
+         const updatedViewed = profs.find(p => p.uid === viewedProfile.uid);
+         if (updatedViewed) setViewedProfile(updatedViewed);
+      }
     }, (error) => console.error("Profiles error:", error));
     return () => unsubscribe();
   }, [fbUser]);
@@ -295,6 +303,10 @@ export default function App() {
       setEditBio(userProfile.bio || '');
       setEditFacebook(userProfile.facebookUrl || '');
       setEditYoutube(userProfile.youtubeUrl || '');
+      setProfileImagePreview(null);
+      setProfileImageFile(null);
+      setCoverImagePreview(null);
+      setCoverImageFile(null);
     }
   }, [showSettingsModal, userProfile]);
 
@@ -415,7 +427,7 @@ export default function App() {
       if (imgbbResponse.ok) { receiptUrl = (await imgbbResponse.json()).data.url; } else { throw new Error('حدث خطأ بالشبكة'); }
 
       const newUid = fbUser ? fbUser.uid : Date.now().toString(); 
-      const newProfile = { uid: newUid, fullName: signupData.fullName, displayName: signupData.displayName, email: cleanEmail, phone: cleanPhone, password: signupData.password, subscriptionStatus: 'Pending', createdAt: new Date().toISOString(), receiptUrl: receiptUrl, photoUrl: photoUrl, bio: '', facebookUrl: '', youtubeUrl: '', isBanned: false };
+      const newProfile = { uid: newUid, fullName: signupData.fullName, displayName: signupData.displayName, email: cleanEmail, phone: cleanPhone, password: signupData.password, subscriptionStatus: 'Pending', createdAt: new Date().toISOString(), receiptUrl: receiptUrl, photoUrl: photoUrl, coverUrl: null, bio: '', facebookUrl: '', youtubeUrl: '', isBanned: false };
       await setDoc(doc(db, 'users', newUid), newProfile); await setDoc(doc(db, 'profiles', newUid), newProfile);
       setAppAlert('تم إرسال طلبك بنجاح! بانتظار المراجعة.'); setTimeout(() => { window.location.reload(); }, 3500);
     } catch (error) { setSignupError(error.message || 'حدث خطأ أثناء التسجيل'); } finally { setIsUploading(false); }
@@ -509,7 +521,7 @@ export default function App() {
     try { await updateDoc(doc(db, 'chats', activeChatId), { messages: [...(activeChat.messages || []), newMsg], updatedAt: Date.now() }); } catch (error) {}
   };
 
-  const handleMouseDown = (e, adId) => { if (e.target.closest('button')) return; setIsDragging(true); dragRef.current = { startX: e.clientX, startY: e.clientY, initialX: chatPositions[adId]?.x || 0, initialY: chatPositions[adId]?.y || 0, adId: adId }; };
+  const handleMouseDown = (e, adId) => { if (e.target.closest('button') || e.target.tagName.toLowerCase() === 'input') return; setIsDragging(true); dragRef.current = { startX: e.clientX, startY: e.clientY, initialX: chatPositions[adId]?.x || 0, initialY: chatPositions[adId]?.y || 0, adId: adId }; };
 
   useEffect(() => {
     const handleMouseMove = (e) => { if (!isDragging || !dragRef.current.adId) return; setChatPositions(prev => ({ ...prev, [dragRef.current.adId]: { x: dragRef.current.initialX + (e.clientX - dragRef.current.startX), y: dragRef.current.initialY + (e.clientY - dragRef.current.startY) } })); };
@@ -522,18 +534,29 @@ export default function App() {
 
   const handleImageUpload = (e) => { if (e.target.files && e.target.files.length > 0) { const newImages = Array.from(e.target.files).map(file => ({ file: file, preview: URL.createObjectURL(file) })); setUploadedImages(prev => [...prev, ...newImages]); } };
   const removeUploadedImage = (indexToRemove) => setUploadedImages(prev => prev.filter((_, index) => index !== indexToRemove));
+  
   const handleProfileImageUpload = async (e) => { if (e.target.files && e.target.files[0]) { setProfileImagePreview(URL.createObjectURL(e.target.files[0])); setProfileImageFile(e.target.files[0]); } };
+  const handleCoverImageUpload = async (e) => { if (e.target.files && e.target.files[0]) { setCoverImagePreview(URL.createObjectURL(e.target.files[0])); setCoverImageFile(e.target.files[0]); } };
 
   const saveProfileUpdates = async () => {
     if (!isAppLoggedIn || !userProfile) return; setIsUploading(true);
     try {
       let newPhotoUrl = userProfile.photoUrl || null;
+      let newCoverUrl = userProfile.coverUrl || null;
+
       if (profileImageFile) {
         const formData = new FormData(); formData.append('image', profileImageFile);
         const res = await fetch('https://api.imgbb.com/1/upload?key=8c8cec8f9ee7b67db88ba5799154c94d', { method: 'POST', body: formData });
         if (res.ok) { newPhotoUrl = (await res.json()).data.url; }
       }
-      const updatedProfile = { ...userProfile, displayName: editName, phone: editPhone, photoUrl: newPhotoUrl, bio: editBio, facebookUrl: editFacebook, youtubeUrl: editYoutube };
+
+      if (coverImageFile) {
+        const formData = new FormData(); formData.append('image', coverImageFile);
+        const res = await fetch('https://api.imgbb.com/1/upload?key=8c8cec8f9ee7b67db88ba5799154c94d', { method: 'POST', body: formData });
+        if (res.ok) { newCoverUrl = (await res.json()).data.url; }
+      }
+
+      const updatedProfile = { ...userProfile, displayName: editName, phone: editPhone, photoUrl: newPhotoUrl, coverUrl: newCoverUrl, bio: editBio, facebookUrl: editFacebook, youtubeUrl: editYoutube };
       await updateDoc(doc(db, 'users', userProfile.uid), updatedProfile); await updateDoc(doc(db, 'profiles', userProfile.uid), updatedProfile); 
       setUserProfile(updatedProfile); setAppAlert('تم تحديث الملف الشخصي بنجاح!'); setShowSettingsModal(false);
     } catch (error) { setAppAlert('خطأ أثناء تحديث الملف الشخصي.'); } finally { setIsUploading(false); }
@@ -717,10 +740,11 @@ export default function App() {
                {userProfile?.subscriptionStatus === 'Pending' ? (
                  <span className="text-yellow-500 font-bold text-xs md:text-sm hidden sm:flex bg-yellow-500/10 px-3 py-1.5 rounded-full border border-yellow-500/20 items-center gap-1.5"><AlertTriangle size={14} className="animate-pulse" /> قيد المراجعة</span>
                ) : (
-                 <span className="text-emerald-400 font-bold text-xs md:text-sm hidden sm:flex bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20 items-center gap-2">
-                   {userProfile?.photoUrl ? <img src={userProfile.photoUrl} alt="profile" className="w-6 h-6 rounded-full object-cover" /> : <AvatarFallback size={24} />} 
-                   {userProfile?.displayName || 'مستخدم'}
-                 </span>
+                 // --- HEADER PROFILE LINK ---
+                 <button onClick={() => { setViewedProfile(userProfile); navigateTo('user-profile'); }} className="text-emerald-400 font-bold text-xs md:text-sm hidden sm:flex bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors px-3 py-1.5 rounded-full border border-emerald-500/20 items-center gap-2 cursor-pointer group">
+                   {userProfile?.photoUrl ? <img src={userProfile.photoUrl} alt="profile" className="w-6 h-6 rounded-full object-cover group-hover:scale-110 transition-transform" /> : <AvatarFallback size={24} />} 
+                   <span className="group-hover:text-emerald-300 transition-colors">{userProfile?.displayName || 'مستخدم'}</span>
+                 </button>
                )}
                <button onClick={handleLogout} className="text-red-400 hover:text-red-500 hover:bg-red-500/10 px-3 py-1.5 rounded-lg text-xs md:text-sm font-bold">خروج</button>
              </div>
@@ -848,24 +872,44 @@ export default function App() {
           </div>
         )}
 
-        {/* --- SETTINGS MODAL --- */}
+        {/* --- SETTINGS MODAL (With Cover & Profile Uploads) --- */}
         {showSettingsModal && (
           <div className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4">
-            <div className="bg-[#1f2937] rounded-3xl p-8 w-full max-w-lg relative shadow-2xl border border-gray-700 max-h-[90vh] overflow-y-auto custom-scrollbar">
-               <button onClick={() => setShowSettingsModal(false)} className="absolute top-4 left-4 text-gray-400 hover:text-white bg-gray-800 p-2 rounded-full z-10"><X size={20}/></button>
-               <h3 className="text-2xl font-bold mb-6 text-white text-center mt-4">إعدادات الحساب</h3>
+            <div className="bg-[#1f2937] rounded-3xl w-full max-w-lg relative shadow-2xl border border-gray-700 max-h-[90vh] overflow-y-auto custom-scrollbar pb-6">
+               <button onClick={() => setShowSettingsModal(false)} className="absolute top-4 left-4 text-white hover:text-emerald-400 bg-black/50 p-2 rounded-full z-20 backdrop-blur-sm transition-colors"><X size={20}/></button>
                
-               <div className="flex flex-col items-center mb-6">
-                 <div className="relative w-24 h-24 rounded-full border-2 border-emerald-500 overflow-hidden mb-3">
-                    {profileImagePreview || userProfile?.photoUrl ? <img src={profileImagePreview || userProfile?.photoUrl} alt="Profile" className="w-full h-full object-cover" /> : <AvatarFallback size={96} />}
-                 </div>
-                 <label className="bg-gray-800 text-emerald-400 px-4 py-2 rounded-lg cursor-pointer text-sm font-bold border border-gray-700 hover:border-emerald-500 transition-colors">تغيير الصورة<input type="file" className="hidden" accept="image/*" onChange={handleProfileImageUpload} /></label>
+               {/* Cover Image Upload Area */}
+               <div className="relative h-32 md:h-40 w-full bg-gray-800 rounded-t-3xl overflow-hidden group">
+                  {coverImagePreview || userProfile?.coverUrl ? (
+                     <img src={coverImagePreview || userProfile?.coverUrl} alt="Cover" className="w-full h-full object-cover" />
+                  ) : (
+                     <div className="w-full h-full bg-gradient-to-r from-emerald-600 to-cyan-600"></div>
+                  )}
+                  <label className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity z-10">
+                     <Camera className="text-white" size={24}/> <span className="text-white font-bold ml-2">تغيير صورة الغلاف</span>
+                     <input type="file" className="hidden" accept="image/*" onChange={handleCoverImageUpload} />
+                  </label>
                </div>
 
-               <div className="space-y-4">
+               {/* Profile Image Upload Area */}
+               <div className="relative w-24 h-24 rounded-full border-4 border-[#1f2937] -mt-12 mx-auto overflow-hidden bg-gray-800 z-10 group shadow-xl">
+                  {profileImagePreview || userProfile?.photoUrl ? (
+                     <img src={profileImagePreview || userProfile?.photoUrl} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                     <AvatarFallback size={96} />
+                  )}
+                  <label className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
+                     <Camera className="text-white" size={20}/>
+                     <input type="file" className="hidden" accept="image/*" onChange={handleProfileImageUpload} />
+                  </label>
+               </div>
+
+               <h3 className="text-2xl font-bold mb-6 text-white text-center mt-4">إعدادات الحساب</h3>
+
+               <div className="space-y-4 px-8">
                  <div><label className="block text-gray-400 text-sm mb-1">اسم العرض (البراند)</label><input type="text" value={editName} onChange={e => setEditName(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500" /></div>
                  <div><label className="block text-gray-400 text-sm mb-1">رقم الهاتف</label><input type="tel" value={editPhone} onChange={e => setEditPhone(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500" /></div>
-                 <div><label className="block text-gray-400 text-sm mb-1">نبذة عنك (Bio)</label><textarea rows="3" value={editBio} onChange={e => setEditBio(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500 resize-none custom-scrollbar" placeholder="اكتب نبذة مختصرة عنك وعن منتجاتك..."></textarea></div>
+                 <div><label className="block text-gray-400 text-sm mb-1">نبذة عنك (Bio) - تظهر في بروفايلك</label><textarea rows="3" value={editBio} onChange={e => setEditBio(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500 resize-none custom-scrollbar" placeholder="اكتب نبذة مختصرة عنك وعن منتجاتك..."></textarea></div>
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div><label className="flex items-center gap-1 text-blue-400 text-sm mb-1"><Facebook size={16}/> رابط فيسبوك</label><input type="url" value={editFacebook} onChange={e => setEditFacebook(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-blue-500" placeholder="https://facebook.com/..." /></div>
                     <div><label className="flex items-center gap-1 text-red-400 text-sm mb-1"><Youtube size={16}/> رابط يوتيوب</label><input type="url" value={editYoutube} onChange={e => setEditYoutube(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-red-500" placeholder="https://youtube.com/..." /></div>
@@ -916,25 +960,46 @@ export default function App() {
              
              {/* Profile Card */}
              <div className="w-full bg-[#1f2937] rounded-3xl overflow-hidden shadow-2xl border border-gray-700 mb-8 relative">
-                <div className="h-32 bg-gradient-to-r from-emerald-600 to-cyan-600 relative"></div>
-                <div className="px-6 pb-6 pt-0 flex flex-col md:flex-row gap-6 items-center md:items-start text-center md:text-right relative -mt-16">
-                   <div className="relative">
-                      {viewedProfile.photoUrl ? <img src={viewedProfile.photoUrl} alt="User" className="w-32 h-32 rounded-full object-cover border-4 border-[#1f2937] bg-[#1f2937] shadow-xl" /> : <AvatarFallback size={128} className="border-4 border-[#1f2937] shadow-xl" />}
-                      {viewedProfile.subscriptionStatus === 'Active' && <span className="absolute bottom-2 right-2 bg-emerald-500 text-white p-1 rounded-full border-2 border-[#1f2937]"><ShieldCheck size={16}/></span>}
+                
+                {/* Cover Photo */}
+                {viewedProfile.coverUrl ? (
+                   <img src={viewedProfile.coverUrl} className="w-full h-32 md:h-48 object-cover" alt="Cover" />
+                ) : (
+                   <div className="h-32 md:h-48 bg-gradient-to-r from-emerald-600 to-cyan-600 relative"></div>
+                )}
+                
+                <div className="px-6 pb-6 pt-0 flex flex-col md:flex-row gap-6 items-center md:items-start text-center md:text-right relative -mt-16 md:-mt-20">
+                   <div className="relative shrink-0">
+                      {viewedProfile.photoUrl ? <img src={viewedProfile.photoUrl} alt="User" className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-4 border-[#1f2937] bg-[#1f2937] shadow-xl" /> : <AvatarFallback size={144} className="border-4 border-[#1f2937] shadow-xl" />}
+                      {viewedProfile.subscriptionStatus === 'Active' && <span className="absolute bottom-2 right-2 bg-emerald-500 text-white p-1 md:p-1.5 rounded-full border-2 border-[#1f2937]"><ShieldCheck size={18}/></span>}
                    </div>
-                   <div className="flex-1 mt-2 md:mt-16">
+                   <div className="flex-1 mt-2 md:mt-24">
                       <h2 className="text-3xl font-black text-white">{viewedProfile.displayName || viewedProfile.fullName}</h2>
-                      {viewedProfile.bio && <p className="text-gray-300 mt-3 leading-relaxed max-w-2xl">{viewedProfile.bio}</p>}
+                      
+                      {/* Bio Section */}
+                      <div className="mt-4 bg-[#111827] p-4 rounded-xl border border-gray-800">
+                        <h4 className="text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider"><FileText size={14} className="inline mr-1"/> النبذة التعريفية (Bio)</h4>
+                        {viewedProfile.bio ? (
+                          <p className="text-gray-300 leading-relaxed text-sm">{viewedProfile.bio}</p>
+                        ) : (
+                          <p className="text-gray-600 text-sm italic">لا توجد نبذة تعريفية حتى الآن.</p>
+                        )}
+                      </div>
+
                       <div className="flex items-center gap-3 justify-center md:justify-start mt-4">
-                         {viewedProfile.facebookUrl && <a href={viewedProfile.facebookUrl} target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 flex items-center gap-1 bg-blue-500/10 px-3 py-1.5 rounded-lg"><Facebook size={18}/> فيسبوك</a>}
-                         {viewedProfile.youtubeUrl && <a href={viewedProfile.youtubeUrl} target="_blank" rel="noreferrer" className="text-red-400 hover:text-red-300 flex items-center gap-1 bg-red-500/10 px-3 py-1.5 rounded-lg"><Youtube size={18}/> يوتيوب</a>}
+                         {viewedProfile.facebookUrl && <a href={viewedProfile.facebookUrl} target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 flex items-center gap-1 bg-blue-500/10 px-3 py-1.5 rounded-lg text-sm font-bold"><Facebook size={18}/> فيسبوك</a>}
+                         {viewedProfile.youtubeUrl && <a href={viewedProfile.youtubeUrl} target="_blank" rel="noreferrer" className="text-red-400 hover:text-red-300 flex items-center gap-1 bg-red-500/10 px-3 py-1.5 rounded-lg text-sm font-bold"><Youtube size={18}/> يوتيوب</a>}
                       </div>
                    </div>
-                   {userProfile?.uid !== viewedProfile.uid && (
-                      <div className="mt-4 md:mt-16 w-full md:w-auto">
+
+                   {/* Actions (Chat or Edit Own Profile) */}
+                   <div className="mt-4 md:mt-24 w-full md:w-auto flex flex-col gap-2 shrink-0">
+                      {userProfile?.uid === viewedProfile.uid ? (
+                         <button onClick={() => setShowSettingsModal(true)} className="w-full md:w-auto bg-gray-700 text-white px-8 py-3 rounded-xl font-bold hover:bg-gray-600 transition-colors shadow-lg flex items-center justify-center gap-2"><Edit size={20}/> تعديل البروفايل</button>
+                      ) : (
                          <button onClick={() => openChat(viewedProfile.uid, viewedProfile.displayName)} className="w-full md:w-auto bg-emerald-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"><Send size={20}/> إرسال رسالة</button>
-                      </div>
-                   )}
+                      )}
+                   </div>
                 </div>
              </div>
 
@@ -942,12 +1007,12 @@ export default function App() {
              
              <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
                {globalAds.filter(ad => ad.sellerId === viewedProfile.uid && ad.statusEn === 'Active').map(ad => (
-                 <div key={ad.id} onClick={() => viewAdDetails(ad)} className="bg-[#1f2937] p-4 rounded-2xl border border-gray-700 cursor-pointer hover:border-emerald-500">
+                 <div key={ad.id} onClick={() => viewAdDetails(ad)} className="bg-[#1f2937] p-4 rounded-2xl border border-gray-700 cursor-pointer hover:border-emerald-500 transition-colors">
                     <img src={ad.images?.[0]} alt="ad" className="w-full h-40 object-cover rounded-xl mb-3" />
                     <h4 className="font-bold text-white">{lang === 'ar' ? ad.title : ad.titleEn}</h4><p className="text-gray-400 text-xs mt-1">{ad.category}</p><p className="text-emerald-400 font-bold mt-2">{ad.price} {lang === 'ar' ? 'ج.م' : 'EGP'}</p>
                  </div>
                ))}
-               {globalAds.filter(ad => ad.sellerId === viewedProfile.uid && ad.statusEn === 'Active').length === 0 && <p className="text-gray-500 col-span-2 text-center py-6">لا توجد إعلانات نشطة لهذا البائع حالياً.</p>}
+               {globalAds.filter(ad => ad.sellerId === viewedProfile.uid && ad.statusEn === 'Active').length === 0 && <p className="text-gray-500 col-span-2 text-center py-6 bg-[#1f2937] rounded-2xl border border-gray-700">لا توجد إعلانات نشطة لهذا البائع حالياً.</p>}
              </div>
            </div>
         )}
