@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 // --- FIREBASE IMPORTS ---
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, updateDoc, query, where, getDocs } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, updateDoc, getDocs } from 'firebase/firestore';
 
 import { 
   Search, SlidersHorizontal, Sparkles, CreditCard, Settings, ShieldCheck, 
@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 
 // ==========================================
-// 🔴 ضع مفاتيحك هنا بدل هذا الكود 🔴
+// 🔴 إعدادات فايربيز الآمنة 🔴
 // ==========================================
 const firebaseConfig = {
   apiKey: "AIzaSyD8Z2DViAifgXEuGDW1S2aYCyUPpWs6QI4",
@@ -25,11 +25,17 @@ const firebaseConfig = {
   appId: "1:46231791806:web:37fd1b2ae7c560dffe96ef",
   measurementId: "G-HZ3RZVQTZY"
 };
-// ==========================================
 
-const app = initializeApp(firebaseConfig);
+const fbConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : firebaseConfig;
+const app = initializeApp(fbConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'filter-egypt-app';
+
+// دوال مساعدة للوصول الآمن للبيانات لتجنب أخطاء الصلاحيات
+const publicCol = (colName) => collection(db, 'artifacts', appId, 'public', 'data', colName);
+const publicDoc = (colName, docId) => doc(db, 'artifacts', appId, 'public', 'data', colName, docId);
+// ==========================================
 
 const defaultLegalTexts = {
   terms: "مرحباً بك في منصة فلتر إيجيبت. بمجرد استخدامك لهذه المنصة، فإنك توافق على الالتزام بالشروط والأحكام التالية التي تنظم عملنا كمنصة إعلانات مبوبة متخصصة.\n\n1. طبيعة المنصة وإخلاء المسؤولية\nتعمل منصة فلتر إيجيبت كوسيط إلكتروني (منصة إعلانات مبوبة) يجمع بين البائعين والمشترين في مجال فلاتر المياه. نحن لا نمتلك المنتجات المعروضة، ولا نتدخل في عمليات الدفع المباشرة، ولا نقدم أي ضمانات على جودة السلع المشتراة. تقع مسؤولية فحص المنتج والتأكد من جودته بالكامل على المشتري عند الاستلام اليدوي.\n\n2. حسابك والتزاماتك\nأنت مسؤول مسؤولية كاملة عن الحفاظ على سرية بيانات حسابك وكلمة المرور. كما تلتزم بأن جميع البيانات التي قدمتها أثناء التسجيل (بما في ذلك إيصالات الدفع) هي بيانات صحيحة وقانونية. في حال ثبوت أي تلاعب، يحق للمنصة إيقاف حسابك فوراً.\n\n3. المحتوى المحظور\nيُمنع منعاً باتاً نشر إعلانات لمنتجات غير قانونية، مسروقة، أو مقلدة بشكل ينتهك حقوق الشركات الكبرى لفلاتر المياه. يمنع استخدام المنصة لنشر محتوى مسيء، خادش للحياء، أو لا يتعلق بطبيعة تخصص الموقع. الإدارة تقوم بمراجعة الإعلانات ولها الحق في حذف أي إعلان مخالف دون سابق إنذار.",
@@ -161,7 +167,15 @@ export default function App() {
 
   // Auth Init
   useEffect(() => {
-    const initAuth = async () => { try { await signInAnonymously(auth); } catch (error) { console.error('Auth Error:', error); } };
+    const initAuth = async () => { 
+      try { 
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth); 
+        }
+      } catch (error) { console.error('Auth Error:', error); } 
+    };
     initAuth();
     const unsubscribe = onAuthStateChanged(auth, (user) => { setFbUser(user); });
     return () => unsubscribe();
@@ -172,7 +186,7 @@ export default function App() {
     if (!fbUser) return;
     const fetchProfile = async () => {
       try {
-        const docSnap = await getDoc(doc(db, 'users', fbUser.uid));
+        const docSnap = await getDoc(publicDoc('users', fbUser.uid));
         if (docSnap.exists()) { 
            if (docSnap.data().isBanned) {
               setAppAlert('عذراً، هذا الحساب تم حظره من قبل الإدارة.');
@@ -191,7 +205,7 @@ export default function App() {
   // Sync Profiles
   useEffect(() => {
     if (!fbUser) return;
-    const unsubscribe = onSnapshot(collection(db, 'profiles'), (snapshot) => {
+    const unsubscribe = onSnapshot(publicCol('profiles'), (snapshot) => {
       const profs = [];
       snapshot.forEach(doc => profs.push({ uid: doc.id, ...doc.data() }));
       setAllProfiles(profs);
@@ -203,12 +217,12 @@ export default function App() {
       }
     }, (error) => console.error("Profiles error:", error));
     return () => unsubscribe();
-  }, [fbUser]);
+  }, [fbUser, viewedProfile]);
 
   // Sync Complaints (Admin)
   useEffect(() => {
     if (!fbUser) return;
-    const unsubscribe = onSnapshot(collection(db, 'complaints'), (snapshot) => {
+    const unsubscribe = onSnapshot(publicCol('complaints'), (snapshot) => {
       const comps = [];
       snapshot.forEach(doc => comps.push({ id: doc.id, ...doc.data() }));
       comps.sort((a, b) => b.createdAt - a.createdAt);
@@ -220,7 +234,7 @@ export default function App() {
   // Sync Ads
   useEffect(() => {
     if (!fbUser) return;
-    const unsubscribe = onSnapshot(collection(db, 'ads'), (snapshot) => {
+    const unsubscribe = onSnapshot(publicCol('ads'), (snapshot) => {
       const adsList = [];
       snapshot.forEach(doc => adsList.push({ id: doc.id, ...doc.data() }));
       adsList.sort((a, b) => b.createdAt - a.createdAt);
@@ -235,13 +249,17 @@ export default function App() {
     return () => unsubscribe();
   }, [fbUser]);
 
-  // Sync Chats
+  // Sync Chats (In-memory filter for complex arrays)
   useEffect(() => {
     if (!fbUser || !userProfile?.uid) return; 
-    const chatsQuery = query(collection(db, 'chats'), where('participants', 'array-contains', userProfile.uid));
-    const unsubscribe = onSnapshot(chatsQuery, (snapshot) => {
+    const unsubscribe = onSnapshot(publicCol('chats'), (snapshot) => {
       const newChats = [];
-      snapshot.forEach(d => newChats.push({ id: d.id, ...d.data() }));
+      snapshot.forEach(d => {
+        const data = d.data();
+        if (data.participants?.includes(userProfile.uid)) {
+           newChats.push({ id: d.id, ...data });
+        }
+      });
       newChats.sort((a,b) => b.updatedAt - a.updatedAt);
       
       newChats.forEach(chat => {
@@ -264,12 +282,13 @@ export default function App() {
 
   // Sync Banners
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'settings', 'banners'), (docSnap) => {
+    if (!fbUser) return;
+    const unsub = onSnapshot(publicDoc('settings', 'banners'), (docSnap) => {
       if (docSnap.exists() && docSnap.data().list) setBanners(docSnap.data().list);
       else setBanners([]);
     }, (error) => console.log("Banners sync issue, ignoring."));
     return () => unsub();
-  }, []);
+  }, [fbUser]);
 
   // Scroll to bottom
   useEffect(() => {
@@ -282,15 +301,16 @@ export default function App() {
 
   // Sync Categories & Legal
   useEffect(() => {
-    const unsubscribeLegal = onSnapshot(doc(db, 'settings', 'legal'), (docSnap) => {
+    if (!fbUser) return;
+    const unsubscribeLegal = onSnapshot(publicDoc('settings', 'legal'), (docSnap) => {
       if (docSnap.exists()) setLegalTexts(docSnap.data());
       else setLegalTexts(defaultLegalTexts);
     });
-    const unsubscribeCategories = onSnapshot(doc(db, 'settings', 'categories'), (docSnap) => {
+    const unsubscribeCategories = onSnapshot(publicDoc('settings', 'categories'), (docSnap) => {
       if (docSnap.exists() && docSnap.data().list) setCategories(docSnap.data().list);
     });
     return () => { unsubscribeLegal(); unsubscribeCategories(); };
-  }, []);
+  }, [fbUser]);
 
   useEffect(() => {
     if (categories.length > 0 && (!adCategory || !categories.includes(adCategory))) setAdCategory(categories[0]);
@@ -326,19 +346,19 @@ export default function App() {
     if (categories.includes(newCat)) { setAppAlert('هذا القسم موجود بالفعل!'); return; }
     const updated = [...categories, newCat];
     setCategories(updated); setNewCategoryInput(''); setIsUploading(true);
-    try { await setDoc(doc(db, 'settings', 'categories'), { list: updated }, { merge: true }); setAppAlert('تم إضافة القسم بنجاح'); } catch(e) { console.error(e); } setIsUploading(false);
+    try { await setDoc(publicDoc('settings', 'categories'), { list: updated }, { merge: true }); setAppAlert('تم إضافة القسم بنجاح'); } catch(e) { console.error(e); } setIsUploading(false);
   };
 
   const handleDeleteCategory = (catToRemove) => {
     setConfirmModal({
       isOpen: true, title: 'تأكيد الحذف', message: `هل أنت متأكد من حذف قسم "${catToRemove}" نهائياً؟`, confirmText: 'نعم، احذف', type: 'danger',
-      onConfirm: async () => { setConfirmModal({ ...confirmModal, isOpen: false }); setIsUploading(true); try { const updated = categories.filter(c => c !== catToRemove); setCategories(updated); await setDoc(doc(db, 'settings', 'categories'), { list: updated }, { merge: true }); setAppAlert('تم حذف القسم بنجاح'); } catch(e) {} setIsUploading(false); }
+      onConfirm: async () => { setConfirmModal({ ...confirmModal, isOpen: false }); setIsUploading(true); try { const updated = categories.filter(c => c !== catToRemove); setCategories(updated); await setDoc(publicDoc('settings', 'categories'), { list: updated }, { merge: true }); setAppAlert('تم حذف القسم بنجاح'); } catch(e) {} setIsUploading(false); }
     });
   };
 
   const saveLegalDocument = async () => {
     setIsUploading(true);
-    try { await setDoc(doc(db, 'settings', 'legal'), { ...legalTexts, [legalEditModal.type]: legalEditModal.content }, { merge: true }); setLegalEditModal({ isOpen: false, type: '', content: '', title: '' }); setAppAlert('تم تحديث الصفحة بنجاح وحفظها في قاعدة البيانات!'); } catch(err) {} setIsUploading(false);
+    try { await setDoc(publicDoc('settings', 'legal'), { ...legalTexts, [legalEditModal.type]: legalEditModal.content }, { merge: true }); setLegalEditModal({ isOpen: false, type: '', content: '', title: '' }); setAppAlert('تم تحديث الصفحة بنجاح وحفظها في قاعدة البيانات!'); } catch(err) {} setIsUploading(false);
   };
 
   // Admin Banners
@@ -352,7 +372,7 @@ export default function App() {
           const url = (await res.json()).data.url;
           const newBanner = { id: Date.now().toString(), imageUrl: url, link: newBannerLink };
           const updatedBanners = [...banners, newBanner];
-          await setDoc(doc(db, 'settings', 'banners'), { list: updatedBanners }, { merge: true });
+          await setDoc(publicDoc('settings', 'banners'), { list: updatedBanners }, { merge: true });
           setAppAlert('تم رفع البنر وإضافته بنجاح!');
           setNewBannerImage(null);
           setNewBannerLink('');
@@ -365,7 +385,7 @@ export default function App() {
     setIsUploading(true);
     try {
        const updatedBanners = banners.filter(b => b.id !== bannerId);
-       await setDoc(doc(db, 'settings', 'banners'), { list: updatedBanners }, { merge: true });
+       await setDoc(publicDoc('settings', 'banners'), { list: updatedBanners }, { merge: true });
        setAppAlert('تم إزالة البنر بنجاح!');
     } catch(e) { setAppAlert('خطأ أثناء إزالة البنر.'); }
     setIsUploading(false);
@@ -396,7 +416,7 @@ export default function App() {
         }
       }
       if (finalImageUrls.length === 0) finalImageUrls.push("https://images.unsplash.com/photo-1550355291-bbee04a92027?auto=format&fit=crop&q=80&w=800");
-      await updateDoc(doc(db, 'ads', adToEdit.id), { title: adToEdit.title, titleEn: adToEdit.title, price: adToEdit.price, category: adToEdit.category, description: adToEdit.description || '', images: finalImageUrls });
+      await updateDoc(publicDoc('ads', adToEdit.id), { title: adToEdit.title, titleEn: adToEdit.title, price: adToEdit.price, category: adToEdit.category, description: adToEdit.description || '', images: finalImageUrls });
       setAppAlert('تم تعديل الإعلان والصور بنجاح!'); setAdToEdit(null); setEditNewImages([]);
     } catch (err) {} setIsUploading(false);
   };
@@ -428,7 +448,7 @@ export default function App() {
 
       const newUid = fbUser ? fbUser.uid : Date.now().toString(); 
       const newProfile = { uid: newUid, fullName: signupData.fullName, displayName: signupData.displayName, email: cleanEmail, phone: cleanPhone, password: signupData.password, subscriptionStatus: 'Pending', createdAt: new Date().toISOString(), receiptUrl: receiptUrl, photoUrl: photoUrl, coverUrl: null, bio: '', facebookUrl: '', youtubeUrl: '', isBanned: false };
-      await setDoc(doc(db, 'users', newUid), newProfile); await setDoc(doc(db, 'profiles', newUid), newProfile);
+      await setDoc(publicDoc('users', newUid), newProfile); await setDoc(publicDoc('profiles', newUid), newProfile);
       setAppAlert('تم إرسال طلبك بنجاح! بانتظار المراجعة.'); setTimeout(() => { window.location.reload(); }, 3500);
     } catch (error) { setSignupError(error.message || 'حدث خطأ أثناء التسجيل'); } finally { setIsUploading(false); }
   };
@@ -440,8 +460,8 @@ export default function App() {
        const res = await fetch('https://api.imgbb.com/1/upload?key=8c8cec8f9ee7b67db88ba5799154c94d', { method: 'POST', body: formData });
        if(res.ok) {
           const url = (await res.json()).data.url;
-          await updateDoc(doc(db, 'users', userProfile.uid), { subscriptionStatus: 'Pending', receiptUrl: url });
-          await updateDoc(doc(db, 'profiles', userProfile.uid), { subscriptionStatus: 'Pending', receiptUrl: url });
+          await updateDoc(publicDoc('users', userProfile.uid), { subscriptionStatus: 'Pending', receiptUrl: url });
+          await updateDoc(publicDoc('profiles', userProfile.uid), { subscriptionStatus: 'Pending', receiptUrl: url });
           setAppAlert('تم إرسال طلب التجديد بنجاح!'); setShowRenewModal(false); setUserProfile({...userProfile, subscriptionStatus: 'Pending', receiptUrl: url});
        }
     } catch(e) {} setIsUploading(false);
@@ -451,14 +471,13 @@ export default function App() {
     setLoginError('');
     if (!loginData.identifier || !loginData.password) { setLoginError('يرجى إدخال البيانات'); return; }
     try {
-      const usersRef = collection(db, 'profiles'); let foundUser = null;
+      const usersSnap = await getDocs(publicCol('profiles'));
+      const profiles = [];
+      usersSnap.forEach(d => profiles.push(d.data()));
+
       const searchIdentifier = loginData.identifier.trim().toLowerCase();
-      const emailSnap = await getDocs(query(usersRef, where('email', '==', searchIdentifier)));
-      if (!emailSnap.empty) { foundUser = emailSnap.docs.map(d => d.data()).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))[0]; 
-      } else {
-        const phoneSnap = await getDocs(query(usersRef, where('phone', '==', loginData.identifier.trim())));
-        if (!phoneSnap.empty) { foundUser = phoneSnap.docs.map(d => d.data()).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))[0]; }
-      }
+      const foundUser = profiles.filter(p => p.email === searchIdentifier || p.phone === loginData.identifier.trim())
+                                .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
 
       if (foundUser) {
         if (foundUser.isBanned) { setLoginError('عذراً، هذا الحساب تم حظره من الإدارة.'); return; }
@@ -472,10 +491,15 @@ export default function App() {
     setResetError(''); setResetSuccess('');
     if (!resetData.email || !resetData.phone || !resetData.newPassword) { setResetError('يرجى ملء كافة البيانات'); return; }
     try {
-      const snap = await getDocs(query(collection(db, 'profiles'), where('email', '==', resetData.email), where('phone', '==', resetData.phone)));
-      if (!snap.empty) {
-        const uid = snap.docs[0].id;
-        await updateDoc(doc(db, 'users', uid), { password: resetData.newPassword }); await updateDoc(doc(db, 'profiles', uid), { password: resetData.newPassword });
+      const snap = await getDocs(publicCol('profiles'));
+      const profiles = [];
+      snap.forEach(d => profiles.push({ id: d.id, ...d.data() }));
+
+      const foundUser = profiles.find(p => p.email === resetData.email && p.phone === resetData.phone);
+
+      if (foundUser) {
+        const uid = foundUser.id;
+        await updateDoc(publicDoc('users', uid), { password: resetData.newPassword }); await updateDoc(publicDoc('profiles', uid), { password: resetData.newPassword });
         setResetSuccess('تم تغيير كلمة المرور بنجاح!'); setTimeout(() => { setActiveView('login'); setResetData({ email: '', phone: '', newPassword: '' }); setResetSuccess(''); }, 3000);
       } else { setResetError('البيانات غير صحيحة'); }
     } catch (error) { setResetError('حدث خطأ'); }
@@ -487,7 +511,7 @@ export default function App() {
     if (!complaintText.trim() || !userProfile) return;
     setIsUploading(true);
     try {
-       await setDoc(doc(db, 'complaints', Date.now().toString()), {
+       await setDoc(publicDoc('complaints', Date.now().toString()), {
           senderId: userProfile.uid, senderName: userProfile.displayName, text: complaintText, createdAt: Date.now(), phone: userProfile.phone
        });
        setAppAlert('تم إرسال رسالتك للإدارة بنجاح. شكراً لتواصلك معنا.');
@@ -506,7 +530,7 @@ export default function App() {
     
     const chatId = `${adIdRef}_${userProfile.uid}_${targetSellerId}`;
     const existingChat = globalChats.find(c => c.id === chatId);
-    if (!existingChat) { await setDoc(doc(db, 'chats', chatId), { adId: adIdRef, adTitle: targetTitle, participants: [userProfile.uid, targetSellerId], buyerId: userProfile.uid, sellerId: targetSellerId, messages: [], updatedAt: Date.now() }); }
+    if (!existingChat) { await setDoc(publicDoc('chats', chatId), { adId: adIdRef, adTitle: targetTitle, participants: [userProfile.uid, targetSellerId], buyerId: userProfile.uid, sellerId: targetSellerId, messages: [], updatedAt: Date.now() }); }
     if (!openChatIds.includes(chatId)) setOpenChatIds(prev => [...prev, chatId]);
     setActiveChatId(chatId);
     if (!chatPositions[chatId]) setChatPositions(prev => ({ ...prev, [chatId]: { x: window.innerWidth > 768 ? (window.innerWidth / 2) - 190 : 10, y: window.innerHeight > 768 ? (window.innerHeight / 2) - 275 : 10 } }));
@@ -518,7 +542,7 @@ export default function App() {
     const activeChat = globalChats.find(c => c.id === activeChatId); if (!activeChat) return;
     const newMsg = { text: currentInput, senderId: userProfile.uid, timestamp: Date.now(), time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) };
     setChatInputs(prev => ({...prev, [activeChatId]: ''}));
-    try { await updateDoc(doc(db, 'chats', activeChatId), { messages: [...(activeChat.messages || []), newMsg], updatedAt: Date.now() }); } catch (error) {}
+    try { await updateDoc(publicDoc('chats', activeChatId), { messages: [...(activeChat.messages || []), newMsg], updatedAt: Date.now() }); } catch (error) {}
   };
 
   const handleMouseDown = (e, adId) => { if (e.target.closest('button') || e.target.tagName.toLowerCase() === 'input') return; setIsDragging(true); dragRef.current = { startX: e.clientX, startY: e.clientY, initialX: chatPositions[adId]?.x || 0, initialY: chatPositions[adId]?.y || 0, adId: adId }; };
@@ -557,14 +581,14 @@ export default function App() {
       }
 
       const updatedProfile = { ...userProfile, displayName: editName, phone: editPhone, photoUrl: newPhotoUrl, coverUrl: newCoverUrl, bio: editBio, facebookUrl: editFacebook, youtubeUrl: editYoutube };
-      await updateDoc(doc(db, 'users', userProfile.uid), updatedProfile); await updateDoc(doc(db, 'profiles', userProfile.uid), updatedProfile); 
+      await updateDoc(publicDoc('users', userProfile.uid), updatedProfile); await updateDoc(publicDoc('profiles', userProfile.uid), updatedProfile); 
       setUserProfile(updatedProfile); setAppAlert('تم تحديث الملف الشخصي بنجاح!'); setShowSettingsModal(false);
     } catch (error) { setAppAlert('خطأ أثناء تحديث الملف الشخصي.'); } finally { setIsUploading(false); }
   };
 
   const viewAdDetails = async (ad) => {
     setSelectedAd(ad); setDetailsImageIdx(0); navigateTo('ad-details');
-    if (isAppLoggedIn && userProfile && ad.sellerId !== userProfile.uid && ad.id !== 'dummy-1') { try { await updateDoc(doc(db, 'ads', ad.id), { views: (ad.views || 0) + 1 }); } catch (e) {} }
+    if (isAppLoggedIn && userProfile && ad.sellerId !== userProfile.uid && ad.id !== 'dummy-1') { try { await updateDoc(publicDoc('ads', ad.id), { views: (ad.views || 0) + 1 }); } catch (e) {} }
   };
 
   const navigateTo = (view) => { if (view === 'landing') { setHistory([]); setActiveView('landing'); } else { setHistory(prev => [...prev, activeView]); setActiveView(view); } };
@@ -850,7 +874,7 @@ export default function App() {
                                   }
                                 }
                                 const newAd = { title: sellerInput || 'إعلان جديد', titleEn: sellerInput || 'New Ad', category: adCategory, description: '', views: 0, statusAr: 'قيد المراجعة', statusEn: 'Pending', date: new Date().toISOString().split('T')[0], location: 'مصر', time: 'الآن', price: 'السعر بالاتفاق', images: finalImageUrls.length > 0 ? finalImageUrls : ["https://images.unsplash.com/photo-1550355291-bbee04a92027?auto=format&fit=crop&q=80&w=800"], sellerId: userProfile.uid, sellerName: userProfile.displayName, createdAt: Date.now() };
-                                await setDoc(doc(db, 'ads', Date.now().toString()), newAd);
+                                await setDoc(publicDoc('ads', Date.now().toString()), newAd);
                                 setSellerInput(''); setUploadedImages([]); setIsUploading(false); setAppAlert('تم رفع الإعلان بنجاح. وهو الآن قيد المراجعة من الإدارة للحماية. يمكنك تعديل الوصف من صفحة "إعلاناتي".');
                               } catch (err) { setIsUploading(false); setAppAlert('حدث خطأ.'); }
                             }
@@ -1061,7 +1085,7 @@ export default function App() {
                      ) : ( <span className="text-emerald-400 text-xs font-bold bg-emerald-500/10 px-3 py-1.5 rounded-lg flex items-center gap-1"><CheckCircle size={14}/> نشط</span> )}
                      <div className="flex gap-2">
                        <button onClick={() => { setAdToEdit({ ...ad, description: ad.description || '' }); setEditNewImages([]); }} className="bg-blue-500/10 text-blue-400 p-2 rounded-lg hover:bg-blue-500/20 transition-colors"><Edit size={18}/></button>
-                       <button onClick={() => { setConfirmModal({ isOpen: true, title: 'حذف إعلانك', message: 'هل أنت متأكد من حذف إعلانك نهائياً؟', confirmText: 'احذف الإعلان', type: 'danger', onConfirm: async () => { setIsUploading(true); try { await deleteDoc(doc(db, 'ads', ad.id)); setAppAlert('تم حذف الإعلان بنجاح'); } catch(e) { } setIsUploading(false); setConfirmModal({ ...confirmModal, isOpen: false }); } }); }} className="bg-red-500/10 text-red-500 p-2 rounded-lg hover:bg-red-500/20 transition-colors"><Trash2 size={18}/></button>
+                       <button onClick={() => { setConfirmModal({ isOpen: true, title: 'حذف إعلانك', message: 'هل أنت متأكد من حذف إعلانك نهائياً؟', confirmText: 'احذف الإعلان', type: 'danger', onConfirm: async () => { setIsUploading(true); try { await deleteDoc(publicDoc('ads', ad.id)); setAppAlert('تم حذف الإعلان بنجاح'); } catch(e) { } setIsUploading(false); setConfirmModal({ ...confirmModal, isOpen: false }); } }); }} className="bg-red-500/10 text-red-500 p-2 rounded-lg hover:bg-red-500/20 transition-colors"><Trash2 size={18}/></button>
                      </div>
                    </div>
                  </div>
@@ -1258,7 +1282,7 @@ export default function App() {
                          {u.photoUrl ? <img src={u.photoUrl} alt="User" className="w-14 h-14 rounded-full object-cover border border-gray-600" /> : <AvatarFallback size={56} />}
                          <div><p className="text-xl text-white font-bold">{u.fullName}</p><p className="text-sm text-gray-400 mt-1">الإيميل: {u.email} | الهاتف: {u.phone}</p><a href={u.receiptUrl} target="_blank" rel="noreferrer" className="text-emerald-400 text-sm hover:underline mt-2 inline-block font-bold">👀 عرض إيصال الدفع (نافذة جديدة)</a></div>
                       </div>
-                      <button onClick={async () => { setIsUploading(true); try { const activationTime = Date.now(); await updateDoc(doc(db, 'users', u.uid), { subscriptionStatus: 'Active', activatedAt: activationTime }); await updateDoc(doc(db, 'profiles', u.uid), { subscriptionStatus: 'Active', activatedAt: activationTime }); setPendingUsers(pendingUsers.filter(user => user.uid !== u.uid)); setAppAlert('تم تفعيل الحساب وتجديد الـ 30 يوم بنجاح!'); } catch(err) { setAppAlert('خطأ: تم رفض الإذن من قاعدة البيانات.'); } setIsUploading(false); }} className="bg-emerald-500 text-white px-6 py-3 rounded-lg hover:bg-emerald-600 font-bold w-full sm:w-auto shrink-0">تفعيل الحساب (30 يوم)</button>
+                      <button onClick={async () => { setIsUploading(true); try { const activationTime = Date.now(); await updateDoc(publicDoc('users', u.uid), { subscriptionStatus: 'Active', activatedAt: activationTime }); await updateDoc(publicDoc('profiles', u.uid), { subscriptionStatus: 'Active', activatedAt: activationTime }); setPendingUsers(pendingUsers.filter(user => user.uid !== u.uid)); setAppAlert('تم تفعيل الحساب وتجديد الـ 30 يوم بنجاح!'); } catch(err) { setAppAlert('خطأ: تم رفض الإذن من قاعدة البيانات.'); } setIsUploading(false); }} className="bg-emerald-500 text-white px-6 py-3 rounded-lg hover:bg-emerald-600 font-bold w-full sm:w-auto shrink-0">تفعيل الحساب (30 يوم)</button>
                     </div>
                   ))}
                   {pendingUsers.filter(u => u.fullName?.includes(adminPendingSearch) || u.phone?.includes(adminPendingSearch) || u.email?.includes(adminPendingSearch)).length === 0 && <p className="text-gray-500 text-center py-4">لا توجد نتائج مطابقة لبحثك.</p>}
@@ -1316,8 +1340,8 @@ export default function App() {
                          <button onClick={async () => {
                             setIsUploading(true);
                             try {
-                               await updateDoc(doc(db, 'users', p.uid), { isBanned: !p.isBanned });
-                               await updateDoc(doc(db, 'profiles', p.uid), { isBanned: !p.isBanned });
+                               await updateDoc(publicDoc('users', p.uid), { isBanned: !p.isBanned });
+                               await updateDoc(publicDoc('profiles', p.uid), { isBanned: !p.isBanned });
                                setAppAlert(p.isBanned ? 'تم فك الحظر بنجاح.' : 'تم حظر المستخدم بنجاح.');
                             } catch(e) { setAppAlert('حدث خطأ.'); }
                             setIsUploading(false);
@@ -1349,7 +1373,7 @@ export default function App() {
               </div>
 
               {/* إدارة الأقسام */}
-              <div className="flex flex-col sm:flex-row justify-between items-center border-b border-gray-700 pb-4 mb-6 mt-12"><h2 className="text-2xl font-bold text-yellow-400 mb-4 sm:mb-0">إدارة الأقسام (Categories)</h2><button onClick={async () => { setIsUploading(true); try { await setDoc(doc(db, 'settings', 'categories'), { list: defaultCategoriesList }, { merge: true }); setCategories(defaultCategoriesList); setAppAlert('تم إعادة تعيين الأقسام للقائمة الافتراضية بنجاح!'); } catch(e) {} setIsUploading(false); }} className="bg-gray-700 hover:bg-gray-600 text-white font-bold px-4 py-2 rounded-xl transition-colors text-sm flex items-center gap-2">إعادة التعيين للافتراضي</button></div>
+              <div className="flex flex-col sm:flex-row justify-between items-center border-b border-gray-700 pb-4 mb-6 mt-12"><h2 className="text-2xl font-bold text-yellow-400 mb-4 sm:mb-0">إدارة الأقسام (Categories)</h2><button onClick={async () => { setIsUploading(true); try { await setDoc(publicDoc('settings', 'categories'), { list: defaultCategoriesList }, { merge: true }); setCategories(defaultCategoriesList); setAppAlert('تم إعادة تعيين الأقسام للقائمة الافتراضية بنجاح!'); } catch(e) {} setIsUploading(false); }} className="bg-gray-700 hover:bg-gray-600 text-white font-bold px-4 py-2 rounded-xl transition-colors text-sm flex items-center gap-2">إعادة التعيين للافتراضي</button></div>
               <div className="bg-[#1f2937] p-6 rounded-2xl border border-gray-700 shadow-xl">
                 <div className="flex flex-col sm:flex-row gap-3 mb-6"><input type="text" value={newCategoryInput} onChange={e => setNewCategoryInput(e.target.value)} placeholder="اكتب اسم القسم الجديد هنا..." className="flex-1 bg-[#111827] border border-gray-700 rounded-xl p-4 text-white outline-none focus:border-yellow-500" /><button onClick={handleAddCategory} className="bg-yellow-500 text-black font-bold px-8 py-4 rounded-xl hover:bg-yellow-400 transition-colors flex items-center justify-center gap-2"><Plus size={20}/> إضافة القسم</button></div>
                 <div className="flex flex-wrap gap-3 max-h-60 overflow-y-auto custom-scrollbar pr-2">
@@ -1371,8 +1395,8 @@ export default function App() {
                             <div><p className="text-lg text-white font-bold">{ad.title}</p><p className="text-sm text-gray-400 mt-1">القسم: {ad.category} | السعر: {ad.price} | البائع: {ad.sellerName || ad.sellerId}</p></div>
                          </div>
                          <div className="flex gap-2 w-full sm:w-auto shrink-0">
-                            <button onClick={() => { setConfirmModal({ isOpen: true, title: 'رفض الإعلان', message: 'هل أنت متأكد من رفض وحذف هذا الإعلان نهائياً؟', confirmText: 'رفض وحذف', type: 'danger', onConfirm: async () => { setConfirmModal({ ...confirmModal, isOpen: false }); setIsUploading(true); try { await deleteDoc(doc(db, 'ads', ad.id)); setAppAlert('تم حذف الإعلان لعدم الموافقة.'); } catch(e) {} setIsUploading(false); } }); }} className="bg-red-500/20 text-red-500 px-4 py-2 rounded-lg font-bold hover:bg-red-500 hover:text-white flex-1 sm:flex-none">رفض</button>
-                            <button onClick={async () => { setIsUploading(true); try { await updateDoc(doc(db, 'ads', ad.id), { statusEn: 'Active', statusAr: 'نشط' }); setAppAlert('تم الموافقة على الإعلان ونشره بنجاح!'); } catch(e) {} setIsUploading(false); }} className="bg-blue-500 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-600 flex-1 sm:flex-none">موافقة ونشر</button>
+                            <button onClick={() => { setConfirmModal({ isOpen: true, title: 'رفض الإعلان', message: 'هل أنت متأكد من رفض وحذف هذا الإعلان نهائياً؟', confirmText: 'رفض وحذف', type: 'danger', onConfirm: async () => { setConfirmModal({ ...confirmModal, isOpen: false }); setIsUploading(true); try { await deleteDoc(publicDoc('ads', ad.id)); setAppAlert('تم حذف الإعلان لعدم الموافقة.'); } catch(e) {} setIsUploading(false); } }); }} className="bg-red-500/20 text-red-500 px-4 py-2 rounded-lg font-bold hover:bg-red-500 hover:text-white flex-1 sm:flex-none">رفض</button>
+                            <button onClick={async () => { setIsUploading(true); try { await updateDoc(publicDoc('ads', ad.id), { statusEn: 'Active', statusAr: 'نشط' }); setAppAlert('تم الموافقة على الإعلان ونشره بنجاح!'); } catch(e) {} setIsUploading(false); }} className="bg-blue-500 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-600 flex-1 sm:flex-none">موافقة ونشر</button>
                          </div>
                       </div>
                     ))
@@ -1391,7 +1415,7 @@ export default function App() {
                 <div className="flex flex-col items-center justify-center gap-3">
                   <div className="w-24 h-24 rounded-full bg-red-500/10 border-4 border-red-500/20 flex items-center justify-center mb-2"><span className="text-4xl font-black text-red-500">{expiredAdminAds.length}</span></div>
                   <p className="text-gray-400 text-sm font-bold mb-4">إعلان منتهي الصلاحية</p>
-                  <button onClick={async () => { if(expiredAdminAds.length === 0) { setAppAlert('المساحة نظيفة! لا توجد إعلانات منتهية حالياً.'); return; } setConfirmModal({ isOpen: true, title: 'تحذير: مسح نهائي', message: `هل أنت متأكد من مسح ${expiredAdminAds.length} إعلان نهائياً؟`, confirmText: 'نعم، مسح', type: 'danger', onConfirm: async () => { setConfirmModal({...confirmModal, isOpen: false}); setIsUploading(true); try { for(const ad of expiredAdminAds) { await deleteDoc(doc(db, 'ads', ad.id)); } setAppAlert('تم تنظيف قاعدة البيانات بنجاح!'); } catch(e) {} setIsUploading(false); } }); }} className={`bg-red-500 text-white font-bold px-8 py-4 rounded-xl transition-all shadow-lg shadow-red-500/20 flex items-center justify-center gap-2 w-full sm:w-auto ${expiredAdminAds.length === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-red-600'}`} disabled={expiredAdminAds.length === 0}>
+                  <button onClick={async () => { if(expiredAdminAds.length === 0) { setAppAlert('المساحة نظيفة! لا توجد إعلانات منتهية حالياً.'); return; } setConfirmModal({ isOpen: true, title: 'تحذير: مسح نهائي', message: `هل أنت متأكد من مسح ${expiredAdminAds.length} إعلان نهائياً؟`, confirmText: 'نعم، مسح', type: 'danger', onConfirm: async () => { setConfirmModal({...confirmModal, isOpen: false}); setIsUploading(true); try { for(const ad of expiredAdminAds) { await deleteDoc(publicDoc('ads', ad.id)); } setAppAlert('تم تنظيف قاعدة البيانات بنجاح!'); } catch(e) {} setIsUploading(false); } }); }} className={`bg-red-500 text-white font-bold px-8 py-4 rounded-xl transition-all shadow-lg shadow-red-500/20 flex items-center justify-center gap-2 w-full sm:w-auto ${expiredAdminAds.length === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-red-600'}`} disabled={expiredAdminAds.length === 0}>
                     <Trash2 size={20} /> حذف وتفريغ المساحة الآن
                   </button>
                 </div>
