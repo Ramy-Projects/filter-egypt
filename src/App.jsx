@@ -99,6 +99,15 @@ export default function App() {
   const [complaintText, setComplaintText] = useState('');
   const [adminComplaints, setAdminComplaints] = useState([]);
 
+  // Banner Ads States
+  const [banners, setBanners] = useState([]);
+  const [newBannerImage, setNewBannerImage] = useState(null);
+  const [newBannerLink, setNewBannerLink] = useState('');
+
+  // Admin Search States
+  const [adminPendingSearch, setAdminPendingSearch] = useState('');
+  const [adminMembersSearch, setAdminMembersSearch] = useState('');
+
   // Categories & Ads
   const [categories, setCategories] = useState(defaultCategoriesList);
   const [newCategoryInput, setNewCategoryInput] = useState('');
@@ -245,6 +254,15 @@ export default function App() {
     return () => unsubscribe();
   }, [fbUser, userProfile?.uid]);
 
+  // Sync Banners
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'settings', 'banners'), (docSnap) => {
+      if (docSnap.exists() && docSnap.data().list) setBanners(docSnap.data().list);
+      else setBanners([]);
+    }, (error) => console.log("Banners sync issue, ignoring."));
+    return () => unsub();
+  }, []);
+
   // Scroll to bottom
   useEffect(() => {
     activeChatRef.current = activeChatId;
@@ -309,6 +327,36 @@ export default function App() {
   const saveLegalDocument = async () => {
     setIsUploading(true);
     try { await setDoc(doc(db, 'settings', 'legal'), { ...legalTexts, [legalEditModal.type]: legalEditModal.content }, { merge: true }); setLegalEditModal({ isOpen: false, type: '', content: '', title: '' }); setAppAlert('تم تحديث الصفحة بنجاح وحفظها في قاعدة البيانات!'); } catch(err) {} setIsUploading(false);
+  };
+
+  // Admin Banners
+  const handleAddBanner = async () => {
+    if (!newBannerImage) { setAppAlert('يرجى اختيار صورة البنر الإعلاني أولاً.'); return; }
+    setIsUploading(true);
+    try {
+       const formData = new FormData(); formData.append('image', newBannerImage);
+       const res = await fetch('https://api.imgbb.com/1/upload?key=8c8cec8f9ee7b67db88ba5799154c94d', { method: 'POST', body: formData });
+       if(res.ok) {
+          const url = (await res.json()).data.url;
+          const newBanner = { id: Date.now().toString(), imageUrl: url, link: newBannerLink };
+          const updatedBanners = [...banners, newBanner];
+          await setDoc(doc(db, 'settings', 'banners'), { list: updatedBanners }, { merge: true });
+          setAppAlert('تم رفع البنر وإضافته بنجاح!');
+          setNewBannerImage(null);
+          setNewBannerLink('');
+       } else { throw new Error('Network error'); }
+    } catch(e) { console.error(e); setAppAlert('خطأ أثناء رفع البنر الإعلاني.'); }
+    setIsUploading(false);
+  };
+
+  const handleDeleteBanner = async (bannerId) => {
+    setIsUploading(true);
+    try {
+       const updatedBanners = banners.filter(b => b.id !== bannerId);
+       await setDoc(doc(db, 'settings', 'banners'), { list: updatedBanners }, { merge: true });
+       setAppAlert('تم إزالة البنر بنجاح!');
+    } catch(e) { setAppAlert('خطأ أثناء إزالة البنر.'); }
+    setIsUploading(false);
   };
 
   const renderLegalText = (text) => {
@@ -685,24 +733,48 @@ export default function App() {
         </div>
       </header>
 
-      <main className="flex-1 w-full max-w-4xl flex flex-col justify-center items-center px-4 mt-8 md:mt-0 pb-20">
+      <main className="flex-1 w-full max-w-4xl flex flex-col justify-center items-center px-4 mt-8 md:mt-0 pb-10">
         
         {activeView === 'landing' && (
-          <div className="w-full animate-fade-in text-center flex flex-col items-center mt-6">
-            <h2 className="text-3xl md:text-5xl font-bold mb-5 leading-tight">مجتمع حصري <span className={accentColor}>للأعضاء فقط</span></h2>
-            <p className="text-gray-400 text-base md:text-lg mb-12 max-w-2xl leading-relaxed">بيئة مميزة للجودة والثقة باشتراك رمزي (10 جنيهات شهرياً). بيع وشراء بأمان بعيداً عن فوضى السوق والتشتت.</p>
+          <div className="w-full animate-fade-in flex flex-col items-center mt-6 w-full">
+            <h2 className="text-3xl md:text-5xl font-bold mb-5 leading-tight text-center">مجتمع حصري <span className={accentColor}>للأعضاء فقط</span></h2>
+            <p className="text-gray-400 text-base md:text-lg mb-12 max-w-2xl leading-relaxed text-center">بيئة مميزة للجودة والثقة باشتراك رمزي (10 جنيهات شهرياً). بيع وشراء بأمان بعيداً عن فوضى السوق والتشتت.</p>
             <div className="flex flex-col md:flex-row gap-6 w-full max-w-2xl justify-center">
               <div onClick={() => isAppLoggedIn ? setActiveView('seller') : navigateTo('login')} className={`${cardBg} flex-1 p-8 rounded-3xl border border-gray-700 hover:border-emerald-500 cursor-pointer group flex flex-col items-center gap-4`}>
                 <div className="w-16 h-16 rounded-full bg-gray-800 group-hover:bg-emerald-500/20 flex items-center justify-center"><Store className="text-gray-400 group-hover:text-emerald-400" size={32} /></div>
                 <h3 className="text-xl font-bold text-white">أنا البائع</h3>
-                <p className="text-gray-400 text-xs md:text-sm">أريد عرض منتجاتي أو خدماتي.</p>
+                <p className="text-gray-400 text-xs md:text-sm text-center">أريد عرض منتجاتي أو خدماتي.</p>
               </div>
               <div onClick={() => isAppLoggedIn ? setActiveView('buyer') : navigateTo('login')} className={`${cardBg} flex-1 p-8 rounded-3xl border border-gray-700 hover:border-blue-500 cursor-pointer group flex flex-col items-center gap-4`}>
                 <div className="w-16 h-16 rounded-full bg-gray-800 group-hover:bg-blue-500/20 flex items-center justify-center"><ShoppingBag className="text-gray-400 group-hover:text-blue-400" size={32} /></div>
                 <h3 className="text-xl font-bold text-white">أنا المشتري</h3>
-                <p className="text-gray-400 text-xs md:text-sm">أريد البحث عن صفقات رائعة بأمان.</p>
+                <p className="text-gray-400 text-xs md:text-sm text-center">أريد البحث عن صفقات رائعة بأمان.</p>
               </div>
             </div>
+
+            {/* --- Banner Ads Section for Monetization --- */}
+            {banners.length > 0 && (
+              <div className="w-full mt-16 animate-fade-in">
+                 <div className="flex items-center justify-center gap-2 mb-6">
+                    <div className="h-px bg-gray-800 flex-1"></div>
+                    <span className="text-gray-500 text-sm font-bold bg-[#111827] px-4">مساحات إعلانية مميزة</span>
+                    <div className="h-px bg-gray-800 flex-1"></div>
+                 </div>
+                 <div className="flex flex-col gap-6 w-full">
+                    {banners.map(banner => (
+                       banner.link ? (
+                         <a key={banner.id} href={banner.link} target="_blank" rel="noreferrer" className="block w-full rounded-3xl overflow-hidden border border-gray-700 shadow-2xl hover:border-emerald-500 transition-colors group">
+                           <img src={banner.imageUrl} alt="Ad Banner" className="w-full h-auto object-cover max-h-48 md:max-h-64 group-hover:scale-105 transition-transform duration-500" />
+                         </a>
+                       ) : (
+                         <div key={banner.id} className="w-full rounded-3xl overflow-hidden border border-gray-700 shadow-2xl">
+                           <img src={banner.imageUrl} alt="Ad Banner" className="w-full h-auto object-cover max-h-48 md:max-h-64" />
+                         </div>
+                       )
+                    ))}
+                 </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -732,7 +804,11 @@ export default function App() {
                     {activeView === 'seller' && (
                       <div className="absolute inset-y-1.5 right-1.5 flex items-center z-10">
                         <button onClick={() => setShowAdCategoryMenu(!showAdCategoryMenu)} className="h-full bg-gray-700/50 hover:bg-emerald-500/20 text-emerald-400 rounded-full px-4 flex items-center justify-center gap-1 transition-colors border border-transparent hover:border-emerald-500/50"><span className="text-xs font-bold max-w-[70px] truncate">{adCategory || 'القسم'}</span><ChevronDown size={16} /></button>
-                        {showAdCategoryMenu && (<div className="absolute top-full right-0 mt-2 w-48 bg-[#1f2937] border border-gray-700 rounded-xl shadow-2xl overflow-hidden py-1 z-50">{categories.map(cat => ( <button key={cat} onClick={() => { setAdCategory(cat); setShowAdCategoryMenu(false); }} className={`w-full text-right px-4 py-2.5 text-sm hover:bg-emerald-500/10 transition-colors ${adCategory === cat ? 'text-emerald-400 font-bold bg-emerald-500/10' : 'text-white'}`}>{cat}</button> ))}</div>)}
+                        {showAdCategoryMenu && (
+                          <div className="absolute top-full right-0 mt-2 w-48 max-h-60 bg-[#1f2937] border border-gray-700 rounded-xl shadow-2xl overflow-y-auto custom-scrollbar py-1 z-50">
+                            {categories.map(cat => ( <button key={cat} onClick={() => { setAdCategory(cat); setShowAdCategoryMenu(false); }} className={`w-full text-right px-4 py-2.5 text-sm hover:bg-emerald-500/10 transition-colors ${adCategory === cat ? 'text-emerald-400 font-bold bg-emerald-500/10' : 'text-white'}`}>{cat}</button> ))}
+                          </div>
+                        )}
                       </div>
                     )}
                     <div className="absolute inset-y-1.5 left-1.5 flex gap-1.5 items-center">
@@ -802,30 +878,33 @@ export default function App() {
 
         {/* --- MEMBERS DIRECTORY --- */}
         {activeView === 'directory' && (
-           <div className="w-full animate-fade-in flex flex-col items-center">
+           <div className="w-full animate-fade-in flex flex-col items-center h-full">
              <div className="w-full flex justify-between items-center mb-6"><h2 className="text-2xl font-bold flex items-center gap-2"><UserSearch className="text-blue-400"/> دليل المشتركين</h2><button onClick={goBack} className="bg-[#1f2937] px-4 py-2 rounded-full border border-gray-700">رجوع</button></div>
+             
              <div className="w-full max-w-2xl mb-8 relative">
                 <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
                 <input type="text" value={directorySearch} onChange={e => setDirectorySearch(e.target.value)} placeholder="ابحث عن متجر، تاجر أو رقم هاتف..." className="w-full bg-[#1f2937] border border-gray-700 rounded-full py-4 pr-12 pl-4 text-white outline-none focus:border-blue-500 shadow-xl" />
              </div>
              
-             <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
-               {allProfiles.filter(p => !p.isBanned && (p.displayName?.includes(directorySearch) || p.fullName?.includes(directorySearch) || p.phone?.includes(directorySearch))).map(profile => (
-                 <div key={profile.uid} className="bg-[#1f2937] p-5 rounded-2xl border border-gray-700 flex flex-col sm:flex-row gap-4 items-center hover:border-emerald-500 transition-colors">
-                    {profile.photoUrl ? <img src={profile.photoUrl} alt="User" className="w-20 h-20 rounded-full object-cover border-2 border-gray-600 shrink-0" /> : <AvatarFallback size={80} className="border-2 border-gray-600 shrink-0" />}
-                    <div className="flex-1 text-center sm:text-right">
-                       <h4 className="font-bold text-white text-lg">{profile.displayName || profile.fullName}</h4>
-                       <p className="text-gray-400 text-sm line-clamp-2 mt-1 min-h-[40px]">{profile.bio || 'لا توجد نبذة تعريفية.'}</p>
-                       <div className="flex gap-2 justify-center sm:justify-start mt-3">
-                          <button onClick={() => { setViewedProfile(profile); navigateTo('user-profile'); }} className="bg-[#111827] border border-gray-600 text-gray-300 px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-800 transition-colors flex-1">زيارة البروفايل</button>
-                          {userProfile?.uid !== profile.uid && (
-                             <button onClick={() => openChat(profile.uid, profile.displayName)} className="bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-emerald-600 transition-colors flex items-center justify-center gap-1"><MessageSquare size={16}/> شات</button>
-                          )}
-                       </div>
-                    </div>
-                 </div>
-               ))}
-               {allProfiles.length === 0 && <p className="text-gray-500 text-center py-10 w-full col-span-2">جاري التحميل أو لا يوجد مستخدمين.</p>}
+             <div className="w-full max-h-[65vh] overflow-y-auto custom-scrollbar pr-2 pb-8">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 {allProfiles.filter(p => !p.isBanned && (p.displayName?.includes(directorySearch) || p.fullName?.includes(directorySearch) || p.phone?.includes(directorySearch))).map(profile => (
+                   <div key={profile.uid} className="bg-[#1f2937] p-5 rounded-2xl border border-gray-700 flex flex-col sm:flex-row gap-4 items-center hover:border-emerald-500 transition-colors">
+                      {profile.photoUrl ? <img src={profile.photoUrl} alt="User" className="w-20 h-20 rounded-full object-cover border-2 border-gray-600 shrink-0" /> : <AvatarFallback size={80} className="border-2 border-gray-600 shrink-0" />}
+                      <div className="flex-1 text-center sm:text-right">
+                         <h4 className="font-bold text-white text-lg">{profile.displayName || profile.fullName}</h4>
+                         <p className="text-gray-400 text-sm line-clamp-2 mt-1 min-h-[40px]">{profile.bio || 'لا توجد نبذة تعريفية.'}</p>
+                         <div className="flex gap-2 justify-center sm:justify-start mt-3">
+                            <button onClick={() => { setViewedProfile(profile); navigateTo('user-profile'); }} className="bg-[#111827] border border-gray-600 text-gray-300 px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-800 transition-colors flex-1">زيارة البروفايل</button>
+                            {userProfile?.uid !== profile.uid && (
+                               <button onClick={() => openChat(profile.uid, profile.displayName)} className="bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-emerald-600 transition-colors flex items-center justify-center gap-1"><MessageSquare size={16}/> شات</button>
+                            )}
+                         </div>
+                      </div>
+                   </div>
+                 ))}
+                 {allProfiles.length === 0 && <p className="text-gray-500 text-center py-10 w-full col-span-2">جاري التحميل أو لا يوجد مستخدمين.</p>}
+               </div>
              </div>
            </div>
         )}
@@ -885,19 +964,6 @@ export default function App() {
                   </div>
                 ))}
              </div>
-          </div>
-        )}
-
-        {/* --- FILTER MODAL --- */}
-        {showFilterModal && (
-          <div className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4">
-            <div className="bg-[#1f2937] rounded-3xl p-8 w-full max-w-lg relative shadow-2xl border border-gray-700 max-h-[85vh] overflow-y-auto custom-scrollbar">
-               <button onClick={() => setShowFilterModal(false)} className="absolute top-4 left-4 text-gray-400 hover:text-white bg-gray-800 p-2 rounded-full z-10"><X size={20}/></button>
-               <h3 className="text-2xl font-bold mb-6 text-emerald-400 text-center mt-4">تصفية متقدمة (الأقسام)</h3>
-               <div className="grid grid-cols-2 gap-4">
-                  {['الكل', ...categories].map(cat => ( <button key={cat} onClick={() => { setFilterCategory(cat); setShowFilterModal(false); navigateTo('results'); }} className="bg-[#111827] border border-gray-700 hover:border-emerald-500 hover:bg-emerald-500/10 p-4 rounded-xl text-white font-bold transition-colors">{cat}</button> ))}
-               </div>
-            </div>
           </div>
         )}
 
@@ -1113,30 +1179,70 @@ export default function App() {
               </div>
               
               {/* قسم طلبات التفعيل */}
+              <div className="mb-4 relative">
+                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                 <input type="text" value={adminPendingSearch} onChange={e => setAdminPendingSearch(e.target.value)} placeholder="ابحث في الطلبات بالاسم، الرقم، الإيميل..." className="w-full bg-[#111827] border border-gray-700 rounded-lg py-3 pr-10 pl-4 text-sm text-white outline-none focus:border-emerald-500" />
+              </div>
               {pendingUsers.length === 0 ? (
                 <div className="bg-[#111827] p-6 rounded-xl border border-gray-700 text-center"><p className="text-gray-400">لا توجد طلبات في قائمة الانتظار حالياً.</p><p className="text-sm text-gray-500 mt-2">اضغط على "تحديث القائمة" لجلب التحديثات الجديدة.</p></div>
               ) : (
-                <div className="space-y-4">
-                  {pendingUsers.map(u => (
+                <div className="max-h-96 overflow-y-auto custom-scrollbar pr-2 space-y-4">
+                  {pendingUsers.filter(u => u.fullName?.includes(adminPendingSearch) || u.phone?.includes(adminPendingSearch) || u.email?.includes(adminPendingSearch)).map(u => (
                     <div key={u.uid} className="bg-[#111827] p-5 rounded-xl border border-gray-700 flex flex-col sm:flex-row justify-between items-center gap-4">
                       <div className="flex gap-4 items-center">
                          {u.photoUrl ? <img src={u.photoUrl} alt="User" className="w-14 h-14 rounded-full object-cover border border-gray-600" /> : <AvatarFallback size={56} />}
                          <div><p className="text-xl text-white font-bold">{u.fullName}</p><p className="text-sm text-gray-400 mt-1">الإيميل: {u.email} | الهاتف: {u.phone}</p><a href={u.receiptUrl} target="_blank" rel="noreferrer" className="text-emerald-400 text-sm hover:underline mt-2 inline-block font-bold">👀 عرض إيصال الدفع (نافذة جديدة)</a></div>
                       </div>
-                      <button onClick={async () => { setIsUploading(true); try { const activationTime = Date.now(); await updateDoc(doc(db, 'users', u.uid), { subscriptionStatus: 'Active', activatedAt: activationTime }); await updateDoc(doc(db, 'profiles', u.uid), { subscriptionStatus: 'Active', activatedAt: activationTime }); setPendingUsers(pendingUsers.filter(user => user.uid !== u.uid)); setAppAlert('تم تفعيل الحساب وتجديد الـ 30 يوم بنجاح!'); } catch(err) { setAppAlert('خطأ: تم رفض الإذن من قاعدة البيانات.'); } setIsUploading(false); }} className="bg-emerald-500 text-white px-6 py-3 rounded-lg hover:bg-emerald-600 font-bold w-full sm:w-auto">تفعيل الحساب (30 يوم)</button>
+                      <button onClick={async () => { setIsUploading(true); try { const activationTime = Date.now(); await updateDoc(doc(db, 'users', u.uid), { subscriptionStatus: 'Active', activatedAt: activationTime }); await updateDoc(doc(db, 'profiles', u.uid), { subscriptionStatus: 'Active', activatedAt: activationTime }); setPendingUsers(pendingUsers.filter(user => user.uid !== u.uid)); setAppAlert('تم تفعيل الحساب وتجديد الـ 30 يوم بنجاح!'); } catch(err) { setAppAlert('خطأ: تم رفض الإذن من قاعدة البيانات.'); } setIsUploading(false); }} className="bg-emerald-500 text-white px-6 py-3 rounded-lg hover:bg-emerald-600 font-bold w-full sm:w-auto shrink-0">تفعيل الحساب (30 يوم)</button>
                     </div>
                   ))}
+                  {pendingUsers.filter(u => u.fullName?.includes(adminPendingSearch) || u.phone?.includes(adminPendingSearch) || u.email?.includes(adminPendingSearch)).length === 0 && <p className="text-gray-500 text-center py-4">لا توجد نتائج مطابقة لبحثك.</p>}
                 </div>
               )}
 
+              {/* قسم إدارة البنرات الإعلانية */}
+              <div className="flex flex-col sm:flex-row justify-between items-center border-b border-gray-700 pb-4 mb-6 mt-12">
+                <h2 className="text-2xl font-bold text-pink-400 mb-4 sm:mb-0 flex items-center gap-2">
+                  <ImagePlus/> إدارة المساحات الإعلانية (البنرات)
+                </h2>
+              </div>
+              <div className="bg-[#1f2937] p-6 rounded-2xl border border-gray-700 shadow-xl">
+                 <div className="flex flex-col gap-4 mb-6">
+                    <label className="border border-dashed border-gray-600 p-4 rounded-xl text-center cursor-pointer block text-gray-400 hover:border-emerald-500 transition-colors">
+                       <Upload className="mx-auto mb-2" />
+                       {newBannerImage ? 'تم اختيار الصورة الإعلانية بنجاح' : 'إرفاق صورة البنر الإعلاني (يفضل صورة أفقية)'}
+                       <input type="file" className="hidden" accept="image/*" onChange={(e) => { if(e.target.files[0]) setNewBannerImage(e.target.files[0]); }} />
+                    </label>
+                    <input type="url" placeholder="رابط الإعلان (اختياري) - مثلاً: صفحة الفيسبوك للمعلن" value={newBannerLink} onChange={e => setNewBannerLink(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-pink-500" />
+                    <button onClick={handleAddBanner} className="bg-pink-600 text-white font-bold py-3 rounded-xl hover:bg-pink-500 transition-colors shadow-lg">رفع وإضافة البنر للصفحة الرئيسية</button>
+                 </div>
+                 
+                 <div className="space-y-4 max-h-96 overflow-y-auto custom-scrollbar pr-2">
+                   {banners.map(b => (
+                      <div key={b.id} className="bg-[#111827] p-4 rounded-xl border border-gray-700 flex flex-col sm:flex-row gap-4 items-center justify-between">
+                         <img src={b.imageUrl} className="w-32 h-16 object-cover rounded-lg border border-gray-600 shrink-0" alt="Banner Preview" />
+                         <div className="flex-1 text-center sm:text-right overflow-hidden">
+                            {b.link ? <a href={b.link} target="_blank" rel="noreferrer" className="text-blue-400 text-sm hover:underline truncate block">{b.link}</a> : <span className="text-gray-500 text-sm">إعلان بدون رابط</span>}
+                         </div>
+                         <button onClick={() => handleDeleteBanner(b.id)} className="bg-red-500/10 text-red-500 px-4 py-2 rounded-lg font-bold hover:bg-red-500 hover:text-white transition-colors shrink-0">إزالة</button>
+                      </div>
+                   ))}
+                   {banners.length === 0 && <p className="text-gray-500 text-center py-4">لا توجد مساحات إعلانية مفعلة حالياً.</p>}
+                 </div>
+              </div>
+
               {/* قسم إدارة جميع المشتركين (الحظر) */}
               <div className="flex flex-col sm:flex-row justify-between items-center border-b border-gray-700 pb-4 mb-6 mt-12"><h2 className="text-2xl font-bold text-orange-400 mb-4 sm:mb-0 flex items-center gap-2"><Ban/> إدارة المشتركين والحظر</h2></div>
+              <div className="mb-4 relative">
+                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                 <input type="text" value={adminMembersSearch} onChange={e => setAdminMembersSearch(e.target.value)} placeholder="ابحث عن مشترك بالاسم، الرقم..." className="w-full bg-[#111827] border border-gray-700 rounded-lg py-3 pr-10 pl-4 text-sm text-white outline-none focus:border-orange-500" />
+              </div>
               <div className="bg-[#1f2937] p-6 rounded-2xl border border-gray-700 shadow-xl max-h-96 overflow-y-auto custom-scrollbar">
                  <div className="space-y-3">
-                   {allProfiles.map(p => (
+                   {allProfiles.filter(p => p.displayName?.includes(adminMembersSearch) || p.fullName?.includes(adminMembersSearch) || p.phone?.includes(adminMembersSearch)).map(p => (
                       <div key={p.uid} className="bg-[#111827] p-4 rounded-xl border border-gray-700 flex flex-col sm:flex-row justify-between items-center gap-3">
                          <div className="flex items-center gap-3">
-                           {p.photoUrl ? <img src={p.photoUrl} className="w-10 h-10 rounded-full object-cover"/> : <AvatarFallback size={40}/>}
+                           {p.photoUrl ? <img src={p.photoUrl} className="w-10 h-10 rounded-full object-cover shrink-0"/> : <AvatarFallback size={40}/>}
                            <div>
                               <p className="text-white font-bold">{p.displayName || p.fullName} {p.isBanned && <span className="text-red-500 text-xs bg-red-500/10 px-2 py-0.5 rounded ml-2">محظور</span>}</p>
                               <p className="text-gray-400 text-xs">{p.phone} | {p.email}</p>
@@ -1150,11 +1256,12 @@ export default function App() {
                                setAppAlert(p.isBanned ? 'تم فك الحظر بنجاح.' : 'تم حظر المستخدم بنجاح.');
                             } catch(e) { setAppAlert('حدث خطأ.'); }
                             setIsUploading(false);
-                         }} className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${p.isBanned ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white'}`}>
+                         }} className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors shrink-0 ${p.isBanned ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white'}`}>
                             {p.isBanned ? 'فك الحظر' : 'حظر نهائي'}
                          </button>
                       </div>
                    ))}
+                   {allProfiles.filter(p => p.displayName?.includes(adminMembersSearch) || p.fullName?.includes(adminMembersSearch) || p.phone?.includes(adminMembersSearch)).length === 0 && <p className="text-gray-500 text-center py-4">لا توجد نتائج مطابقة لبحثك.</p>}
                  </div>
               </div>
 
@@ -1180,7 +1287,7 @@ export default function App() {
               <div className="flex flex-col sm:flex-row justify-between items-center border-b border-gray-700 pb-4 mb-6 mt-12"><h2 className="text-2xl font-bold text-yellow-400 mb-4 sm:mb-0">إدارة الأقسام (Categories)</h2><button onClick={async () => { setIsUploading(true); try { await setDoc(doc(db, 'settings', 'categories'), { list: defaultCategoriesList }, { merge: true }); setCategories(defaultCategoriesList); setAppAlert('تم إعادة تعيين الأقسام للقائمة الافتراضية بنجاح!'); } catch(e) {} setIsUploading(false); }} className="bg-gray-700 hover:bg-gray-600 text-white font-bold px-4 py-2 rounded-xl transition-colors text-sm flex items-center gap-2">إعادة التعيين للافتراضي</button></div>
               <div className="bg-[#1f2937] p-6 rounded-2xl border border-gray-700 shadow-xl">
                 <div className="flex flex-col sm:flex-row gap-3 mb-6"><input type="text" value={newCategoryInput} onChange={e => setNewCategoryInput(e.target.value)} placeholder="اكتب اسم القسم الجديد هنا..." className="flex-1 bg-[#111827] border border-gray-700 rounded-xl p-4 text-white outline-none focus:border-yellow-500" /><button onClick={handleAddCategory} className="bg-yellow-500 text-black font-bold px-8 py-4 rounded-xl hover:bg-yellow-400 transition-colors flex items-center justify-center gap-2"><Plus size={20}/> إضافة القسم</button></div>
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap gap-3 max-h-60 overflow-y-auto custom-scrollbar pr-2">
                   {categories.map(cat => ( <div key={cat} className="bg-[#111827] border border-gray-700 px-4 py-2.5 rounded-full flex items-center gap-3 text-white font-bold">{cat}<button onClick={() => handleDeleteCategory(cat)} className="text-red-500 hover:text-red-400 bg-red-500/10 hover:bg-red-500/20 p-1.5 rounded-full transition-colors"><Trash2 size={16}/></button></div> ))}
                   {categories.length === 0 && <p className="text-gray-500 text-sm w-full text-center py-4">لا توجد أقسام حالياً.</p>}
                 </div>
@@ -1188,17 +1295,17 @@ export default function App() {
 
               {/* مراجعة الإعلانات */}
               <div className="flex flex-col sm:flex-row justify-between items-center border-b border-gray-700 pb-4 mb-6 mt-12"><h2 className="text-2xl font-bold text-blue-400 mb-4 sm:mb-0">مراجعة الإعلانات الجديدة</h2></div>
-              <div className="space-y-4">
+              <div className="space-y-4 max-h-96 overflow-y-auto custom-scrollbar pr-2">
                  {globalAds.filter(ad => ad.statusEn === 'Pending').length === 0 ? (
                     <div className="bg-[#111827] p-6 rounded-xl border border-gray-700 text-center"><p className="text-gray-400">لا توجد إعلانات في انتظار المراجعة.</p></div>
                  ) : (
                     globalAds.filter(ad => ad.statusEn === 'Pending').map(ad => (
                       <div key={ad.id} className="bg-[#111827] p-5 rounded-xl border border-gray-700 flex flex-col sm:flex-row justify-between items-center gap-4">
                          <div className="flex gap-4 items-center">
-                            <img src={ad.images?.[0]} className="w-16 h-16 rounded-lg object-cover" alt="ad" />
+                            <img src={ad.images?.[0]} className="w-16 h-16 rounded-lg object-cover shrink-0" alt="ad" />
                             <div><p className="text-lg text-white font-bold">{ad.title}</p><p className="text-sm text-gray-400 mt-1">القسم: {ad.category} | السعر: {ad.price} | البائع: {ad.sellerName || ad.sellerId}</p></div>
                          </div>
-                         <div className="flex gap-2 w-full sm:w-auto">
+                         <div className="flex gap-2 w-full sm:w-auto shrink-0">
                             <button onClick={() => { setConfirmModal({ isOpen: true, title: 'رفض الإعلان', message: 'هل أنت متأكد من رفض وحذف هذا الإعلان نهائياً؟', confirmText: 'رفض وحذف', type: 'danger', onConfirm: async () => { setConfirmModal({ ...confirmModal, isOpen: false }); setIsUploading(true); try { await deleteDoc(doc(db, 'ads', ad.id)); setAppAlert('تم حذف الإعلان لعدم الموافقة.'); } catch(e) {} setIsUploading(false); } }); }} className="bg-red-500/20 text-red-500 px-4 py-2 rounded-lg font-bold hover:bg-red-500 hover:text-white flex-1 sm:flex-none">رفض</button>
                             <button onClick={async () => { setIsUploading(true); try { await updateDoc(doc(db, 'ads', ad.id), { statusEn: 'Active', statusAr: 'نشط' }); setAppAlert('تم الموافقة على الإعلان ونشره بنجاح!'); } catch(e) {} setIsUploading(false); }} className="bg-blue-500 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-600 flex-1 sm:flex-none">موافقة ونشر</button>
                          </div>
