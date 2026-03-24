@@ -1189,12 +1189,95 @@ export default function App() {
                             <div><p className="text-lg text-white font-bold">{ad.title}</p><p className="text-sm text-gray-400 mt-1">القسم: {ad.category} | السعر: {ad.price} | البائع: {ad.sellerName || ad.sellerId}</p></div>
                          </div>
                          <div className="flex gap-2 w-full sm:w-auto">
-                            <button onClick={() => { setConfirmModal({ isOpen: true, title: 'رفض الإعلان', message: 'هل أنت متأكد من رفض وحذف هذا الإعلان نهائياً؟', confirmText: 'رفض وحذف', type: 'danger', onConfirm: async () => { await deleteDoc(doc(db, 'ads', ad.id)); setConfirmModal({ ...confirmModal, isOpen: false }); setAppAlert('تم حذف الإعلان لعدم الموافقة.'); } }); }} className="bg-red-500/20 text-red-500 px-4 py-2 rounded-lg font-bold hover:bg-red-500 hover:text-white flex-1 sm:flex-none">رفض</button>
-                            <button onClick={async () => { await updateDoc(doc(db, 'ads', ad.id), { statusEn: 'Active', statusAr: 'نشط' }); setAppAlert('تم الموافقة على الإعلان ونشره بنجاح!'); }} className="bg-blue-500 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-600 flex-1 sm:flex-none">موافقة ونشر</button>
+                            <button onClick={() => { 
+                              setConfirmModal({ 
+                                isOpen: true, 
+                                title: 'رفض الإعلان', 
+                                message: 'هل أنت متأكد من رفض وحذف هذا الإعلان نهائياً؟', 
+                                confirmText: 'رفض وحذف', 
+                                type: 'danger', 
+                                onConfirm: async () => { 
+                                  setConfirmModal({ ...confirmModal, isOpen: false }); 
+                                  setIsUploading(true);
+                                  try {
+                                    await deleteDoc(doc(db, 'ads', ad.id)); 
+                                    setAppAlert('تم حذف الإعلان لعدم الموافقة.'); 
+                                  } catch(e) {
+                                    console.error(e);
+                                    setAppAlert('تم رفض العملية من Firebase. يرجى تعديل الـ Rules للسماح للإدارة بالحذف.');
+                                  }
+                                  setIsUploading(false);
+                                } 
+                              }); 
+                            }} className="bg-red-500/20 text-red-500 px-4 py-2 rounded-lg font-bold hover:bg-red-500 hover:text-white flex-1 sm:flex-none">رفض</button>
+                            
+                            <button onClick={async () => { 
+                              setIsUploading(true);
+                              try {
+                                await updateDoc(doc(db, 'ads', ad.id), { statusEn: 'Active', statusAr: 'نشط' }); 
+                                setAppAlert('تم الموافقة على الإعلان ونشره بنجاح!'); 
+                              } catch(e) {
+                                console.error(e);
+                                setAppAlert('تم رفض العملية من Firebase. يرجى تعديل الـ Rules للسماح للإدارة بالتعديل.');
+                              }
+                              setIsUploading(false);
+                            }} className="bg-blue-500 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-600 flex-1 sm:flex-none">موافقة ونشر</button>
                          </div>
                       </div>
                     ))
                  )}
+              </div>
+
+              {/* تنظيف الإعلانات المنتهية */}
+              <div className="flex flex-col sm:flex-row justify-between items-center border-b border-gray-700 pb-4 mb-6 mt-12">
+                <h2 className="text-2xl font-bold text-red-400 mb-4 sm:mb-0">إدارة المساحة (تنظيف الإعلانات المنتهية)</h2>
+              </div>
+              <div className="bg-[#1f2937] p-6 md:p-8 rounded-2xl border border-gray-700 shadow-xl text-center">
+                <h3 className="text-xl text-white font-bold mb-2">الإعلانات الأقدم من 30 يوم</h3>
+                <p className="text-gray-400 mb-6 text-sm md:text-base leading-relaxed">
+                  هذه الإعلانات لم تعد تظهر للمستخدمين لأن مدة صلاحيتها (30 يوماً) قد انتهت.<br/>
+                  يُفضل حذفها نهائياً من قاعدة البيانات لتوفير المساحة وتسريع الموقع.
+                </p>
+                <div className="flex flex-col items-center justify-center gap-3">
+                  <div className="w-24 h-24 rounded-full bg-red-500/10 border-4 border-red-500/20 flex items-center justify-center mb-2">
+                    <span className="text-4xl font-black text-red-500">{expiredAdminAds.length}</span>
+                  </div>
+                  <p className="text-gray-400 text-sm font-bold mb-4">إعلان منتهي الصلاحية</p>
+                  
+                  <button 
+                    onClick={async () => {
+                      if(expiredAdminAds.length === 0) {
+                        setAppAlert('المساحة نظيفة! لا توجد إعلانات منتهية حالياً.');
+                        return;
+                      }
+                      setConfirmModal({
+                        isOpen: true,
+                        title: 'تحذير: مسح نهائي',
+                        message: `هل أنت متأكد من مسح ${expiredAdminAds.length} إعلان نهائياً من النظام لتوفير المساحة؟`,
+                        confirmText: 'نعم، مسح وتوفير مساحة',
+                        type: 'danger',
+                        onConfirm: async () => {
+                          setConfirmModal({...confirmModal, isOpen: false});
+                          setIsUploading(true);
+                          try {
+                            for(const ad of expiredAdminAds) {
+                              await deleteDoc(doc(db, 'ads', ad.id));
+                            }
+                            setAppAlert('تم تنظيف قاعدة البيانات وحذف الإعلانات المنتهية بنجاح!');
+                          } catch(e) {
+                            console.error(e);
+                            setAppAlert('حدث خطأ أثناء محاولة مسح الإعلانات.');
+                          }
+                          setIsUploading(false);
+                        }
+                      });
+                    }}
+                    className={`bg-red-500 text-white font-bold px-8 py-4 rounded-xl transition-all shadow-lg shadow-red-500/20 flex items-center justify-center gap-2 w-full sm:w-auto ${expiredAdminAds.length === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-red-600 hover:-translate-y-1'}`}
+                    disabled={expiredAdminAds.length === 0}
+                  >
+                    <Trash2 size={20} /> حذف وتفريغ المساحة الآن
+                  </button>
+                </div>
               </div>
 
               {/* الصفحات القانونية */}
