@@ -107,6 +107,9 @@ export default function App() {
   const [complaintText, setComplaintText] = useState('');
   const [adminComplaints, setAdminComplaints] = useState([]);
 
+  // الرسائل الجماعية
+  const [broadcastText, setBroadcastText] = useState('');
+
   // Banner Ads States
   const [banners, setBanners] = useState([]);
   const [newBannerImage, setNewBannerImage] = useState(null);
@@ -521,6 +524,65 @@ export default function App() {
        setComplaintText(''); setShowComplaintModal(false);
     } catch (err) { console.error(err); setAppAlert('حدث خطأ. تأكد من إعدادات الـ Rules.'); }
     setIsUploading(false);
+  };
+
+  const handleSendBroadcast = async () => {
+    if (!broadcastText.trim()) return;
+    setConfirmModal({
+      isOpen: true,
+      title: 'تأكيد الإرسال الجماعي',
+      message: `سيتم إرسال هذه الرسالة إلى ${allProfiles.length} مشترك مسجل. هل أنت متأكد؟`,
+      confirmText: 'نعم، إرسال للجميع',
+      type: 'warning',
+      onConfirm: async () => {
+        setConfirmModal({ ...confirmModal, isOpen: false });
+        setIsUploading(true);
+        try {
+          let sentCount = 0;
+          const nowTimestamp = Date.now();
+          const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+          for (const profile of allProfiles) {
+            if (profile.uid === userProfile.uid) continue; // تخطي إرسال الرسالة للمدير نفسه
+
+            const chatId = `admin_msg_${userProfile.uid}_${profile.uid}`;
+            const newMsg = {
+              text: broadcastText,
+              senderId: userProfile.uid,
+              timestamp: nowTimestamp,
+              time: timeString
+            };
+
+            const chatRef = publicDoc('chats', chatId);
+            const chatSnap = await getDoc(chatRef);
+
+            if (chatSnap.exists()) {
+              await updateDoc(chatRef, {
+                messages: [...(chatSnap.data().messages || []), newMsg],
+                updatedAt: nowTimestamp
+              });
+            } else {
+              await setDoc(chatRef, {
+                adId: 'system_admin',
+                adTitle: 'رسالة إدارية',
+                participants: [userProfile.uid, profile.uid],
+                buyerId: profile.uid,
+                sellerId: userProfile.uid,
+                messages: [newMsg],
+                updatedAt: nowTimestamp
+              });
+            }
+            sentCount++;
+          }
+          setAppAlert(`تم إرسال الرسالة بنجاح إلى ${sentCount} مشترك.`);
+          setBroadcastText('');
+        } catch (err) {
+          console.error(err);
+          setAppAlert('حدث خطأ أثناء الإرسال الجماعي.');
+        }
+        setIsUploading(false);
+      }
+    });
   };
 
   const openChat = async (adOrProfileId, titleFallback) => {
@@ -1377,6 +1439,20 @@ export default function App() {
                      ))}
                    </div>
                  )}
+              </div>
+
+              {/* قسم الرسائل الجماعية (Broadcast) */}
+              <div className="flex flex-col sm:flex-row justify-between items-center border-b border-gray-700 pb-4 mb-6 mt-12">
+                <h2 className="text-2xl font-bold text-emerald-400 mb-4 sm:mb-0 flex items-center gap-2">
+                  <Megaphone /> إرسال رسالة جماعية للمشتركين
+                </h2>
+              </div>
+              <div className="bg-[#1f2937] p-6 rounded-2xl border border-gray-700 shadow-xl">
+                 <p className="text-gray-400 mb-4 text-sm">ستصل هذه الرسالة إلى صندوق الوارد (الرسائل) الخاص بجميع المشتركين المسجلين في الموقع فوراً.</p>
+                 <textarea rows="4" value={broadcastText} onChange={e => setBroadcastText(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-4 text-white outline-none focus:border-emerald-500 resize-none mb-4" placeholder="اكتب إعلانك أو رسالتك الإدارية هنا..."></textarea>
+                 <button onClick={handleSendBroadcast} className="w-full bg-emerald-500 text-white font-bold py-4 rounded-xl hover:bg-emerald-600 transition-colors shadow-lg flex items-center justify-center gap-2">
+                    <Send size={20} /> إرسال الرسالة الآن
+                 </button>
               </div>
 
               {/* إدارة الأقسام */}
