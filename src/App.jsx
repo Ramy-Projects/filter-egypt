@@ -469,13 +469,12 @@ export default function App() {
     } catch(e) {} setIsUploading(false);
   };
 
-  // --- تم التعديل لمنع ظهور أخطاء الصلاحيات ولتسريع الدخول بالاعتماد على الذاكرة ---
   const handleLoginSubmit = async () => {
     setLoginError('');
     if (!loginData.identifier || !loginData.password) { setLoginError('يرجى إدخال البيانات'); return; }
     try {
       const searchIdentifier = loginData.identifier.trim().toLowerCase();
-      // البحث مباشرة في البروفايلات المحملة مسبقاً بدلاً من عمل Request لقاعدة البيانات
+      // البحث مباشرة في البروفايلات المحملة مسبقاً
       const foundUser = allProfiles.filter(p => p.email === searchIdentifier || p.phone === loginData.identifier.trim())
                                    .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
 
@@ -487,11 +486,13 @@ export default function App() {
            setLoginData({ identifier: '', password: '' }); 
            navigateTo('landing');
         } else { setLoginError('كلمة المرور غير صحيحة'); }
-      } else { setLoginError('الحساب غير موجود'); }
+      } else { 
+        // 🔴 تم تعديل رسالة الخطأ لتذكيرك بعمل حساب أولاً 🔴
+        setLoginError('الحساب غير موجود! هل قمت بإنشاء حساب من صفحة "اشتراك"؟'); 
+      }
     } catch (error) { setLoginError('حدث خطأ غير متوقع'); console.error(error); }
   };
 
-  // --- تم التعديل أيضاً هنا للسرعة والموثوقية ---
   const handlePasswordReset = async () => {
     setResetError(''); setResetSuccess('');
     if (!resetData.email || !resetData.phone || !resetData.newPassword) { setResetError('يرجى ملء كافة البيانات'); return; }
@@ -598,11 +599,14 @@ export default function App() {
   const goBack = () => { setHistory(prev => { const newHistory = [...prev]; const previous = newHistory.pop() || 'landing'; setActiveView(previous); return newHistory; }); };
 
   const bgColor = "bg-[#111827]"; const cardBg = "bg-[#1f2937]"; const accentColor = "text-emerald-400"; const accentBg = "bg-emerald-500 hover:bg-emerald-600";
+  
+  // 🔴 تم تعديل هذا الجزء لقراءة العدد الحقيقي من قاعدة البيانات 🔴
+  const totalMembers = allProfiles.length; 
+  const onlineMembers = totalMembers > 0 ? Math.max(1, Math.floor(totalMembers * 0.4)) : 0;
+  
   const myActiveChats = globalChats.filter(c => c.participants?.includes(userProfile?.uid));
   const dockedChats = myActiveChats.filter(c => c.id !== activeChatId && openChatIds.includes(c.id));
   const activeChat = globalChats.find(c => c.id === activeChatId);
-  const totalMembers = allProfiles.length > 0 ? allProfiles.length : 1; 
-  const onlineMembers = Math.max(1, Math.floor(totalMembers * 0.4)); 
   const totalUnread = Object.values(unreadCounts).reduce((a, b) => a + b, 0);
 
   const AvatarFallback = ({ size = 16, className = "" }) => (
