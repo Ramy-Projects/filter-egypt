@@ -165,7 +165,7 @@ export default function App() {
   const myAds = globalAds.filter(ad => ad.sellerId === userProfile?.uid);
   const expiredAdminAds = globalAds.filter(ad => (now - ad.createdAt) >= AD_EXPIRATION_MS);
 
-  // Auth Init
+  // --- Auth Init ---
   useEffect(() => {
     const initAuth = async () => { 
       try { 
@@ -181,7 +181,7 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Fetch Profile
+  // Fetch Profile manually
   useEffect(() => {
     if (!fbUser) return;
     const fetchProfile = async () => {
@@ -210,7 +210,6 @@ export default function App() {
       snapshot.forEach(doc => profs.push({ uid: doc.id, ...doc.data() }));
       setAllProfiles(profs);
       
-      // Update viewed profile if it changes remotely (like changing cover/pic)
       if (viewedProfile) {
          const updatedViewed = profs.find(p => p.uid === viewedProfile.uid);
          if (updatedViewed) setViewedProfile(updatedViewed);
@@ -227,7 +226,7 @@ export default function App() {
       snapshot.forEach(doc => comps.push({ id: doc.id, ...doc.data() }));
       comps.sort((a, b) => b.createdAt - a.createdAt);
       setAdminComplaints(comps);
-    }, (error) => console.log("Complaints rule might be missing, ignoring if not admin."));
+    }, (error) => console.log("Complaints fetch issue:", error));
     return () => unsubscribe();
   }, [fbUser]);
 
@@ -249,7 +248,7 @@ export default function App() {
     return () => unsubscribe();
   }, [fbUser]);
 
-  // Sync Chats (In-memory filter for complex arrays)
+  // Sync Chats
   useEffect(() => {
     if (!fbUser || !userProfile?.uid) return; 
     const unsubscribe = onSnapshot(publicCol('chats'), (snapshot) => {
@@ -305,10 +304,12 @@ export default function App() {
     const unsubscribeLegal = onSnapshot(publicDoc('settings', 'legal'), (docSnap) => {
       if (docSnap.exists()) setLegalTexts(docSnap.data());
       else setLegalTexts(defaultLegalTexts);
-    });
+    }, (error) => console.log(error));
+    
     const unsubscribeCategories = onSnapshot(publicDoc('settings', 'categories'), (docSnap) => {
       if (docSnap.exists() && docSnap.data().list) setCategories(docSnap.data().list);
-    });
+    }, (error) => console.log(error));
+    
     return () => { unsubscribeLegal(); unsubscribeCategories(); };
   }, [fbUser]);
 
@@ -448,7 +449,8 @@ export default function App() {
 
       const newUid = fbUser ? fbUser.uid : Date.now().toString(); 
       const newProfile = { uid: newUid, fullName: signupData.fullName, displayName: signupData.displayName, email: cleanEmail, phone: cleanPhone, password: signupData.password, subscriptionStatus: 'Pending', createdAt: new Date().toISOString(), receiptUrl: receiptUrl, photoUrl: photoUrl, coverUrl: null, bio: '', facebookUrl: '', youtubeUrl: '', isBanned: false };
-      await setDoc(publicDoc('users', newUid), newProfile); await setDoc(publicDoc('profiles', newUid), newProfile);
+      await setDoc(publicDoc('users', newUid), newProfile); 
+      await setDoc(publicDoc('profiles', newUid), newProfile);
       setAppAlert('تم إرسال طلبك بنجاح! بانتظار المراجعة.'); setTimeout(() => { window.location.reload(); }, 3500);
     } catch (error) { setSignupError(error.message || 'حدث خطأ أثناء التسجيل'); } finally { setIsUploading(false); }
   };
@@ -467,42 +469,42 @@ export default function App() {
     } catch(e) {} setIsUploading(false);
   };
 
+  // --- تم التعديل لمنع ظهور أخطاء الصلاحيات ولتسريع الدخول بالاعتماد على الذاكرة ---
   const handleLoginSubmit = async () => {
     setLoginError('');
     if (!loginData.identifier || !loginData.password) { setLoginError('يرجى إدخال البيانات'); return; }
     try {
-      const usersSnap = await getDocs(publicCol('profiles'));
-      const profiles = [];
-      usersSnap.forEach(d => profiles.push(d.data()));
-
       const searchIdentifier = loginData.identifier.trim().toLowerCase();
-      const foundUser = profiles.filter(p => p.email === searchIdentifier || p.phone === loginData.identifier.trim())
-                                .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+      // البحث مباشرة في البروفايلات المحملة مسبقاً بدلاً من عمل Request لقاعدة البيانات
+      const foundUser = allProfiles.filter(p => p.email === searchIdentifier || p.phone === loginData.identifier.trim())
+                                   .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
 
       if (foundUser) {
         if (foundUser.isBanned) { setLoginError('عذراً، هذا الحساب تم حظره من الإدارة.'); return; }
-        if (foundUser.password === loginData.password) { setUserProfile(foundUser); setIsAppLoggedIn(true); setLoginData({ identifier: '', password: '' }); navigateTo('landing');
+        if (foundUser.password === loginData.password) { 
+           setUserProfile(foundUser); 
+           setIsAppLoggedIn(true); 
+           setLoginData({ identifier: '', password: '' }); 
+           navigateTo('landing');
         } else { setLoginError('كلمة المرور غير صحيحة'); }
       } else { setLoginError('الحساب غير موجود'); }
-    } catch (error) { setLoginError('خطأ في النظام'); }
+    } catch (error) { setLoginError('حدث خطأ غير متوقع'); console.error(error); }
   };
 
+  // --- تم التعديل أيضاً هنا للسرعة والموثوقية ---
   const handlePasswordReset = async () => {
     setResetError(''); setResetSuccess('');
     if (!resetData.email || !resetData.phone || !resetData.newPassword) { setResetError('يرجى ملء كافة البيانات'); return; }
     try {
-      const snap = await getDocs(publicCol('profiles'));
-      const profiles = [];
-      snap.forEach(d => profiles.push({ id: d.id, ...d.data() }));
-
-      const foundUser = profiles.find(p => p.email === resetData.email && p.phone === resetData.phone);
+      const foundUser = allProfiles.find(p => p.email === resetData.email && p.phone === resetData.phone);
 
       if (foundUser) {
-        const uid = foundUser.id;
-        await updateDoc(publicDoc('users', uid), { password: resetData.newPassword }); await updateDoc(publicDoc('profiles', uid), { password: resetData.newPassword });
+        const uid = foundUser.uid;
+        await updateDoc(publicDoc('users', uid), { password: resetData.newPassword }); 
+        await updateDoc(publicDoc('profiles', uid), { password: resetData.newPassword });
         setResetSuccess('تم تغيير كلمة المرور بنجاح!'); setTimeout(() => { setActiveView('login'); setResetData({ email: '', phone: '', newPassword: '' }); setResetSuccess(''); }, 3000);
       } else { setResetError('البيانات غير صحيحة'); }
-    } catch (error) { setResetError('حدث خطأ'); }
+    } catch (error) { setResetError('حدث خطأ'); console.error(error); }
   };
 
   const handleLogout = () => { setIsAppLoggedIn(false); setUserProfile(null); setOpenChatIds([]); setActiveChatId(null); navigateTo('login'); };
@@ -581,7 +583,8 @@ export default function App() {
       }
 
       const updatedProfile = { ...userProfile, displayName: editName, phone: editPhone, photoUrl: newPhotoUrl, coverUrl: newCoverUrl, bio: editBio, facebookUrl: editFacebook, youtubeUrl: editYoutube };
-      await updateDoc(publicDoc('users', userProfile.uid), updatedProfile); await updateDoc(publicDoc('profiles', userProfile.uid), updatedProfile); 
+      await updateDoc(publicDoc('users', userProfile.uid), updatedProfile); 
+      await updateDoc(publicDoc('profiles', userProfile.uid), updatedProfile); 
       setUserProfile(updatedProfile); setAppAlert('تم تحديث الملف الشخصي بنجاح!'); setShowSettingsModal(false);
     } catch (error) { setAppAlert('خطأ أثناء تحديث الملف الشخصي.'); } finally { setIsUploading(false); }
   };
@@ -1150,7 +1153,7 @@ export default function App() {
               <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-3 top-3 text-gray-400 hover:text-white">{showPassword ? <EyeOff size={20} /> : <Eye size={20} />}</button>
             </div>
             <div className="flex justify-end mb-6"><button onClick={() => setActiveView('forgot-password')} className="text-emerald-400 text-sm hover:underline">نسيت كلمة المرور؟</button></div>
-            {loginError && <p className="text-red-500 text-sm mb-4">{loginError}</p>}
+            {loginError && <p className="text-red-500 text-sm mb-4 text-center font-bold bg-red-500/10 p-2 rounded-lg">{loginError}</p>}
             <button onClick={handleLoginSubmit} className="w-full bg-emerald-500 text-white font-bold rounded-lg py-3 hover:bg-emerald-600">تسجيل الدخول</button>
           </div></div>
         )}
@@ -1161,7 +1164,7 @@ export default function App() {
             <input type="email" placeholder="البريد الإلكتروني" autoComplete="off" value={resetData.email} onChange={e => setResetData({...resetData, email: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 mb-4 text-white outline-none focus:border-emerald-500" />
             <input type="tel" placeholder="رقم الهاتف المسجل للحساب" autoComplete="off" value={resetData.phone} onChange={e => setResetData({...resetData, phone: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 mb-4 text-white outline-none focus:border-emerald-500" />
             <input type="text" placeholder="اكتب كلمة المرور الجديدة" autoComplete="new-password" value={resetData.newPassword} onChange={e => setResetData({...resetData, newPassword: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 mb-6 text-white outline-none focus:border-emerald-500" />
-            {resetError && <p className="text-red-500 text-sm mb-4 text-center">{resetError}</p>}
+            {resetError && <p className="text-red-500 text-sm mb-4 text-center bg-red-500/10 p-2 rounded-lg font-bold">{resetError}</p>}
             {resetSuccess && <p className="text-emerald-400 text-sm mb-4 text-center font-bold">{resetSuccess}</p>}
             <button onClick={handlePasswordReset} className="w-full bg-emerald-500 text-white font-bold rounded-lg py-3 hover:bg-emerald-600">تغيير كلمة المرور</button>
           </div></div>
