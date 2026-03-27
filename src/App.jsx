@@ -745,7 +745,7 @@ export default function App() {
            </div>
            <h1 className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 mb-6 animate-pulse">فلتر إيجيبت</h1>
            <p className="text-gray-300 text-lg md:text-xl font-bold tracking-wide text-center max-w-lg px-6 leading-relaxed opacity-90">
-             المنصة الأولى لبيع وشراء الفلاتر وقطع الغيار في مصر.<br/>تواصل، بيع، واشتري بسهولة وأمان تام.
+             المنصة الأولى للبيع والشراء عن طريق التواصل الاجتماعي في مصر.<br/>تواصل، بيع، واشتري بسهولة وأمان تام.
            </p>
            <div className="mt-12 flex items-center gap-2">
               <div className="w-3 h-3 bg-emerald-500 rounded-full animate-ping"></div>
