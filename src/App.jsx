@@ -10,7 +10,8 @@ import {
   UserPlus, Filter, ImagePlus, Bell, User, ShieldAlert, ArrowRight, 
   CheckCircle, AlertTriangle, Send, MessageSquareX, Minus, MessageSquare, 
   Megaphone, Edit, Trash2, Save, Activity, Info, Loader, Plus, ChevronDown, Clock,
-  Facebook, Youtube, UserSearch, Ban, MessageCircleWarning, Link as LinkIcon, Camera
+  Facebook, Youtube, UserSearch, Ban, MessageCircleWarning, Link as LinkIcon, Camera,
+  MessageCircle
 } from 'lucide-react';
 
 // ==========================================
@@ -52,6 +53,15 @@ const defaultCategoriesList = [
 ];
 
 const AD_EXPIRATION_DAYS = 30; 
+
+function ActionIcon({ icon, label, highlight }) {
+  return (
+    <div className="flex flex-col items-center gap-2 group cursor-pointer w-20">
+      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:-translate-y-1 ${highlight === 'red' ? 'bg-red-500/10 text-red-500 border border-red-500/20' : highlight ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-[#1f2937] text-gray-300 border border-gray-700 group-hover:border-emerald-500'}`}>{React.cloneElement(icon, { size: 26 })}</div>
+      <span className="text-[11px] text-gray-400 text-center font-bold">{label}</span>
+    </div>
+  );
+}
 
 export default function App() {
   const [activeView, setActiveView] = useState('landing'); 
@@ -490,7 +500,6 @@ export default function App() {
            navigateTo('landing');
         } else { setLoginError('كلمة المرور غير صحيحة'); }
       } else { 
-        // 🔴 تم تعديل رسالة الخطأ لتذكيرك بعمل حساب أولاً 🔴
         setLoginError('الحساب غير موجود! هل قمت بإنشاء حساب من صفحة "اشتراك"؟'); 
       }
     } catch (error) { setLoginError('حدث خطأ غير متوقع'); console.error(error); }
@@ -662,7 +671,6 @@ export default function App() {
 
   const bgColor = "bg-[#111827]"; const cardBg = "bg-[#1f2937]"; const accentColor = "text-emerald-400"; const accentBg = "bg-emerald-500 hover:bg-emerald-600";
   
-  // 🔴 تم تعديل هذا الجزء لقراءة العدد الحقيقي من قاعدة البيانات 🔴
   const totalMembers = allProfiles.length; 
   const onlineMembers = totalMembers > 0 ? Math.max(1, Math.floor(totalMembers * 0.4)) : 0;
   
@@ -722,9 +730,21 @@ export default function App() {
           <div className="bg-[#1f2937] rounded-3xl p-8 w-full max-w-md relative shadow-2xl border border-gray-700">
              <button onClick={() => setShowComplaintModal(false)} className="absolute top-4 left-4 text-gray-400 hover:text-white"><X/></button>
              <h3 className="text-2xl font-bold mb-4 text-emerald-400 text-center flex items-center justify-center gap-2"><MessageCircleWarning size={28}/> تواصل مع الإدارة</h3>
-             <p className="text-center text-gray-400 mb-6 text-sm">اكتب اقتراحك أو الشكوى الخاصة بك وسيقوم الدعم الفني بمراجعتها بأقرب وقت.</p>
-             <textarea rows="5" value={complaintText} onChange={e => setComplaintText(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-4 text-white outline-none focus:border-emerald-500 resize-none mb-4" placeholder="اكتب رسالتك هنا..."></textarea>
-             <button onClick={submitComplaint} className="w-full bg-emerald-500 text-white font-bold py-4 rounded-xl hover:bg-emerald-600 transition-colors shadow-lg">إرسال الرسالة للإدارة</button>
+             <p className="text-center text-gray-400 mb-6 text-sm">اكتب اقتراحك أو الشكوى الخاصة بك، أو تواصل معنا مباشرة عبر واتساب وسيقوم الدعم الفني بمراجعتها بأقرب وقت.</p>
+             
+             {/* WhatsApp Button */}
+             <a href="https://wa.me/201024059955" target="_blank" rel="noreferrer" className="w-full bg-[#25D366] text-white font-bold py-3 rounded-xl hover:bg-[#20bd5a] transition-colors shadow-lg flex items-center justify-center gap-2 mb-6">
+                <MessageCircle size={22} /> تواصل معنا عبر واتساب
+             </a>
+
+             <div className="flex items-center gap-4 mb-4">
+                <div className="h-px bg-gray-700 flex-1"></div>
+                <span className="text-gray-500 text-xs font-bold">أو أرسل رسالة داخلية</span>
+                <div className="h-px bg-gray-700 flex-1"></div>
+             </div>
+
+             <textarea rows="4" value={complaintText} onChange={e => setComplaintText(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-4 text-white outline-none focus:border-emerald-500 resize-none mb-4 custom-scrollbar" placeholder="اكتب رسالتك هنا..."></textarea>
+             <button onClick={submitComplaint} className="w-full bg-emerald-500 text-white font-bold py-3 rounded-xl hover:bg-emerald-600 transition-colors shadow-lg">إرسال الرسالة للإدارة</button>
           </div>
         </div>
       )}
@@ -761,8 +781,8 @@ export default function App() {
           <div className="bg-[#1f2937] rounded-3xl p-8 w-full max-w-md relative shadow-2xl border border-gray-700">
              <button onClick={() => setShowRenewModal(false)} className="absolute top-4 left-4 text-gray-400 hover:text-white"><X/></button>
              <h3 className="text-2xl font-bold mb-6 text-emerald-400 text-center">تجديد الاشتراك الشهري</h3>
-             <p className="text-center text-gray-300 mb-6 text-sm leading-relaxed">يرجى تحويل مبلغ 10 جنيهات لرسوم الاشتراك الشهري وإرفاق الإيصال هنا ليتم تفعيل حسابك مرة أخرى.</p>
-             <label className="border border-dashed border-gray-600 p-6 rounded-xl text-center cursor-pointer block text-gray-400 hover:border-emerald-500 transition-colors mb-6"><Upload className="mx-auto mb-2" /> {renewFile ? 'تم اختيار إيصال التجديد بنجاح' : 'إرفاق إيصال التجديد (10 جنيه)'}<input type="file" className="hidden" accept="image/*" onChange={(e) => { if(e.target.files[0]) { setRenewFile(e.target.files[0]); } }} /></label>
+             <p className="text-center text-gray-300 mb-6 text-sm leading-relaxed">يرجى تحويل رسوم التجديد (10 جنيه داخل مصر، أو 1 دولار من الخارج) وإرفاق الإيصال هنا ليتم تفعيل حسابك مرة أخرى.</p>
+             <label className="border border-dashed border-gray-600 p-6 rounded-xl text-center cursor-pointer block text-gray-400 hover:border-emerald-500 transition-colors mb-6"><Upload className="mx-auto mb-2" /> {renewFile ? 'تم اختيار إيصال التجديد بنجاح' : 'إرفاق إيصال التجديد'}<input type="file" className="hidden" accept="image/*" onChange={(e) => { if(e.target.files[0]) { setRenewFile(e.target.files[0]); } }} /></label>
              <button onClick={handleRenewSubmit} className="w-full bg-emerald-500 text-white font-bold py-4 rounded-xl hover:bg-emerald-600 transition-colors shadow-lg">إرسال طلب التجديد</button>
           </div>
         </div>
@@ -853,9 +873,9 @@ export default function App() {
       <main className="flex-1 w-full max-w-4xl flex flex-col justify-center items-center px-4 mt-8 md:mt-0 pb-10">
         
         {activeView === 'landing' && (
-          <div className="w-full animate-fade-in flex flex-col items-center mt-6 w-full">
+          <div className="w-full animate-fade-in flex flex-col items-center mt-6">
             <h2 className="text-3xl md:text-5xl font-bold mb-5 leading-tight text-center">مجتمع حصري <span className={accentColor}>للأعضاء فقط</span></h2>
-            <p className="text-gray-400 text-base md:text-lg mb-12 max-w-2xl leading-relaxed text-center">بيئة مميزة للجودة والثقة باشتراك رمزي (10 جنيهات شهرياً). بيع وشراء بأمان بعيداً عن فوضى السوق والتشتت.</p>
+            <p className="text-gray-400 text-base md:text-lg mb-12 max-w-2xl leading-relaxed text-center">بيئة مميزة للجودة والثقة باشتراك رمزي (10 جنيهات داخل مصر، أو 1 دولار للمقيمين بالخارج شهرياً). بيع وشراء بأمان بعيداً عن فوضى السوق والتشتت.</p>
             <div className="flex flex-col md:flex-row gap-6 w-full max-w-2xl justify-center">
               <div onClick={() => isAppLoggedIn ? setActiveView('seller') : navigateTo('login')} className={`${cardBg} flex-1 p-8 rounded-3xl border border-gray-700 hover:border-emerald-500 cursor-pointer group flex flex-col items-center gap-4`}>
                 <div className="w-16 h-16 rounded-full bg-gray-800 group-hover:bg-emerald-500/20 flex items-center justify-center"><Store className="text-gray-400 group-hover:text-emerald-400" size={32} /></div>
@@ -908,7 +928,7 @@ export default function App() {
               ) : activeView === 'seller' && subStatus === 'expired' ? (
                 <div className="w-full max-w-3xl bg-[#1f2937] border border-red-500/50 p-8 rounded-3xl text-center shadow-2xl shadow-red-500/10 mb-6">
                   <AlertTriangle size={40} className="mx-auto text-red-500 mb-4" />
-                  <h3 className="text-2xl font-bold text-white mb-3">انتهى الاشتراك الشهري</h3><p className="text-gray-300 mb-6">انتهت باقة الـ 30 يوم الخاصة بك. يرجى تجديد الاشتراك (10 جنيه) وإرسال الإيصال للإدارة للتمكن من نشر إعلانات جديدة والتواصل.</p>
+                  <h3 className="text-2xl font-bold text-white mb-3">انتهى الاشتراك الشهري</h3><p className="text-gray-300 mb-6">انتهت باقة الـ 30 يوم الخاصة بك. يرجى تجديد الاشتراك (10 جنيه للمصريين أو 1 دولار للأجانب) وإرسال الإيصال للإدارة للتمكن من نشر إعلانات جديدة والتواصل.</p>
                   <button onClick={() => setShowRenewModal(true)} className="bg-emerald-500 text-white font-bold py-3 px-8 rounded-xl hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/20">تجديد الاشتراك الآن</button>
                 </div>
               ) : (
@@ -1202,9 +1222,12 @@ export default function App() {
                       <div><p className="text-sm text-gray-400">البائع:</p><p className="text-white font-bold">{selectedAd.sellerName}</p></div>
                       <UserSearch className="mr-auto text-emerald-400 opacity-50" size={20}/>
                    </div>
-
+                   
                    {selectedAd.description && ( <div className="bg-[#111827] p-4 rounded-2xl border border-gray-700 mb-6 flex-1"><h4 className="text-sm font-bold text-gray-400 mb-2">الوصف والمواصفات</h4><p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">{selectedAd.description}</p></div> )}
-                   <button onClick={() => openChat(selectedAd)} className="w-full bg-emerald-500 text-white font-bold rounded-xl py-4 flex justify-center items-center gap-2 hover:bg-emerald-600 transition-colors mt-auto shadow-lg shadow-emerald-500/20"><Send size={20} /> تواصل مع البائع</button>
+                   
+                   {userProfile?.uid !== selectedAd.sellerId && (
+                      <button onClick={() => openChat(selectedAd)} className="w-full bg-emerald-500 text-white font-bold rounded-xl py-4 flex justify-center items-center gap-2 hover:bg-emerald-600 transition-colors mt-auto shadow-lg shadow-emerald-500/20"><Send size={20} /> تواصل مع البائع</button>
+                   )}
                 </div>
              </div>
            </div>
@@ -1268,7 +1291,7 @@ export default function App() {
                   </div>
 
                   <label className="col-span-1 md:col-span-2 border border-dashed border-emerald-500/50 p-6 rounded-xl text-center cursor-pointer text-gray-400 hover:border-emerald-500 transition-colors bg-emerald-500/5 mt-2">
-                     <Upload className="mx-auto mb-2 text-emerald-400" /> {receiptUploaded ? 'تم إرفاق الإيصال بنجاح' : 'إرفاق صورة إيصال الدفع (10 جنيه) (إلزامي)'}<input type="file" className="hidden" accept="image/*" onChange={(e) => { if(e.target.files[0]) { setReceiptUploaded(true); setReceiptFile(e.target.files[0]); } }} />
+                     <Upload className="mx-auto mb-2 text-emerald-400" /> {receiptUploaded ? 'تم إرفاق الإيصال بنجاح' : 'إرفاق صورة إيصال الدفع (10 جنيه للمصريين أو 1 دولار للمقيمين بالخارج) (إلزامي)'}<input type="file" className="hidden" accept="image/*" onChange={(e) => { if(e.target.files[0]) { setReceiptUploaded(true); setReceiptFile(e.target.files[0]); } }} />
                   </label>
                   
                   {signupError && <p className="col-span-1 md:col-span-2 text-red-500 text-sm text-center font-bold bg-red-500/10 p-3 rounded-lg border border-red-500/20">{signupError}</p>}
@@ -1277,53 +1300,6 @@ export default function App() {
             </div>
           </div>
         )}
-      </main>
-
-      {/* --- CHATS DOCK --- */}
-      <div className="fixed z-[50] left-4 bottom-4 flex flex-col gap-3 max-h-[80vh] overflow-y-auto">
-         {dockedChats.map(chat => (
-            <div key={chat.id} className="h-14 pr-2 pl-4 rounded-2xl bg-[#1f2937] border border-gray-700 text-white flex items-center shadow-2xl relative gap-3 group">
-               <button onClick={() => setActiveChatId(chat.id)} className="flex items-center gap-3 flex-1 text-right hover:text-emerald-400 transition-colors"><MessageSquare size={20} className="text-emerald-400 shrink-0" /><span className="font-bold text-sm max-w-[140px] truncate" dir="rtl">{chat.adTitle}</span></button>
-               <div className="w-px h-6 bg-gray-700 mx-1"></div>
-               <button onClick={() => { setOpenChatIds(prev => prev.filter(id => id !== chat.id)); if (activeChatId === chat.id) setActiveChatId(null); }} className="text-gray-500 hover:text-red-400 p-2" title="إغلاق المحادثة"><X size={16}/></button>
-               {unreadCounts[chat.id] > 0 && <span className="absolute -top-2 -left-2 bg-red-500 text-white w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center border-2 border-[#1f2937]">{unreadCounts[chat.id]}</span>}
-            </div>
-         ))}
-      </div>
-
-      {/* --- ACTIVE CHAT --- */}
-      {activeChat && (() => {
-         const pos = chatPositions[activeChatId] || { x: 20, y: 20 };
-         const otherUserId = activeChat.participants.find(id => id !== userProfile?.uid);
-         const otherUserProfile = allProfiles.find(p => p.uid === otherUserId);
-
-         return (
-            <div style={{ left: pos.x, top: pos.y }} className={`fixed z-[60] w-[350px] h-[480px] flex flex-col shadow-2xl rounded-2xl overflow-hidden bg-[#111827] border border-gray-600`}>
-              <div onMouseDown={(e) => handleMouseDown(e, activeChatId)} className="bg-[#1f2937] p-3 flex justify-between items-center cursor-move border-b border-gray-800">
-                
-                {/* Chat Header -> Clickable to go to profile */}
-                <div className="flex items-center gap-2 cursor-pointer hover:bg-gray-700 p-1.5 rounded-lg flex-1 overflow-hidden transition-colors" onClick={() => { if(otherUserProfile) { setViewedProfile(otherUserProfile); navigateTo('user-profile'); } }}>
-                   {otherUserProfile?.photoUrl ? <img src={otherUserProfile.photoUrl} className="w-8 h-8 rounded-full object-cover shrink-0" /> : <AvatarFallback size={32} />}
-                   <span className="text-white font-bold text-sm truncate" dir="rtl">{otherUserProfile?.displayName || activeChat.adTitle}</span>
-                </div>
-
-                <div className="flex items-center gap-1 shrink-0"><button onClick={() => setActiveChatId(null)} className="text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-gray-700 transition-colors" title="تصغير"><Minus size={18}/></button><button onClick={() => { setOpenChatIds(prev => prev.filter(id => id !== activeChatId)); setActiveChatId(null); }} className="text-gray-400 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-500/20 transition-colors" title="إغلاق المحادثة"><X size={18}/></button></div>
-              </div>
-              <div className="bg-yellow-500/10 border-b border-yellow-500/20 px-3 py-2 text-center"><p className="text-yellow-500 text-[10px] font-bold leading-relaxed">⚠️ تنبيه: الموقع غير مسؤول عن أي تحويلات مالية خارج المنصة. يُمنع استخدام ألفاظ خارجة.</p></div>
-              <div className="flex-1 p-3 overflow-y-auto space-y-3">
-                 {(activeChat.messages || []).map((msg, idx) => {
-                   const isSender = msg.senderId === userProfile?.uid;
-                   return (<div key={idx} className={`flex w-full ${isSender ? 'justify-end' : 'justify-start'}`}><div className={`p-2 rounded-xl text-sm ${isSender ? 'bg-emerald-600 text-white' : 'bg-gray-700 text-gray-100'}`}>{msg.text}</div></div>);
-                 })}
-                 <div ref={chatMessagesEndRef} />
-              </div>
-              <div className="p-2 flex gap-2 bg-[#1f2937]">
-                 <input type="text" value={chatInputs[activeChatId] || ''} onChange={(e) => setChatInputs(prev => ({...prev, [activeChatId]: e.target.value}))} onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()} className="flex-1 bg-[#111827] rounded-full px-3 text-white text-sm outline-none" placeholder="رسالة..." />
-                 <button onClick={handleSendMessage} className="bg-emerald-500 text-white p-2 rounded-full"><Send size={16}/></button>
-              </div>
-            </div>
-         );
-      })()}
 
         {/* --- ADMIN DASHBOARD --- */}
         {activeView === 'admin-dashboard' && (
@@ -1532,6 +1508,54 @@ export default function App() {
         {activeView === 'privacy' && ( <div className="w-full max-w-4xl mx-auto animate-fade-in text-right px-4"><button onClick={goBack} className="mb-6 text-gray-400 hover:text-white flex items-center gap-2"><ArrowRight size={20} /> رجوع</button><div className={`${cardBg} p-8 md:p-12 rounded-3xl shadow-xl border border-gray-700`}><div className="flex items-center gap-4 mb-8 border-b border-gray-700 pb-6"><ShieldCheck size={40} className="text-emerald-400" /><h2 className="text-3xl font-bold text-white">سياسة الخصوصية</h2></div><div className="text-gray-300 leading-relaxed text-lg">{renderLegalText(legalTexts.privacy)}</div></div></div> )}
         {activeView === 'ip' && ( <div className="w-full max-w-4xl mx-auto animate-fade-in text-right px-4"><button onClick={goBack} className="mb-6 text-gray-400 hover:text-white flex items-center gap-2"><ArrowRight size={20} /> رجوع</button><div className={`${cardBg} p-8 md:p-12 rounded-3xl shadow-xl border border-gray-700`}><div className="flex items-center gap-4 mb-8 border-b border-gray-700 pb-6"><Sparkles size={40} className="text-emerald-400" /><h2 className="text-3xl font-bold text-white">حقوق الملكية الفكرية</h2></div><div className="text-gray-300 leading-relaxed text-lg">{renderLegalText(legalTexts.ip)}</div></div></div> )}
 
+      </main>
+
+      {/* --- CHATS DOCK --- */}
+      <div className="fixed z-[50] left-4 bottom-4 flex flex-col gap-3 max-h-[80vh] overflow-y-auto">
+         {dockedChats.map(chat => (
+            <div key={chat.id} className="h-14 pr-2 pl-4 rounded-2xl bg-[#1f2937] border border-gray-700 text-white flex items-center shadow-2xl relative gap-3 group">
+               <button onClick={() => setActiveChatId(chat.id)} className="flex items-center gap-3 flex-1 text-right hover:text-emerald-400 transition-colors"><MessageSquare size={20} className="text-emerald-400 shrink-0" /><span className="font-bold text-sm max-w-[140px] truncate" dir="rtl">{chat.adTitle}</span></button>
+               <div className="w-px h-6 bg-gray-700 mx-1"></div>
+               <button onClick={() => { setOpenChatIds(prev => prev.filter(id => id !== chat.id)); if (activeChatId === chat.id) setActiveChatId(null); }} className="text-gray-500 hover:text-red-400 p-2" title="إغلاق المحادثة"><X size={16}/></button>
+               {unreadCounts[chat.id] > 0 && <span className="absolute -top-2 -left-2 bg-red-500 text-white w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center border-2 border-[#1f2937]">{unreadCounts[chat.id]}</span>}
+            </div>
+         ))}
+      </div>
+
+      {/* --- ACTIVE CHAT --- */}
+      {activeChat && (() => {
+         const pos = chatPositions[activeChatId] || { x: 20, y: 20 };
+         const otherUserId = activeChat.participants.find(id => id !== userProfile?.uid);
+         const otherUserProfile = allProfiles.find(p => p.uid === otherUserId);
+
+         return (
+            <div style={{ left: pos.x, top: pos.y }} className={`fixed z-[60] w-[350px] h-[480px] flex flex-col shadow-2xl rounded-2xl overflow-hidden bg-[#111827] border border-gray-600`}>
+              <div onMouseDown={(e) => handleMouseDown(e, activeChatId)} className="bg-[#1f2937] p-3 flex justify-between items-center cursor-move border-b border-gray-800">
+                
+                {/* Chat Header -> Clickable to go to profile */}
+                <div className="flex items-center gap-2 cursor-pointer hover:bg-gray-700 p-1.5 rounded-lg flex-1 overflow-hidden transition-colors" onClick={() => { if(otherUserProfile) { setViewedProfile(otherUserProfile); navigateTo('user-profile'); } }}>
+                   {otherUserProfile?.photoUrl ? <img src={otherUserProfile.photoUrl} className="w-8 h-8 rounded-full object-cover shrink-0" /> : <AvatarFallback size={32} />}
+                   <span className="text-white font-bold text-sm truncate" dir="rtl">{otherUserProfile?.displayName || activeChat.adTitle}</span>
+                </div>
+
+                <div className="flex items-center gap-1 shrink-0"><button onClick={() => setActiveChatId(null)} className="text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-gray-700 transition-colors" title="تصغير"><Minus size={18}/></button><button onClick={() => { setOpenChatIds(prev => prev.filter(id => id !== activeChatId)); setActiveChatId(null); }} className="text-gray-400 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-500/20 transition-colors" title="إغلاق المحادثة"><X size={18}/></button></div>
+              </div>
+              <div className="bg-yellow-500/10 border-b border-yellow-500/20 px-3 py-2 text-center"><p className="text-yellow-500 text-[10px] font-bold leading-relaxed">⚠️ تنبيه: الموقع غير مسؤول عن أي تحويلات مالية خارج المنصة. يُمنع استخدام ألفاظ خارجة.</p></div>
+              <div className="flex-1 p-3 overflow-y-auto space-y-3">
+                 {(activeChat.messages || []).map((msg, idx) => {
+                   const isSender = msg.senderId === userProfile?.uid;
+                   return (<div key={idx} className={`flex w-full ${isSender ? 'justify-end' : 'justify-start'}`}><div className={`p-2 rounded-xl text-sm ${isSender ? 'bg-emerald-600 text-white' : 'bg-gray-700 text-gray-100'}`}>{msg.text}</div></div>);
+                 })}
+                 <div ref={chatMessagesEndRef} />
+              </div>
+              <div className="p-2 flex gap-2 bg-[#1f2937]">
+                 <input type="text" value={chatInputs[activeChatId] || ''} onChange={(e) => setChatInputs(prev => ({...prev, [activeChatId]: e.target.value}))} onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()} className="flex-1 bg-[#111827] rounded-full px-3 text-white text-sm outline-none" placeholder="رسالة..." />
+                 <button onClick={handleSendMessage} className="bg-emerald-500 text-white p-2 rounded-full"><Send size={16}/></button>
+              </div>
+            </div>
+         );
+      })()}
+
       <button onClick={() => { if(isAppLoggedIn) setShowComplaintModal(true); else { setAppAlert('يرجى تسجيل الدخول أولاً للتمكن من مراسلة الإدارة.'); navigateTo('login'); } }} className="fixed bottom-6 right-6 z-[100] bg-emerald-500 text-white p-4 rounded-full shadow-2xl hover:bg-emerald-600 transition-transform hover:scale-110 flex items-center justify-center group">
          <MessageCircleWarning size={24}/>
          <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-2 transition-all duration-300 font-bold">تواصل مع الإدارة (شكاوى)</span>
@@ -1549,15 +1573,6 @@ export default function App() {
           <button onClick={() => navigateTo('admin-dashboard')} className="text-gray-700 hover:text-emerald-500 text-xs transition-colors">لوحة الإدارة (Admin)</button>
         </div>
       </footer>
-    </div>
-  );
-}
-
-function ActionIcon({ icon, label, highlight }) {
-  return (
-    <div className="flex flex-col items-center gap-2 group cursor-pointer w-20">
-      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:-translate-y-1 ${highlight === 'red' ? 'bg-red-500/10 text-red-500 border border-red-500/20' : highlight ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-[#1f2937] text-gray-300 border border-gray-700 group-hover:border-emerald-500'}`}>{React.cloneElement(icon, { size: 26 })}</div>
-      <span className="text-[11px] text-gray-400 text-center font-bold">{label}</span>
     </div>
   );
 }
