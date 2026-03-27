@@ -10,8 +10,8 @@ import {
   UserPlus, Filter, ImagePlus, Bell, User, ShieldAlert, ArrowRight, 
   CheckCircle, AlertTriangle, Send, MessageSquareX, Minus, MessageSquare, 
   Megaphone, Edit, Trash2, Save, Activity, Info, Loader, Plus, ChevronDown, Clock,
-  Facebook, Youtube, UserSearch, Ban, MessageCircleWarning, Link as LinkIcon, Camera,
-  MessageCircle
+  Facebook, Youtube, Instagram, Ghost, Music, UserSearch, Ban, MessageCircleWarning, 
+  Link as LinkIcon, Camera, MessageCircle
 } from 'lucide-react';
 
 // ==========================================
@@ -33,7 +33,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'filter-egypt-app';
 
-// دوال مساعدة للوصول الآمن للبيانات لتجنب أخطاء الصلاحيات
+// دوال مساعدة للوصول الآمن للبيانات
 const publicCol = (colName) => collection(db, 'artifacts', appId, 'public', 'data', colName);
 const publicDoc = (colName, docId) => doc(db, 'artifacts', appId, 'public', 'data', colName, docId);
 // ==========================================
@@ -64,7 +64,16 @@ function ActionIcon({ icon, label, highlight }) {
 }
 
 export default function App() {
-  const [activeView, setActiveView] = useState('landing'); 
+  const [showSplash, setShowSplash] = useState(true);
+
+  // الصفحات الآمنة التي يمكن الرجوع إليها عند الـ Refresh (بدون مشاكل فقدان البيانات المعينة)
+  const safeViews = ['landing', 'buyer', 'seller', 'my-ads', 'live-feed', 'directory', 'login', 'signup', 'forgot-password', 'admin-dashboard', 'terms', 'privacy', 'ip'];
+  
+  const [activeView, setActiveView] = useState(() => {
+     const savedView = typeof window !== 'undefined' ? localStorage.getItem('filterEgyptActiveView') : null;
+     return (savedView && safeViews.includes(savedView)) ? savedView : 'landing';
+  }); 
+
   const [pendingUsers, setPendingUsers] = useState([]);
   const [history, setHistory] = useState([]); 
   
@@ -87,6 +96,7 @@ export default function App() {
   const [signupError, setSignupError] = useState('');
   const [loginData, setLoginData] = useState({ identifier: '', password: '' });
   const [loginError, setLoginError] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [resetData, setResetData] = useState({ email: '', phone: '', newPassword: '' });
   const [resetError, setResetError] = useState('');
   const [resetSuccess, setResetSuccess] = useState('');
@@ -105,6 +115,9 @@ export default function App() {
   const [editBio, setEditBio] = useState('');
   const [editFacebook, setEditFacebook] = useState('');
   const [editYoutube, setEditYoutube] = useState('');
+  const [editInstagram, setEditInstagram] = useState('');
+  const [editSnapchat, setEditSnapchat] = useState('');
+  const [editTiktok, setEditTiktok] = useState('');
   const [profileImageFile, setProfileImageFile] = useState(null); 
   const [profileImagePreview, setProfileImagePreview] = useState(null);
   const [coverImageFile, setCoverImageFile] = useState(null);
@@ -116,8 +129,6 @@ export default function App() {
   const [showComplaintModal, setShowComplaintModal] = useState(false);
   const [complaintText, setComplaintText] = useState('');
   const [adminComplaints, setAdminComplaints] = useState([]);
-
-  // الرسائل الجماعية
   const [broadcastText, setBroadcastText] = useState('');
 
   // Banner Ads States
@@ -177,6 +188,30 @@ export default function App() {
   const liveFeedAds = globalAds.filter(ad => ad.statusEn === 'Active' && (now - ad.createdAt) < AD_EXPIRATION_MS);
   const myAds = globalAds.filter(ad => ad.sellerId === userProfile?.uid);
   const expiredAdminAds = globalAds.filter(ad => (now - ad.createdAt) >= AD_EXPIRATION_MS);
+
+  // شاشة الترحيب وتخزين الصفحة
+  useEffect(() => {
+    const timer = setTimeout(() => setShowSplash(false), 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (safeViews.includes(activeView)) {
+      localStorage.setItem('filterEgyptActiveView', activeView);
+    }
+  }, [activeView]);
+
+  // استرجاع بيانات الدخول إذا تم اختيار "تذكرني"
+  useEffect(() => {
+    const savedLogin = localStorage.getItem('filterEgyptSavedLogin');
+    if (savedLogin) {
+      try {
+        const parsed = JSON.parse(savedLogin);
+        setLoginData({ identifier: parsed.identifier || '', password: parsed.password || '' });
+        setRememberMe(true);
+      } catch (e) { }
+    }
+  }, []);
 
   // --- Auth Init ---
   useEffect(() => {
@@ -337,6 +372,9 @@ export default function App() {
       setEditBio(userProfile.bio || '');
       setEditFacebook(userProfile.facebookUrl || '');
       setEditYoutube(userProfile.youtubeUrl || '');
+      setEditInstagram(userProfile.instagramUrl || '');
+      setEditSnapchat(userProfile.snapchatUrl || '');
+      setEditTiktok(userProfile.tiktokUrl || '');
       setProfileImagePreview(null);
       setProfileImageFile(null);
       setCoverImagePreview(null);
@@ -461,7 +499,7 @@ export default function App() {
       if (imgbbResponse.ok) { receiptUrl = (await imgbbResponse.json()).data.url; } else { throw new Error('حدث خطأ بالشبكة'); }
 
       const newUid = fbUser ? fbUser.uid : Date.now().toString(); 
-      const newProfile = { uid: newUid, fullName: signupData.fullName, displayName: signupData.displayName, email: cleanEmail, phone: cleanPhone, password: signupData.password, subscriptionStatus: 'Pending', createdAt: new Date().toISOString(), receiptUrl: receiptUrl, photoUrl: photoUrl, coverUrl: null, bio: '', facebookUrl: '', youtubeUrl: '', isBanned: false };
+      const newProfile = { uid: newUid, fullName: signupData.fullName, displayName: signupData.displayName, email: cleanEmail, phone: cleanPhone, password: signupData.password, subscriptionStatus: 'Pending', createdAt: new Date().toISOString(), receiptUrl: receiptUrl, photoUrl: photoUrl, coverUrl: null, bio: '', facebookUrl: '', youtubeUrl: '', instagramUrl: '', snapchatUrl: '', tiktokUrl: '', isBanned: false };
       await setDoc(publicDoc('users', newUid), newProfile); 
       await setDoc(publicDoc('profiles', newUid), newProfile);
       setAppAlert('تم إرسال طلبك بنجاح! بانتظار المراجعة.'); setTimeout(() => { window.location.reload(); }, 3500);
@@ -487,13 +525,19 @@ export default function App() {
     if (!loginData.identifier || !loginData.password) { setLoginError('يرجى إدخال البيانات'); return; }
     try {
       const searchIdentifier = loginData.identifier.trim().toLowerCase();
-      // البحث مباشرة في البروفايلات المحملة مسبقاً
       const foundUser = allProfiles.filter(p => p.email === searchIdentifier || p.phone === loginData.identifier.trim())
                                    .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
 
       if (foundUser) {
         if (foundUser.isBanned) { setLoginError('عذراً، هذا الحساب تم حظره من الإدارة.'); return; }
         if (foundUser.password === loginData.password) { 
+           
+           if (rememberMe) {
+              localStorage.setItem('filterEgyptSavedLogin', JSON.stringify({ identifier: loginData.identifier, password: loginData.password }));
+           } else {
+              localStorage.removeItem('filterEgyptSavedLogin');
+           }
+
            setUserProfile(foundUser); 
            setIsAppLoggedIn(true); 
            setLoginData({ identifier: '', password: '' }); 
@@ -552,7 +596,7 @@ export default function App() {
           const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
           for (const profile of allProfiles) {
-            if (profile.uid === userProfile.uid) continue; // تخطي إرسال الرسالة للمدير نفسه
+            if (profile.uid === userProfile.uid) continue;
 
             const chatId = `admin_msg_${userProfile.uid}_${profile.uid}`;
             const newMsg = {
@@ -654,7 +698,11 @@ export default function App() {
         if (res.ok) { newCoverUrl = (await res.json()).data.url; }
       }
 
-      const updatedProfile = { ...userProfile, displayName: editName, phone: editPhone, photoUrl: newPhotoUrl, coverUrl: newCoverUrl, bio: editBio, facebookUrl: editFacebook, youtubeUrl: editYoutube };
+      const updatedProfile = { 
+        ...userProfile, displayName: editName, phone: editPhone, photoUrl: newPhotoUrl, coverUrl: newCoverUrl, 
+        bio: editBio, facebookUrl: editFacebook, youtubeUrl: editYoutube, instagramUrl: editInstagram, 
+        snapchatUrl: editSnapchat, tiktokUrl: editTiktok 
+      };
       await updateDoc(publicDoc('users', userProfile.uid), updatedProfile); 
       await updateDoc(publicDoc('profiles', userProfile.uid), updatedProfile); 
       setUserProfile(updatedProfile); setAppAlert('تم تحديث الملف الشخصي بنجاح!'); setShowSettingsModal(false);
@@ -688,6 +736,25 @@ export default function App() {
   return (
     <div dir={lang === 'ar' ? 'rtl' : 'ltr'} className={`min-h-screen ${bgColor} text-gray-100 font-sans flex flex-col items-center justify-between relative`}>
       
+      {/* شاشة الترحيب */}
+      {showSplash && (
+        <div className="fixed inset-0 z-[1000] bg-[#050505] flex flex-col items-center justify-center">
+           <div className="relative w-32 h-32 rounded-3xl overflow-hidden flex items-center justify-center shadow-[0_0_50px_rgba(16,185,129,0.3)] mb-8 animate-bounce" style={{ animationDuration: '2.5s' }}>
+              <div className="absolute inset-0 bg-gradient-to-br from-[#111827] via-gray-800 to-black"></div>
+              <Filter className="relative z-10 text-emerald-400 drop-shadow-2xl" size={64} strokeWidth={2.5} />
+           </div>
+           <h1 className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 mb-6 animate-pulse">فلتر إيجيبت</h1>
+           <p className="text-gray-300 text-lg md:text-xl font-bold tracking-wide text-center max-w-lg px-6 leading-relaxed opacity-90">
+             المنصة الأولى لبيع وشراء الفلاتر وقطع الغيار في مصر.<br/>تواصل، بيع، واشتري بسهولة وأمان تام.
+           </p>
+           <div className="mt-12 flex items-center gap-2">
+              <div className="w-3 h-3 bg-emerald-500 rounded-full animate-ping"></div>
+              <div className="w-3 h-3 bg-cyan-500 rounded-full animate-ping" style={{ animationDelay: '0.2s' }}></div>
+              <div className="w-3 h-3 bg-emerald-500 rounded-full animate-ping" style={{ animationDelay: '0.4s' }}></div>
+           </div>
+        </div>
+      )}
+
       {/* إشعارات الرادار المباشر */}
       <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[250] flex flex-col gap-3 w-[90%] max-w-sm pointer-events-none">
         {liveBroadcastAds.map(ad => (
@@ -1023,11 +1090,34 @@ export default function App() {
                  <div><label className="block text-gray-400 text-sm mb-1">اسم العرض (البراند)</label><input type="text" value={editName} onChange={e => setEditName(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500" /></div>
                  <div><label className="block text-gray-400 text-sm mb-1">رقم الهاتف</label><input type="tel" value={editPhone} onChange={e => setEditPhone(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500" /></div>
                  <div><label className="block text-gray-400 text-sm mb-1">نبذة عنك (Bio) - تظهر في بروفايلك</label><textarea rows="3" value={editBio} onChange={e => setEditBio(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500 resize-none custom-scrollbar" placeholder="اكتب نبذة مختصرة عنك وعن منتجاتك..."></textarea></div>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div><label className="flex items-center gap-1 text-blue-400 text-sm mb-1"><Facebook size={16}/> رابط فيسبوك</label><input type="url" value={editFacebook} onChange={e => setEditFacebook(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-blue-500" placeholder="https://facebook.com/..." /></div>
-                    <div><label className="flex items-center gap-1 text-red-400 text-sm mb-1"><Youtube size={16}/> رابط يوتيوب</label><input type="url" value={editYoutube} onChange={e => setEditYoutube(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-red-500" placeholder="https://youtube.com/..." /></div>
+                 
+                 <div className="grid grid-cols-1 gap-4 mt-2">
+                    <label className="text-gray-400 text-sm font-bold border-b border-gray-700 pb-2">روابط السوشيال ميديا (اختياري)</label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                       <div className="relative">
+                         <Facebook className="absolute right-3 top-3 text-blue-500" size={18}/>
+                         <input type="url" value={editFacebook} onChange={e => setEditFacebook(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 pr-10 text-white outline-none focus:border-blue-500 text-sm" placeholder="رابط فيسبوك" />
+                       </div>
+                       <div className="relative">
+                         <Youtube className="absolute right-3 top-3 text-red-500" size={18}/>
+                         <input type="url" value={editYoutube} onChange={e => setEditYoutube(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 pr-10 text-white outline-none focus:border-red-500 text-sm" placeholder="رابط يوتيوب" />
+                       </div>
+                       <div className="relative">
+                         <Instagram className="absolute right-3 top-3 text-pink-500" size={18}/>
+                         <input type="url" value={editInstagram} onChange={e => setEditInstagram(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 pr-10 text-white outline-none focus:border-pink-500 text-sm" placeholder="رابط انستجرام" />
+                       </div>
+                       <div className="relative">
+                         <Ghost className="absolute right-3 top-3 text-yellow-500" size={18}/>
+                         <input type="url" value={editSnapchat} onChange={e => setEditSnapchat(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 pr-10 text-white outline-none focus:border-yellow-500 text-sm" placeholder="رابط سناب شات" />
+                       </div>
+                       <div className="relative md:col-span-2">
+                         <Music className="absolute right-3 top-3 text-cyan-400" size={18}/>
+                         <input type="url" value={editTiktok} onChange={e => setEditTiktok(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 pr-10 text-white outline-none focus:border-cyan-400 text-sm" placeholder="رابط تيك توك" />
+                       </div>
+                    </div>
                  </div>
-                 <button onClick={saveProfileUpdates} className="w-full bg-emerald-500 text-white font-bold py-4 rounded-xl hover:bg-emerald-600 mt-4 shadow-lg shadow-emerald-500/20">حفظ جميع التغييرات</button>
+
+                 <button onClick={saveProfileUpdates} className="w-full bg-emerald-500 text-white font-bold py-4 rounded-xl hover:bg-emerald-600 mt-6 shadow-lg shadow-emerald-500/20">حفظ جميع التغييرات</button>
                </div>
             </div>
           </div>
@@ -1086,7 +1176,7 @@ export default function App() {
                       {viewedProfile.photoUrl ? <img src={viewedProfile.photoUrl} alt="User" className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-4 border-[#1f2937] bg-[#1f2937] shadow-xl" /> : <AvatarFallback size={144} className="border-4 border-[#1f2937] shadow-xl" />}
                       {viewedProfile.subscriptionStatus === 'Active' && <span className="absolute bottom-2 right-2 bg-emerald-500 text-white p-1 md:p-1.5 rounded-full border-2 border-[#1f2937]"><ShieldCheck size={18}/></span>}
                    </div>
-                   <div className="flex-1 mt-2 md:mt-24">
+                   <div className="flex-1 mt-2 md:mt-24 w-full">
                       <h2 className="text-3xl font-black text-white">{viewedProfile.displayName || viewedProfile.fullName}</h2>
                       
                       {/* Bio Section */}
@@ -1099,18 +1189,26 @@ export default function App() {
                         )}
                       </div>
 
-                      <div className="flex items-center gap-3 justify-center md:justify-start mt-4">
+                      <div className="flex items-center gap-3 justify-center md:justify-start mt-4 flex-wrap">
                          {viewedProfile.facebookUrl && <a href={viewedProfile.facebookUrl} target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 flex items-center gap-1 bg-blue-500/10 px-3 py-1.5 rounded-lg text-sm font-bold"><Facebook size={18}/> فيسبوك</a>}
                          {viewedProfile.youtubeUrl && <a href={viewedProfile.youtubeUrl} target="_blank" rel="noreferrer" className="text-red-400 hover:text-red-300 flex items-center gap-1 bg-red-500/10 px-3 py-1.5 rounded-lg text-sm font-bold"><Youtube size={18}/> يوتيوب</a>}
+                         {viewedProfile.instagramUrl && <a href={viewedProfile.instagramUrl} target="_blank" rel="noreferrer" className="text-pink-400 hover:text-pink-300 flex items-center gap-1 bg-pink-500/10 px-3 py-1.5 rounded-lg text-sm font-bold"><Instagram size={18}/> انستجرام</a>}
+                         {viewedProfile.snapchatUrl && <a href={viewedProfile.snapchatUrl} target="_blank" rel="noreferrer" className="text-yellow-400 hover:text-yellow-300 flex items-center gap-1 bg-yellow-500/10 px-3 py-1.5 rounded-lg text-sm font-bold"><Ghost size={18}/> سناب شات</a>}
+                         {viewedProfile.tiktokUrl && <a href={viewedProfile.tiktokUrl} target="_blank" rel="noreferrer" className="text-cyan-400 hover:text-cyan-300 flex items-center gap-1 bg-cyan-500/10 px-3 py-1.5 rounded-lg text-sm font-bold"><Music size={18}/> تيك توك</a>}
                       </div>
                    </div>
 
                    {/* Actions (Chat or Edit Own Profile) */}
-                   <div className="mt-4 md:mt-24 w-full md:w-auto flex flex-col gap-2 shrink-0">
+                   <div className="mt-4 md:mt-24 w-full md:w-auto flex flex-col gap-3 shrink-0">
                       {userProfile?.uid === viewedProfile.uid ? (
                          <button onClick={() => setShowSettingsModal(true)} className="w-full md:w-auto bg-gray-700 text-white px-8 py-3 rounded-xl font-bold hover:bg-gray-600 transition-colors shadow-lg flex items-center justify-center gap-2"><Edit size={20}/> تعديل البروفايل</button>
                       ) : (
-                         <button onClick={() => openChat(viewedProfile.uid, viewedProfile.displayName)} className="w-full md:w-auto bg-emerald-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"><Send size={20}/> إرسال رسالة</button>
+                         <>
+                           <button onClick={() => openChat(viewedProfile.uid, viewedProfile.displayName)} className="w-full md:w-auto bg-emerald-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"><Send size={20}/> إرسال رسالة داخلية</button>
+                           {viewedProfile.phone && (
+                              <a href={`https://wa.me/${viewedProfile.phone.replace(/[^0-9+]/g, '')}`} target="_blank" rel="noreferrer" className="w-full md:w-auto bg-[#25D366] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#20bd5a] transition-colors shadow-lg flex items-center justify-center gap-2"><MessageCircle size={20}/> تواصل عبر واتساب</a>
+                           )}
+                         </>
                       )}
                    </div>
                 </div>
@@ -1235,15 +1333,22 @@ export default function App() {
 
         {/* --- LOGIN --- */}
         {activeView === 'login' && (
-          <div className="w-full max-w-md animate-fade-in"><button onClick={goBack} className="mb-4 text-gray-400">رجوع</button><div className={`${cardBg} p-8 rounded-2xl`}><h2 className="text-3xl font-bold mb-6 text-center">دخول</h2>
-            <input type="text" placeholder="البريد الإلكتروني أو الهاتف" autoComplete="off" value={loginData.identifier} onChange={e => setLoginData({...loginData, identifier: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 mb-4 text-white outline-none focus:border-emerald-500" />
-            <div className="relative mb-2">
-              <input type={showPassword ? "text" : "password"} placeholder="كلمة المرور" autoComplete="new-password" value={loginData.password} onChange={e => setLoginData({...loginData, password: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-emerald-500" />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-3 top-3 text-gray-400 hover:text-white">{showPassword ? <EyeOff size={20} /> : <Eye size={20} />}</button>
-            </div>
-            <div className="flex justify-end mb-6"><button onClick={() => setActiveView('forgot-password')} className="text-emerald-400 text-sm hover:underline">نسيت كلمة المرور؟</button></div>
-            {loginError && <p className="text-red-500 text-sm mb-4 text-center font-bold bg-red-500/10 p-2 rounded-lg">{loginError}</p>}
-            <button onClick={handleLoginSubmit} className="w-full bg-emerald-500 text-white font-bold rounded-lg py-3 hover:bg-emerald-600">تسجيل الدخول</button>
+          <div className="w-full max-w-md animate-fade-in"><button onClick={goBack} className="mb-4 text-gray-400">رجوع</button><div className={`${cardBg} p-8 rounded-2xl shadow-xl border border-gray-700`}><h2 className="text-3xl font-bold mb-6 text-center">دخول</h2>
+            <form onSubmit={(e) => { e.preventDefault(); handleLoginSubmit(); }}>
+              <input type="text" name="email" id="email" autoComplete="username" placeholder="البريد الإلكتروني أو الهاتف" value={loginData.identifier} onChange={e => setLoginData({...loginData, identifier: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 mb-4 text-white outline-none focus:border-emerald-500" />
+              <div className="relative mb-4">
+                <input type={showPassword ? "text" : "password"} name="password" id="password" autoComplete="current-password" placeholder="كلمة المرور" value={loginData.password} onChange={e => setLoginData({...loginData, password: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-emerald-500" />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-3 top-3 text-gray-400 hover:text-white">{showPassword ? <EyeOff size={20} /> : <Eye size={20} />}</button>
+              </div>
+              <div className="flex justify-between items-center mb-6">
+                <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer hover:text-white transition-colors">
+                  <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} className="w-4 h-4 accent-emerald-500 rounded cursor-pointer" /> تذكر بياناتي
+                </label>
+                <button type="button" onClick={() => setActiveView('forgot-password')} className="text-emerald-400 text-sm hover:underline">نسيت كلمة المرور؟</button>
+              </div>
+              {loginError && <p className="text-red-500 text-sm mb-4 text-center font-bold bg-red-500/10 p-2 rounded-lg">{loginError}</p>}
+              <button type="submit" className="w-full bg-emerald-500 text-white font-bold rounded-lg py-3 hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 transition-all">تسجيل الدخول</button>
+            </form>
           </div></div>
         )}
 
@@ -1411,6 +1516,9 @@ export default function App() {
                               <span className="text-gray-500 text-xs">{new Date(comp.createdAt).toLocaleDateString()}</span>
                            </div>
                            <p className="text-white text-sm leading-relaxed whitespace-pre-wrap">{comp.text}</p>
+                           <button onClick={() => openChat(comp.senderId, comp.senderName)} className="mt-4 bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors flex items-center gap-2 w-fit">
+                              <MessageSquare size={16} /> رد على المشترك 
+                           </button>
                         </div>
                      ))}
                    </div>
