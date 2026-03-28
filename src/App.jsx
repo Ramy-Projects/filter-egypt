@@ -772,7 +772,7 @@ export default function App() {
       
       {/* شاشة الترحيب */}
       {showSplash && (
-        <div className="fixed inset-0 z-[1000] bg-[#050505] flex flex-col items-center justify-center">
+        <div className="fixed inset-0 z-[1200] bg-[#050505] flex flex-col items-center justify-center">
            <div className="relative w-32 h-32 rounded-3xl overflow-hidden flex items-center justify-center shadow-[0_0_50px_rgba(16,185,129,0.3)] mb-8 animate-bounce" style={{ animationDuration: '2.5s' }}>
               <div className="absolute inset-0 bg-gradient-to-br from-[#111827] via-gray-800 to-black"></div>
               <Filter className="relative z-10 text-emerald-400 drop-shadow-2xl" size={64} strokeWidth={2.5} />
@@ -805,9 +805,9 @@ export default function App() {
         ))}
       </div>
 
-      {isUploading && ( <div className="fixed inset-0 z-[300] bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-4 animate-fade-in"><Loader className="text-emerald-500 animate-spin mb-4" size={64} /><h2 className="text-xl font-bold text-white mb-2">جاري معالجة البيانات...</h2></div> )}
+      {isUploading && ( <div className="fixed inset-0 z-[1100] bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-4 animate-fade-in"><Loader className="text-emerald-500 animate-spin mb-4" size={64} /><h2 className="text-xl font-bold text-white mb-2">جاري معالجة البيانات...</h2></div> )}
       {appAlert && (
-        <div className="fixed inset-0 z-[300] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+        <div className="fixed inset-0 z-[1100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
           <div className={`${cardBg} border border-emerald-500/50 rounded-3xl p-8 max-w-sm w-full relative shadow-2xl text-center`}>
             <div className="w-16 h-16 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-4"><Info size={32} /></div>
             <h3 className="text-xl font-bold text-white mb-2">إشعار النظام</h3><p className="text-gray-300 text-sm mb-6 leading-relaxed">{appAlert}</p>
@@ -816,7 +816,7 @@ export default function App() {
         </div>
       )}
       {confirmModal.isOpen && (
-        <div className="fixed inset-0 z-[350] bg-black/90 flex items-center justify-center p-4 animate-fade-in">
+        <div className="fixed inset-0 z-[1100] bg-black/90 flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-[#1f2937] rounded-3xl p-6 w-full max-w-sm text-center relative shadow-2xl border border-gray-700">
              <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${confirmModal.type === 'danger' ? 'bg-red-500/20 text-red-500' : 'bg-emerald-500/20 text-emerald-400'}`}><AlertTriangle size={32} /></div>
              <h3 className="text-xl font-bold mb-2 text-white">{confirmModal.title}</h3><p className="text-gray-400 mb-6 text-sm">{confirmModal.message}</p>
@@ -851,7 +851,7 @@ export default function App() {
 
       {/* --- MANUAL INSTALL MODAL --- */}
       {showInstallManualModal && (
-        <div className="fixed inset-0 z-[300] bg-black/90 flex items-center justify-center p-4 animate-fade-in">
+        <div className="fixed inset-0 z-[1000] bg-black/90 flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-[#1f2937] rounded-3xl p-6 md:p-8 w-full max-w-sm relative shadow-2xl border border-gray-700 text-center">
              <button onClick={() => setShowInstallManualModal(false)} className="absolute top-4 left-4 text-gray-400 hover:text-white"><X/></button>
              <div className="w-16 h-16 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-4"><Store size={32} /></div>
@@ -869,7 +869,7 @@ export default function App() {
 
       {/* --- COMPLAINT MODAL --- */}
       {showComplaintModal && (
-        <div className="fixed inset-0 z-[300] bg-black/90 flex items-center justify-center p-4 animate-fade-in">
+        <div className="fixed inset-0 z-[1000] bg-black/90 flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-[#1f2937] rounded-3xl p-8 w-full max-w-md relative shadow-2xl border border-gray-700">
              <button onClick={() => setShowComplaintModal(false)} className="absolute top-4 left-4 text-gray-400 hover:text-white"><X/></button>
              <h3 className="text-2xl font-bold mb-4 text-emerald-400 text-center flex items-center justify-center gap-2"><MessageCircleWarning size={28}/> تواصل مع الإدارة</h3>
@@ -894,7 +894,7 @@ export default function App() {
 
       {/* --- EDIT AD MODAL --- */}
       {adToEdit && (
-        <div className="fixed inset-0 z-[300] bg-black/90 flex items-center justify-center p-4 animate-fade-in">
+        <div className="fixed inset-0 z-[1000] bg-black/90 flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-[#1f2937] rounded-3xl p-6 md:p-8 w-full max-w-lg relative shadow-2xl border border-gray-700 max-h-[90vh] overflow-y-auto custom-scrollbar">
              <button onClick={() => { setAdToEdit(null); setEditNewImages([]); }} className="absolute top-4 left-4 text-gray-400 hover:text-white"><X/></button>
              <h3 className="text-2xl font-bold mb-6 text-emerald-400 text-center">{lang === 'ar' ? 'تعديل الإعلان' : 'Edit Ad'}</h3>
@@ -920,7 +920,7 @@ export default function App() {
 
       {/* --- RENEW SUBSCRIPTION MODAL --- */}
       {showRenewModal && (
-        <div className="fixed inset-0 z-[300] bg-black/90 flex items-center justify-center p-4 animate-fade-in">
+        <div className="fixed inset-0 z-[1000] bg-black/90 flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-[#1f2937] rounded-3xl p-8 w-full max-w-md relative shadow-2xl border border-gray-700">
              <button onClick={() => setShowRenewModal(false)} className="absolute top-4 left-4 text-gray-400 hover:text-white"><X/></button>
              <h3 className="text-2xl font-bold mb-6 text-emerald-400 text-center">تجديد الاشتراك الشهري</h3>
@@ -1080,9 +1080,9 @@ export default function App() {
         {(activeView === 'buyer' || activeView === 'seller') && (
           <div className="w-full animate-fade-in text-center flex flex-col items-center">
             <h2 className="text-3xl md:text-5xl font-bold mb-4 leading-tight">{activeView === 'buyer' ? (lang === 'ar' ? 'ابحث عن صفقتك القادمة' : 'Find Your Next Deal') : (lang === 'ar' ? 'اعرض منتجك للبيع' : 'Sell Your Product')}</h2>
-            
-            <div className="w-full max-w-3xl flex flex-col items-center relative mt-6 z-[900]">
-              {activeView === 'seller' && userProfile?.subscriptionStatus === 'Pending' ? (
+        
+        <div className="w-full max-w-3xl flex flex-col items-center relative mt-6 z-[40]">
+          {activeView === 'seller' && userProfile?.subscriptionStatus === 'Pending' ? (
                 <div className="w-full max-w-3xl bg-[#1f2937] border border-yellow-500/50 p-8 rounded-3xl text-center shadow-2xl shadow-yellow-500/10 mb-6">
                   <AlertTriangle size={40} className="mx-auto text-yellow-500 mb-4" />
                   <h3 className="text-2xl font-bold text-white mb-3">حساب قيد المراجعة</h3><p className="text-gray-300">الإدارة تراجع الإيصال الخاص بك. بمجرد التفعيل، يمكنك النشر والتفاعل.</p>
@@ -1104,7 +1104,7 @@ export default function App() {
                       <div className="absolute inset-y-1.5 right-1.5 flex items-center z-10">
                         <button onClick={() => setShowAdCategoryMenu(!showAdCategoryMenu)} className="h-full bg-gray-700/50 hover:bg-emerald-500/20 text-emerald-400 rounded-full px-4 flex items-center justify-center gap-1 transition-colors border border-transparent hover:border-emerald-500/50"><span className="text-xs font-bold max-w-[70px] truncate">{adCategory || 'القسم'}</span><ChevronDown size={16} /></button>
                         {showAdCategoryMenu && (
-                          <div className="absolute top-full right-0 mt-2 w-48 max-h-60 bg-[#1f2937] border border-gray-700 rounded-xl shadow-2xl overflow-y-auto custom-scrollbar py-1 z-[1000]">
+                          <div className="absolute top-full right-0 mt-2 w-48 max-h-60 bg-[#1f2937] border border-gray-700 rounded-xl shadow-2xl overflow-y-auto custom-scrollbar py-1 z-[50]">
                             {categories.map(cat => ( <button key={cat} onClick={() => { setAdCategory(cat); setShowAdCategoryMenu(false); }} className={`w-full text-right px-4 py-2.5 text-sm hover:bg-emerald-500/10 transition-colors ${adCategory === cat ? 'text-emerald-400 font-bold bg-emerald-500/10' : 'text-white'}`}>{cat}</button> ))}
                           </div>
                         )}
@@ -1147,11 +1147,11 @@ export default function App() {
           </div>
         )}
 
-        {/* --- SETTINGS MODAL (With Cover & Profile Uploads) --- */}
-        {showSettingsModal && (
-          <div className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4">
-            <div className="bg-[#1f2937] rounded-3xl w-full max-w-lg relative shadow-2xl border border-gray-700 max-h-[90vh] overflow-y-auto custom-scrollbar pb-6">
-               <button onClick={() => setShowSettingsModal(false)} className="absolute top-4 left-4 text-white hover:text-emerald-400 bg-black/50 p-2 rounded-full z-20 backdrop-blur-sm transition-colors"><X size={20}/></button>
+    {/* --- SETTINGS MODAL (With Cover & Profile Uploads) --- */}
+    {showSettingsModal && (
+      <div className="fixed inset-0 z-[1000] bg-black/90 flex items-center justify-center p-4">
+        <div className="bg-[#1f2937] rounded-3xl w-full max-w-lg relative shadow-2xl border border-gray-700 max-h-[90vh] overflow-y-auto custom-scrollbar pb-6">
+           <button onClick={() => setShowSettingsModal(false)} className="absolute top-4 left-4 text-white hover:text-emerald-400 bg-black/50 p-2 rounded-full z-20 backdrop-blur-sm transition-colors"><X size={20}/></button>
                
                {/* Cover Image Upload Area */}
                <div className="relative h-32 md:h-40 w-full bg-gray-800 rounded-t-3xl overflow-hidden group">
