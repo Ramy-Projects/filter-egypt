@@ -7,8 +7,8 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      // تم التعديل هنا: خلينا البرنامج يقرا الصور بتاعتك إنت بس
-      includeAssets: ['pwa-192x192.png', 'pwa-512x512.png'],
+      // تم التعديل هنا: قمنا بإضافة الملفات الأساسية الموجودة في فولدر public لديك
+      includeAssets: ['favicon.svg', 'icons.svg', 'pwa-192x192.png', 'pwa-512x512.png'],
       manifest: {
         name: 'فلتر إيجيبت',
         short_name: 'فلتر إيجيبت',
