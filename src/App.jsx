@@ -1696,7 +1696,7 @@ export default function App() {
 
         {/* --- LEGAL EDIT MODAL --- */}
         {legalEditModal.isOpen && (
-          <div className="fixed inset-0 z-[150] bg-black/90 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[1000] bg-black/90 flex items-center justify-center p-4">
             <div className="bg-[#1f2937] rounded-3xl p-6 w-full max-w-4xl h-[85vh] flex flex-col relative shadow-2xl">
                <button onClick={() => setLegalEditModal({...legalEditModal, isOpen: false})} className="absolute top-4 left-4 text-gray-400 hover:text-white"><X size={28}/></button>
                <h3 className="text-2xl font-bold mb-2 text-emerald-400 text-center">تعديل: {legalEditModal.title}</h3>
