@@ -855,14 +855,14 @@ export default function App() {
           <div className="bg-[#1f2937] rounded-3xl p-6 md:p-8 w-full max-w-sm relative shadow-2xl border border-gray-700 text-center">
              <button onClick={() => setShowInstallManualModal(false)} className="absolute top-4 left-4 text-gray-400 hover:text-white"><X/></button>
              <div className="w-16 h-16 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-4"><Store size={32} /></div>
-             <h3 className="text-xl font-bold mb-4 text-white">تنزيل التطبيق يدوياً</h3>
+             <h3 className="text-xl font-bold mb-4 text-white">{lang === 'ar' ? 'تنزيل التطبيق يدوياً' : 'Install App Manually'}</h3>
              <p className="text-gray-300 text-sm mb-6 leading-relaxed">
-               يبدو أن متصفحك يمنع التنزيل التلقائي. لتثبيت التطبيق:
+               {lang === 'ar' ? 'يبدو أن متصفحك يمنع التنزيل التلقائي. لتثبيت التطبيق:' : 'It seems your browser prevents automatic installation. To install:'}
                <br/><br/>
-               <span className="text-emerald-400 font-bold">1.</span> اضغط على قائمة المتصفح (الثلاث نقاط بالأسفل أو الأعلى).<br/>
-               <span className="text-emerald-400 font-bold">2.</span> اختر <strong>"إضافة إلى الشاشة الرئيسية"</strong> أو <strong>"Install App"</strong>.
+               <span className="text-emerald-400 font-bold">1.</span> {lang === 'ar' ? 'اضغط على قائمة المتصفح (الثلاث نقاط بالأسفل أو الأعلى).' : 'Tap the browser menu (three dots).'} <br/>
+               <span className="text-emerald-400 font-bold">2.</span> {lang === 'ar' ? 'اختر' : 'Select'} <strong>{lang === 'ar' ? '"إضافة إلى الشاشة الرئيسية"' : '"Add to Home screen"'}</strong> {lang === 'ar' ? 'أو' : 'or'} <strong>"Install App"</strong>.
              </p>
-             <button onClick={() => setShowInstallManualModal(false)} className="w-full bg-gray-700 text-white font-bold py-3 rounded-xl hover:bg-gray-600 transition-colors">حسناً، فهمت</button>
+             <button onClick={() => setShowInstallManualModal(false)} className="w-full bg-gray-700 text-white font-bold py-3 rounded-xl hover:bg-gray-600 transition-colors">{lang === 'ar' ? 'حسناً، فهمت' : 'Got it'}</button>
           </div>
         </div>
       )}
@@ -966,7 +966,7 @@ export default function App() {
                 setShowInstallManualModal(true);
               }
             }} className="bg-gradient-to-r from-emerald-500 to-cyan-500 text-white px-3 py-1.5 rounded-full font-bold flex items-center gap-1.5 text-xs md:text-sm animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:scale-105 transition-transform">
-               <Store size={16} /> <span className="hidden sm:inline">تنزيل التطبيق</span>
+               <Store size={16} /> <span className="hidden sm:inline">{lang === 'ar' ? 'تنزيل التطبيق' : 'Install App'}</span>
             </button>
           )}
 
@@ -1752,28 +1752,28 @@ export default function App() {
                  <div ref={chatMessagesEndRef} />
               </div>
               <div className="p-2 flex gap-2 bg-[#1f2937]">
-                 <input type="text" value={chatInputs[activeChatId] || ''} onChange={(e) => setChatInputs(prev => ({...prev, [activeChatId]: e.target.value}))} onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()} className="flex-1 bg-[#111827] rounded-full px-3 text-white text-sm outline-none" placeholder="رسالة..." />
+                 <input type="text" value={chatInputs[activeChatId] || ''} onChange={(e) => setChatInputs(prev => ({...prev, [activeChatId]: e.target.value}))} onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()} className="flex-1 bg-[#111827] rounded-full px-3 text-white text-sm outline-none" placeholder={lang === 'ar' ? "رسالة..." : "Message..."} />
                  <button onClick={handleSendMessage} className="bg-emerald-500 text-white p-2 rounded-full"><Send size={16}/></button>
               </div>
             </div>
          );
       })()}
 
-      <button onClick={() => { if(isAppLoggedIn) setShowComplaintModal(true); else { setAppAlert('يرجى تسجيل الدخول أولاً للتمكن من مراسلة الإدارة.'); navigateTo('login'); } }} className="fixed bottom-6 right-6 z-[100] bg-emerald-500 text-white p-4 rounded-full shadow-2xl hover:bg-emerald-600 transition-transform hover:scale-110 flex items-center justify-center group">
+      <button onClick={() => { if(isAppLoggedIn) setShowComplaintModal(true); else { setAppAlert(lang === 'ar' ? 'يرجى تسجيل الدخول أولاً للتمكن من مراسلة الإدارة.' : 'Please login first to contact admin.'); navigateTo('login'); } }} className="fixed bottom-6 right-6 z-[100] bg-emerald-500 text-white p-4 rounded-full shadow-2xl hover:bg-emerald-600 transition-transform hover:scale-110 flex items-center justify-center group">
          <MessageCircleWarning size={24}/>
-         <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-2 transition-all duration-300 font-bold">تواصل مع الإدارة (شكاوى)</span>
+         <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-2 transition-all duration-300 font-bold">{lang === 'ar' ? 'تواصل مع الإدارة (شكاوى)' : 'Contact Admin'}</span>
       </button>
 
       <footer className="w-full mt-auto border-t border-gray-800 bg-[#111827] pt-8 pb-4 relative z-10">
         <div className="max-w-6xl mx-auto px-4 flex flex-col items-center gap-6">
           <div className="flex flex-wrap justify-center gap-6 md:gap-10 text-gray-400 font-semibold text-sm">
-            <button onClick={() => navigateTo('terms')} className="hover:text-emerald-400 transition-colors">شروط الاستخدام</button>
-            <button onClick={() => navigateTo('privacy')} className="hover:text-emerald-400 transition-colors">سياسة الخصوصية</button>
-            <button onClick={() => navigateTo('ip')} className="hover:text-emerald-400 transition-colors">حقوق الملكية الفكرية</button>
+            <button onClick={() => navigateTo('terms')} className="hover:text-emerald-400 transition-colors">{lang === 'ar' ? 'شروط الاستخدام' : 'Terms of Use'}</button>
+            <button onClick={() => navigateTo('privacy')} className="hover:text-emerald-400 transition-colors">{lang === 'ar' ? 'سياسة الخصوصية' : 'Privacy Policy'}</button>
+            <button onClick={() => navigateTo('ip')} className="hover:text-emerald-400 transition-colors">{lang === 'ar' ? 'حقوق الملكية الفكرية' : 'Intellectual Property'}</button>
           </div>
           <div className="w-16 h-px bg-gray-700"></div>
-          <p className="text-gray-600 text-xs">© {new Date().getFullYear()} فلتر إيجيبت. جميع الحقوق محفوظة.</p>
-          <button onClick={() => navigateTo('admin-dashboard')} className="text-gray-700 hover:text-emerald-500 text-xs transition-colors">لوحة الإدارة (Admin)</button>
+          <p className="text-gray-600 text-xs">© {new Date().getFullYear()} {lang === 'ar' ? 'فلتر إيجيبت. جميع الحقوق محفوظة.' : 'Filter Egypt. All rights reserved.'}</p>
+          <button onClick={() => navigateTo('admin-dashboard')} className="text-gray-700 hover:text-emerald-500 text-xs transition-colors">{lang === 'ar' ? 'لوحة الإدارة (Admin)' : 'Admin Dashboard'}</button>
         </div>
       </footer>
     </div>
