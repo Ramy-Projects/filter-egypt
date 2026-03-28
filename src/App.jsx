@@ -96,6 +96,7 @@ export default function App() {
   const [isStandalone, setIsStandalone] = useState(() => {
      return typeof window !== 'undefined' ? window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone : false;
   });
+  const [smartFilterCat, setSmartFilterCat] = useState('الكل');
 
   // Forms
   const [signupData, setSignupData] = useState({ fullName: '', displayName: '', email: '', phone: '', password: '', confirmPassword: '' });
@@ -826,21 +827,20 @@ export default function App() {
 
       {/* --- SMART FILTER MODAL --- */}
       {showFilterModal && (
-        <div className="fixed inset-0 z-[300] bg-black/90 flex items-center justify-center p-4 animate-fade-in">
+        <div className="fixed inset-0 z-[1000] bg-black/90 flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-[#1f2937] rounded-3xl p-6 md:p-8 w-full max-w-sm relative shadow-2xl border border-gray-700">
              <button onClick={() => setShowFilterModal(false)} className="absolute top-4 left-4 text-gray-400 hover:text-white"><X/></button>
-             <h3 className="text-2xl font-bold mb-6 text-emerald-400 text-center flex items-center justify-center gap-2"><SlidersHorizontal/> فلترة ذكية</h3>
+             <h3 className="text-2xl font-bold mb-6 text-emerald-400 text-center flex items-center justify-center gap-2"><SlidersHorizontal/> {lang === 'ar' ? 'فلترة ذكية' : 'Smart Filter'}</h3>
              <div className="space-y-4">
                 <div>
                   <label className="block text-gray-400 text-sm mb-2">{lang === 'ar' ? 'اختر القسم' : 'Select Category'}</label>
-                  <select id="smartFilterCategory" className="w-full bg-[#111827] border border-gray-700 rounded-xl p-4 text-white outline-none focus:border-emerald-500 cursor-pointer">
+                  <select value={smartFilterCat} onChange={e => setSmartFilterCat(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-4 text-white outline-none focus:border-emerald-500 cursor-pointer">
                      <option value="الكل">{lang === 'ar' ? 'جميع الأقسام' : 'All Categories'}</option>
                      {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                   </select>
                 </div>
                 <button onClick={() => {
-                   const selectedCat = document.getElementById('smartFilterCategory').value;
-                   setFilterCategory(selectedCat);
+                   setFilterCategory(smartFilterCat);
                    setShowFilterModal(false);
                    navigateTo('results');
                 }} className="w-full bg-emerald-500 text-white font-bold py-4 rounded-xl hover:bg-emerald-600 transition-colors mt-4 shadow-lg shadow-emerald-500/20">{lang === 'ar' ? 'إظهار النتائج' : 'Show Results'}</button>
@@ -952,6 +952,10 @@ export default function App() {
 
         <div className="flex gap-2 md:gap-4 items-center">
           
+          <button onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')} className="bg-[#1f2937] border border-gray-700 hover:border-emerald-500 text-gray-300 px-3 py-1.5 rounded-full font-bold text-xs md:text-sm transition-colors">
+             {lang === 'ar' ? 'EN' : 'عربي'}
+          </button>
+
           {!isStandalone && (
             <button onClick={async () => {
               if (deferredPrompt) {
@@ -1017,12 +1021,12 @@ export default function App() {
                    <span className="group-hover:text-emerald-300 transition-colors">{userProfile?.displayName || 'مستخدم'}</span>
                  </button>
                )}
-               <button onClick={handleLogout} className="text-red-400 hover:text-red-500 hover:bg-red-500/10 px-3 py-1.5 rounded-lg text-xs md:text-sm font-bold">خروج</button>
+               <button onClick={handleLogout} className="text-red-400 hover:text-red-500 hover:bg-red-500/10 px-3 py-1.5 rounded-lg text-xs md:text-sm font-bold">{lang === 'ar' ? 'خروج' : 'Logout'}</button>
              </div>
           ) : (
             <div className="flex gap-2">
-              <button onClick={() => navigateTo('login')} className={`bg-[#1f2937] border border-gray-700 text-white px-4 py-2 rounded-full font-semibold text-xs md:text-sm`}>دخول</button>
-              <button onClick={() => navigateTo('signup')} className={`${accentBg} text-white px-4 py-2 rounded-full font-semibold flex items-center gap-1.5 text-xs md:text-sm`}><UserPlus size={16} /> <span className="hidden sm:inline">اشتراك</span></button>
+              <button onClick={() => navigateTo('login')} className={`bg-[#1f2937] border border-gray-700 text-white px-4 py-2 rounded-full font-semibold text-xs md:text-sm`}>{lang === 'ar' ? 'دخول' : 'Login'}</button>
+              <button onClick={() => navigateTo('signup')} className={`${accentBg} text-white px-4 py-2 rounded-full font-semibold flex items-center gap-1.5 text-xs md:text-sm`}><UserPlus size={16} /> <span className="hidden sm:inline">{lang === 'ar' ? 'اشتراك' : 'Register'}</span></button>
             </div>
           )}
         </div>
@@ -1037,13 +1041,13 @@ export default function App() {
             <div className="flex flex-col md:flex-row gap-6 w-full max-w-2xl justify-center">
               <div onClick={() => isAppLoggedIn ? setActiveView('seller') : navigateTo('login')} className={`${cardBg} flex-1 p-8 rounded-3xl border border-gray-700 hover:border-emerald-500 cursor-pointer group flex flex-col items-center gap-4`}>
                 <div className="w-16 h-16 rounded-full bg-gray-800 group-hover:bg-emerald-500/20 flex items-center justify-center"><Store className="text-gray-400 group-hover:text-emerald-400" size={32} /></div>
-                <h3 className="text-xl font-bold text-white">أنا البائع</h3>
-                <p className="text-gray-400 text-xs md:text-sm text-center">أريد عرض منتجاتي أو خدماتي.</p>
+                <h3 className="text-xl font-bold text-white">{lang === 'ar' ? 'أنا البائع' : 'I am a Seller'}</h3>
+                <p className="text-gray-400 text-xs md:text-sm text-center">{lang === 'ar' ? 'أريد عرض منتجاتي أو خدماتي.' : 'I want to sell my products/services.'}</p>
               </div>
               <div onClick={() => isAppLoggedIn ? setActiveView('buyer') : navigateTo('login')} className={`${cardBg} flex-1 p-8 rounded-3xl border border-gray-700 hover:border-blue-500 cursor-pointer group flex flex-col items-center gap-4`}>
                 <div className="w-16 h-16 rounded-full bg-gray-800 group-hover:bg-blue-500/20 flex items-center justify-center"><ShoppingBag className="text-gray-400 group-hover:text-blue-400" size={32} /></div>
-                <h3 className="text-xl font-bold text-white">أنا المشتري</h3>
-                <p className="text-gray-400 text-xs md:text-sm text-center">أريد البحث عن صفقات رائعة بأمان.</p>
+                <h3 className="text-xl font-bold text-white">{lang === 'ar' ? 'أنا المشتري' : 'I am a Buyer'}</h3>
+                <p className="text-gray-400 text-xs md:text-sm text-center">{lang === 'ar' ? 'أريد البحث عن صفقات رائعة بأمان.' : 'I want to find great deals safely.'}</p>
               </div>
             </div>
 
@@ -1075,9 +1079,9 @@ export default function App() {
 
         {(activeView === 'buyer' || activeView === 'seller') && (
           <div className="w-full animate-fade-in text-center flex flex-col items-center">
-            <h2 className="text-3xl md:text-5xl font-bold mb-4 leading-tight">{activeView === 'buyer' ? 'ابحث عن صفقتك القادمة' : 'اعرض منتجك للبيع'}</h2>
+            <h2 className="text-3xl md:text-5xl font-bold mb-4 leading-tight">{activeView === 'buyer' ? (lang === 'ar' ? 'ابحث عن صفقتك القادمة' : 'Find Your Next Deal') : (lang === 'ar' ? 'اعرض منتجك للبيع' : 'Sell Your Product')}</h2>
             
-            <div className="w-full max-w-3xl flex flex-col items-center relative mt-6 z-[60]">
+            <div className="w-full max-w-3xl flex flex-col items-center relative mt-6 z-[900]">
               {activeView === 'seller' && userProfile?.subscriptionStatus === 'Pending' ? (
                 <div className="w-full max-w-3xl bg-[#1f2937] border border-yellow-500/50 p-8 rounded-3xl text-center shadow-2xl shadow-yellow-500/10 mb-6">
                   <AlertTriangle size={40} className="mx-auto text-yellow-500 mb-4" />
@@ -1100,7 +1104,7 @@ export default function App() {
                       <div className="absolute inset-y-1.5 right-1.5 flex items-center z-10">
                         <button onClick={() => setShowAdCategoryMenu(!showAdCategoryMenu)} className="h-full bg-gray-700/50 hover:bg-emerald-500/20 text-emerald-400 rounded-full px-4 flex items-center justify-center gap-1 transition-colors border border-transparent hover:border-emerald-500/50"><span className="text-xs font-bold max-w-[70px] truncate">{adCategory || 'القسم'}</span><ChevronDown size={16} /></button>
                         {showAdCategoryMenu && (
-                          <div className="absolute top-full right-0 mt-2 w-48 max-h-60 bg-[#1f2937] border border-gray-700 rounded-xl shadow-2xl overflow-y-auto custom-scrollbar py-1 z-50">
+                          <div className="absolute top-full right-0 mt-2 w-48 max-h-60 bg-[#1f2937] border border-gray-700 rounded-xl shadow-2xl overflow-y-auto custom-scrollbar py-1 z-[1000]">
                             {categories.map(cat => ( <button key={cat} onClick={() => { setAdCategory(cat); setShowAdCategoryMenu(false); }} className={`w-full text-right px-4 py-2.5 text-sm hover:bg-emerald-500/10 transition-colors ${adCategory === cat ? 'text-emerald-400 font-bold bg-emerald-500/10' : 'text-white'}`}>{cat}</button> ))}
                           </div>
                         )}
@@ -1134,11 +1138,11 @@ export default function App() {
             </div>
 
             <div className="flex flex-wrap justify-center gap-4 md:gap-8 mt-12">
-              <div onClick={() => navigateTo('live-feed')}><ActionIcon icon={<Activity className="text-red-500 animate-pulse" />} label="الرادار المباشر" highlight="red" /></div>
-              <div onClick={() => setShowFilterModal(true)}><ActionIcon icon={<SlidersHorizontal />} label="فلترة ذكية" /></div>
-              <div onClick={() => navigateTo('directory')}><ActionIcon icon={<UserSearch className="text-blue-400" />} label="دليل المشتركين" /></div>
-              <div onClick={() => navigateTo('my-ads')}><ActionIcon icon={<Megaphone />} label="إعلاناتي" /></div>
-              <div onClick={() => setShowSettingsModal(true)}><ActionIcon icon={<Settings />} label="الإعدادات" /></div>
+              <div onClick={() => navigateTo('live-feed')}><ActionIcon icon={<Activity className="text-red-500 animate-pulse" />} label={lang === 'ar' ? "الرادار المباشر" : "Live Radar"} highlight="red" /></div>
+              <div onClick={() => setShowFilterModal(true)}><ActionIcon icon={<SlidersHorizontal />} label={lang === 'ar' ? "فلترة ذكية" : "Smart Filter"} /></div>
+              <div onClick={() => navigateTo('directory')}><ActionIcon icon={<UserSearch className="text-blue-400" />} label={lang === 'ar' ? "دليل المشتركين" : "Directory"} /></div>
+              <div onClick={() => navigateTo('my-ads')}><ActionIcon icon={<Megaphone />} label={lang === 'ar' ? "إعلاناتي" : "My Ads"} /></div>
+              <div onClick={() => setShowSettingsModal(true)}><ActionIcon icon={<Settings />} label={lang === 'ar' ? "الإعدادات" : "Settings"} /></div>
             </div>
           </div>
         )}
@@ -1233,9 +1237,9 @@ export default function App() {
                          <h4 className="font-bold text-white text-lg">{profile.displayName || profile.fullName}</h4>
                          <p className="text-gray-400 text-sm line-clamp-2 mt-1 min-h-[40px]">{profile.bio || 'لا توجد نبذة تعريفية.'}</p>
                          <div className="flex gap-2 justify-center sm:justify-start mt-3">
-                            <button onClick={() => { setViewedProfile(profile); navigateTo('user-profile'); }} className="bg-[#111827] border border-gray-600 text-gray-300 px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-800 transition-colors flex-1">زيارة البروفايل</button>
-                            {userProfile?.uid !== profile.uid && (
-                               <button onClick={() => openChat(profile.uid, profile.displayName)} className="bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-emerald-600 transition-colors flex items-center justify-center gap-1"><MessageSquare size={16}/> شات</button>
+                            <button onClick={() => { setViewedProfile(profile); navigateTo('user-profile'); }} className="bg-[#111827] border border-gray-600 text-gray-300 px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-800 transition-colors flex-1">{lang === 'ar' ? 'زيارة البروفايل' : 'View Profile'}</button>
+                            {(!isAppLoggedIn || userProfile?.uid !== profile.uid) && (
+                               <button onClick={() => openChat(profile.uid, profile.displayName)} className="bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-emerald-600 transition-colors flex items-center justify-center gap-1"><MessageSquare size={16}/> {lang === 'ar' ? 'شات' : 'Chat'}</button>
                             )}
                          </div>
                       </div>
@@ -1291,13 +1295,13 @@ export default function App() {
 
                    {/* Actions (Chat or Edit Own Profile) */}
                    <div className="mt-4 md:mt-24 w-full md:w-auto flex flex-col gap-3 shrink-0">
-                      {userProfile?.uid === viewedProfile.uid ? (
-                         <button onClick={() => setShowSettingsModal(true)} className="w-full md:w-auto bg-gray-700 text-white px-8 py-3 rounded-xl font-bold hover:bg-gray-600 transition-colors shadow-lg flex items-center justify-center gap-2"><Edit size={20}/> تعديل البروفايل</button>
+                      {(isAppLoggedIn && userProfile?.uid === viewedProfile.uid) ? (
+                         <button onClick={() => setShowSettingsModal(true)} className="w-full md:w-auto bg-gray-700 text-white px-8 py-3 rounded-xl font-bold hover:bg-gray-600 transition-colors shadow-lg flex items-center justify-center gap-2"><Edit size={20}/> {lang === 'ar' ? 'تعديل البروفايل' : 'Edit Profile'}</button>
                       ) : (
                          <>
-                           <button onClick={() => openChat(viewedProfile.uid, viewedProfile.displayName)} className="w-full md:w-auto bg-emerald-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"><Send size={20}/> إرسال رسالة داخلية</button>
+                           <button onClick={() => openChat(viewedProfile.uid, viewedProfile.displayName)} className="w-full md:w-auto bg-emerald-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"><Send size={20}/> {lang === 'ar' ? 'إرسال رسالة داخلية' : 'Send Message'}</button>
                            {viewedProfile.phone && (
-                              <a href={`https://wa.me/${viewedProfile.phone.replace(/[^0-9+]/g, '')}`} target="_blank" rel="noreferrer" className="w-full md:w-auto bg-[#25D366] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#20bd5a] transition-colors shadow-lg flex items-center justify-center gap-2"><MessageCircle size={20}/> تواصل عبر واتساب</a>
+                              <a href={`https://wa.me/${viewedProfile.phone.replace(/[^0-9+]/g, '')}`} target="_blank" rel="noreferrer" className="w-full md:w-auto bg-[#25D366] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#20bd5a] transition-colors shadow-lg flex items-center justify-center gap-2"><MessageCircle size={20}/> {lang === 'ar' ? 'تواصل عبر واتساب' : 'WhatsApp'}</a>
                            )}
                          </>
                       )}
@@ -1760,7 +1764,7 @@ export default function App() {
          <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-2 transition-all duration-300 font-bold">تواصل مع الإدارة (شكاوى)</span>
       </button>
 
-      <footer className="w-full mt-auto border-t border-gray-800 bg-[#111827] pt-8 pb-4 relative z-40">
+      <footer className="w-full mt-auto border-t border-gray-800 bg-[#111827] pt-8 pb-4 relative z-10">
         <div className="max-w-6xl mx-auto px-4 flex flex-col items-center gap-6">
           <div className="flex flex-wrap justify-center gap-6 md:gap-10 text-gray-400 font-semibold text-sm">
             <button onClick={() => navigateTo('terms')} className="hover:text-emerald-400 transition-colors">شروط الاستخدام</button>
