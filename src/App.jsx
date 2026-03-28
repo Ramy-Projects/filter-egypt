@@ -92,6 +92,10 @@ export default function App() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showInbox, setShowInbox] = useState(false);
+  const [showInstallManualModal, setShowInstallManualModal] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(() => {
+     return typeof window !== 'undefined' ? window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone : false;
+  });
 
   // Forms
   const [signupData, setSignupData] = useState({ fullName: '', displayName: '', email: '', phone: '', password: '', confirmPassword: '' });
@@ -820,6 +824,49 @@ export default function App() {
         </div>
       )}
 
+      {/* --- SMART FILTER MODAL --- */}
+      {showFilterModal && (
+        <div className="fixed inset-0 z-[300] bg-black/90 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-[#1f2937] rounded-3xl p-6 md:p-8 w-full max-w-sm relative shadow-2xl border border-gray-700">
+             <button onClick={() => setShowFilterModal(false)} className="absolute top-4 left-4 text-gray-400 hover:text-white"><X/></button>
+             <h3 className="text-2xl font-bold mb-6 text-emerald-400 text-center flex items-center justify-center gap-2"><SlidersHorizontal/> فلترة ذكية</h3>
+             <div className="space-y-4">
+                <div>
+                  <label className="block text-gray-400 text-sm mb-2">{lang === 'ar' ? 'اختر القسم' : 'Select Category'}</label>
+                  <select id="smartFilterCategory" className="w-full bg-[#111827] border border-gray-700 rounded-xl p-4 text-white outline-none focus:border-emerald-500 cursor-pointer">
+                     <option value="الكل">{lang === 'ar' ? 'جميع الأقسام' : 'All Categories'}</option>
+                     {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                  </select>
+                </div>
+                <button onClick={() => {
+                   const selectedCat = document.getElementById('smartFilterCategory').value;
+                   setFilterCategory(selectedCat);
+                   setShowFilterModal(false);
+                   navigateTo('results');
+                }} className="w-full bg-emerald-500 text-white font-bold py-4 rounded-xl hover:bg-emerald-600 transition-colors mt-4 shadow-lg shadow-emerald-500/20">{lang === 'ar' ? 'إظهار النتائج' : 'Show Results'}</button>
+             </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- MANUAL INSTALL MODAL --- */}
+      {showInstallManualModal && (
+        <div className="fixed inset-0 z-[300] bg-black/90 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-[#1f2937] rounded-3xl p-6 md:p-8 w-full max-w-sm relative shadow-2xl border border-gray-700 text-center">
+             <button onClick={() => setShowInstallManualModal(false)} className="absolute top-4 left-4 text-gray-400 hover:text-white"><X/></button>
+             <div className="w-16 h-16 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-4"><Store size={32} /></div>
+             <h3 className="text-xl font-bold mb-4 text-white">تنزيل التطبيق يدوياً</h3>
+             <p className="text-gray-300 text-sm mb-6 leading-relaxed">
+               يبدو أن متصفحك يمنع التنزيل التلقائي. لتثبيت التطبيق:
+               <br/><br/>
+               <span className="text-emerald-400 font-bold">1.</span> اضغط على قائمة المتصفح (الثلاث نقاط بالأسفل أو الأعلى).<br/>
+               <span className="text-emerald-400 font-bold">2.</span> اختر <strong>"إضافة إلى الشاشة الرئيسية"</strong> أو <strong>"Install App"</strong>.
+             </p>
+             <button onClick={() => setShowInstallManualModal(false)} className="w-full bg-gray-700 text-white font-bold py-3 rounded-xl hover:bg-gray-600 transition-colors">حسناً، فهمت</button>
+          </div>
+        </div>
+      )}
+
       {/* --- COMPLAINT MODAL --- */}
       {showComplaintModal && (
         <div className="fixed inset-0 z-[300] bg-black/90 flex items-center justify-center p-4 animate-fade-in">
@@ -905,8 +952,16 @@ export default function App() {
 
         <div className="flex gap-2 md:gap-4 items-center">
           
-          {deferredPrompt && (
-            <button onClick={handleInstallApp} className="bg-gradient-to-r from-emerald-500 to-cyan-500 text-white px-3 py-1.5 rounded-full font-bold flex items-center gap-1.5 text-xs md:text-sm animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:scale-105 transition-transform">
+          {!isStandalone && (
+            <button onClick={async () => {
+              if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') setDeferredPrompt(null);
+              } else {
+                setShowInstallManualModal(true);
+              }
+            }} className="bg-gradient-to-r from-emerald-500 to-cyan-500 text-white px-3 py-1.5 rounded-full font-bold flex items-center gap-1.5 text-xs md:text-sm animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:scale-105 transition-transform">
                <Store size={16} /> <span className="hidden sm:inline">تنزيل التطبيق</span>
             </button>
           )}
@@ -1022,7 +1077,7 @@ export default function App() {
           <div className="w-full animate-fade-in text-center flex flex-col items-center">
             <h2 className="text-3xl md:text-5xl font-bold mb-4 leading-tight">{activeView === 'buyer' ? 'ابحث عن صفقتك القادمة' : 'اعرض منتجك للبيع'}</h2>
             
-            <div className="w-full max-w-3xl flex flex-col items-center relative mt-6">
+            <div className="w-full max-w-3xl flex flex-col items-center relative mt-6 z-[60]">
               {activeView === 'seller' && userProfile?.subscriptionStatus === 'Pending' ? (
                 <div className="w-full max-w-3xl bg-[#1f2937] border border-yellow-500/50 p-8 rounded-3xl text-center shadow-2xl shadow-yellow-500/10 mb-6">
                   <AlertTriangle size={40} className="mx-auto text-yellow-500 mb-4" />
