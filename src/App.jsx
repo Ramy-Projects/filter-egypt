@@ -67,12 +67,14 @@ export default function App() {
   const [showSplash, setShowSplash] = useState(true);
 
   // الصفحات الآمنة التي يمكن الرجوع إليها عند الـ Refresh (بدون مشاكل فقدان البيانات المعينة)
-  const safeViews = ['landing', 'buyer', 'seller', 'my-ads', 'live-feed', 'directory', 'login', 'signup', 'forgot-password', 'admin-dashboard', 'terms', 'privacy', 'ip'];
+  const safeViews = ['landing', 'buyer', 'seller', 'my-ads', 'live-feed', 'directory', 'login', 'signup', 'forgot-password', 'admin-dashboard', 'terms', 'privacy', 'ip', 'ad-details', 'user-profile', 'results'];
   
   const [activeView, setActiveView] = useState(() => {
      const savedView = typeof window !== 'undefined' ? localStorage.getItem('filterEgyptActiveView') : null;
      return (savedView && safeViews.includes(savedView)) ? savedView : 'landing';
   }); 
+
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
 
   const [pendingUsers, setPendingUsers] = useState([]);
   const [history, setHistory] = useState([]); 
@@ -124,7 +126,9 @@ export default function App() {
   const [coverImagePreview, setCoverImagePreview] = useState(null);
 
   // New Features States
-  const [viewedProfile, setViewedProfile] = useState(null);
+  const [viewedProfile, setViewedProfile] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('filterEgyptViewedProfile')) || null; } catch(e) { return null; }
+  });
   const [directorySearch, setDirectorySearch] = useState('');
   const [showComplaintModal, setShowComplaintModal] = useState(false);
   const [complaintText, setComplaintText] = useState('');
@@ -147,9 +151,13 @@ export default function App() {
   const [sellerInput, setSellerInput] = useState(''); 
   const [adCategory, setAdCategory] = useState('');
   const [showAdCategoryMenu, setShowAdCategoryMenu] = useState(false);
-  const [filterCategory, setFilterCategory] = useState('الكل');
+  const [filterCategory, setFilterCategory] = useState(() => {
+    return typeof window !== 'undefined' ? localStorage.getItem('filterEgyptFilterCategory') || 'الكل' : 'الكل';
+  });
   const [uploadedImages, setUploadedImages] = useState([]); 
-  const [selectedAd, setSelectedAd] = useState(null); 
+  const [selectedAd, setSelectedAd] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('filterEgyptSelectedAd')) || null; } catch(e) { return null; }
+  }); 
   const [detailsImageIdx, setDetailsImageIdx] = useState(0); 
 
   const [adToEdit, setAdToEdit] = useState(null);
@@ -200,6 +208,27 @@ export default function App() {
       localStorage.setItem('filterEgyptActiveView', activeView);
     }
   }, [activeView]);
+
+  useEffect(() => { if (selectedAd) localStorage.setItem('filterEgyptSelectedAd', JSON.stringify(selectedAd)); }, [selectedAd]);
+  useEffect(() => { if (viewedProfile) localStorage.setItem('filterEgyptViewedProfile', JSON.stringify(viewedProfile)); }, [viewedProfile]);
+  useEffect(() => { if (filterCategory) localStorage.setItem('filterEgyptFilterCategory', filterCategory); }, [filterCategory]);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') setDeferredPrompt(null);
+    }
+  };
 
   // استرجاع بيانات الدخول إذا تم اختيار "تذكرني"
   useEffect(() => {
@@ -745,7 +774,7 @@ export default function App() {
            </div>
            <h1 className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 mb-6 animate-pulse">فلتر إيجيبت</h1>
            <p className="text-gray-300 text-lg md:text-xl font-bold tracking-wide text-center max-w-lg px-6 leading-relaxed opacity-90">
-             المنصة الأولى للبيع والشراء عن طريق التواصل الاجتماعي في مصر.<br/>تواصل، بيع، واشتري بسهولة وأمان تام.
+             المنصة الأولى لبيع وشراء الفلاتر وقطع الغيار في مصر.<br/>تواصل، بيع، واشتري بسهولة وأمان تام.
            </p>
            <div className="mt-12 flex items-center gap-2">
               <div className="w-3 h-3 bg-emerald-500 rounded-full animate-ping"></div>
@@ -875,6 +904,13 @@ export default function App() {
         </div>
 
         <div className="flex gap-2 md:gap-4 items-center">
+          
+          {deferredPrompt && (
+            <button onClick={handleInstallApp} className="bg-gradient-to-r from-emerald-500 to-cyan-500 text-white px-3 py-1.5 rounded-full font-bold flex items-center gap-1.5 text-xs md:text-sm animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:scale-105 transition-transform">
+               <Store size={16} /> <span className="hidden sm:inline">تنزيل التطبيق</span>
+            </button>
+          )}
+
           {isAppLoggedIn && (
             <div className="flex gap-2">
                {(showInbox || showNotifications) && (<div className="fixed inset-0 z-40" onClick={() => { setShowInbox(false); setShowNotifications(false); }}></div>)}
