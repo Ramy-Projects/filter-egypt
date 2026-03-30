@@ -52,6 +52,22 @@ const defaultCategoriesList = [
   'كتب', 'شريك مشروع', 'عيادات', 'لوحات فنية', 'اثاث منزلي', 'اثاث مكاتب'
 ];
 
+const categoryTranslations = {
+  'صنايعي': 'Handyman', 'قطع غيار': 'Spare Parts', 'وظائف متاحة': 'Available Jobs', 'عقد عمل': 'Work Contract',
+  'تذاكر سفر': 'Travel Tickets', 'كورسات برمجة': 'Programming Courses', 'شقق للبيع': 'Apartments for Sale',
+  'شقق للايجار': 'Apartments for Rent', 'اراضي': 'Lands', 'سيارات للبيع': 'Cars for Sale', 'سيارات للايجار': 'Cars for Rent',
+  'محلات للبيع': 'Shops for Sale', 'محلات للايجار': 'Shops for Rent', 'ملابس': 'Clothing', 'احذية وشنط': 'Shoes & Bags',
+  'اكسسوارات بنات': 'Girls Accessories', 'مكياج': 'Makeup', 'دكتور نفسي': 'Psychiatrist', 'بلايستيشن': 'PlayStation',
+  'موبايلات': 'Mobiles', 'لابتوب': 'Laptops', 'قرض حسن': 'Interest-Free Loan', 'كتب': 'Books', 'شريك مشروع': 'Business Partner',
+  'عيادات': 'Clinics', 'لوحات فنية': 'Artworks', 'اثاث منزلي': 'Home Furniture', 'اثاث مكاتب': 'Office Furniture'
+};
+
+const translateCategory = (cat, currentLang) => {
+    if (!cat) return '';
+    if (currentLang === 'en' && categoryTranslations[cat]) return categoryTranslations[cat];
+    return cat;
+};
+
 const AD_EXPIRATION_DAYS = 30; 
 
 function ActionIcon({ icon, label, highlight }) {
@@ -840,7 +856,7 @@ export default function App() {
                   <label className="block text-gray-400 text-sm mb-2">{lang === 'ar' ? 'اختر القسم' : 'Select Category'}</label>
                   <select value={smartFilterCat} onChange={e => setSmartFilterCat(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-4 text-white outline-none focus:border-emerald-500 cursor-pointer">
                      <option value="الكل">{lang === 'ar' ? 'جميع الأقسام' : 'All Categories'}</option>
-                     {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                     {categories.map(cat => <option key={cat} value={cat}>{translateCategory(cat, lang)}</option>)}
                   </select>
                 </div>
                 <button onClick={() => {
@@ -906,7 +922,7 @@ export default function App() {
              <div className="space-y-4">
                <div><label className="block text-gray-400 text-sm mb-1">{lang === 'ar' ? 'عنوان الإعلان' : 'Ad Title'}</label><input type="text" value={adToEdit.title} onChange={e => setAdToEdit({...adToEdit, title: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500" /></div>
                <div><label className="block text-gray-400 text-sm mb-1">{lang === 'ar' ? 'السعر (ج.م)' : 'Price (EGP)'}</label><input type="text" value={adToEdit.price} onChange={e => setAdToEdit({...adToEdit, price: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500" /></div>
-               <div><label className="block text-gray-400 text-sm mb-1">{lang === 'ar' ? 'القسم' : 'Category'}</label><select value={adToEdit.category || categories[0]} onChange={e => setAdToEdit({...adToEdit, category: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500 cursor-pointer">{categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}</select></div>
+               <div><label className="block text-gray-400 text-sm mb-1">{lang === 'ar' ? 'القسم' : 'Category'}</label><select value={adToEdit.category || categories[0]} onChange={e => setAdToEdit({...adToEdit, category: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500 cursor-pointer">{categories.map(cat => <option key={cat} value={cat}>{translateCategory(cat, lang)}</option>)}</select></div>
                <div><label className="block text-gray-400 text-sm mb-1">{lang === 'ar' ? 'وصف الإعلان والمواصفات' : 'Ad Description'}</label><textarea rows="4" value={adToEdit.description || ''} onChange={e => setAdToEdit({...adToEdit, description: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500 resize-none custom-scrollbar" placeholder="اكتب التفاصيل هنا..."></textarea></div>
                <div>
                  <label className="block text-gray-400 text-sm mb-2">{lang === 'ar' ? 'صور الإعلان (حذف أو إضافة)' : 'Ad Images (Remove or Add)'}</label>
@@ -1109,14 +1125,15 @@ export default function App() {
                     
                     {activeView === 'seller' && (
                       <div className="absolute inset-y-1.5 start-1.5 flex items-center z-10">
-                        <button onClick={() => setShowAdCategoryMenu(!showAdCategoryMenu)} className="h-full bg-gray-700/50 hover:bg-emerald-500/20 text-emerald-400 rounded-full px-4 flex items-center justify-center gap-1 transition-colors border border-transparent hover:border-emerald-500/50"><span className="text-xs font-bold max-w-[70px] truncate">{adCategory || (lang === 'ar' ? 'القسم' : 'Category')}</span><ChevronDown size={16} /></button>
+                        <button onClick={() => setShowAdCategoryMenu(!showAdCategoryMenu)} className="h-full bg-gray-700/50 hover:bg-emerald-500/20 text-emerald-400 rounded-full px-4 flex items-center justify-center gap-1 transition-colors border border-transparent hover:border-emerald-500/50"><span className="text-xs font-bold max-w-[70px] truncate">{adCategory ? translateCategory(adCategory, lang) : (lang === 'ar' ? 'القسم' : 'Category')}</span><ChevronDown size={16} /></button>
                         {showAdCategoryMenu && (
                           <div className="absolute top-full start-0 mt-2 w-48 max-h-60 bg-[#1f2937] border border-gray-700 rounded-xl shadow-2xl overflow-y-auto custom-scrollbar py-1 z-[50]">
-                            {categories.map(cat => ( <button key={cat} onClick={() => { setAdCategory(cat); setShowAdCategoryMenu(false); }} className={`w-full text-start px-4 py-2.5 text-sm hover:bg-emerald-500/10 transition-colors ${adCategory === cat ? 'text-emerald-400 font-bold bg-emerald-500/10' : 'text-white'}`}>{cat}</button> ))}
+                            {categories.map(cat => ( <button key={cat} onClick={() => { setAdCategory(cat); setShowAdCategoryMenu(false); }} className={`w-full text-start px-4 py-2.5 text-sm hover:bg-emerald-500/10 transition-colors ${adCategory === cat ? 'text-emerald-400 font-bold bg-emerald-500/10' : 'text-white'}`}>{translateCategory(cat, lang)}</button> ))}
                           </div>
                         )}
                       </div>
                     )}
+                    
                     <div className="absolute inset-y-1.5 end-1.5 flex gap-1.5 items-center">
                       {activeView === 'seller' && (<label className={`cursor-pointer bg-gray-700/50 p-2.5 rounded-full flex items-center justify-center hover:bg-emerald-500/20 hover:text-emerald-400 transition-colors h-full aspect-square`}><ImagePlus size={20} /><input type="file" multiple className="hidden" onChange={handleImageUpload} accept="image/*" /></label>)}
                       <button onClick={async () => {
@@ -1322,7 +1339,7 @@ export default function App() {
                {globalAds.filter(ad => ad.sellerId === viewedProfile.uid && ad.statusEn === 'Active').map(ad => (
                  <div key={ad.id} onClick={() => viewAdDetails(ad)} className="bg-[#1f2937] p-4 rounded-2xl border border-gray-700 cursor-pointer hover:border-emerald-500 transition-colors">
                     <img src={ad.images?.[0]} alt="ad" className="w-full h-40 object-cover rounded-xl mb-3" />
-                    <h4 className="font-bold text-white">{lang === 'ar' ? ad.title : ad.titleEn}</h4><p className="text-gray-400 text-xs mt-1">{ad.category}</p><p className="text-emerald-400 font-bold mt-2">{ad.price} {lang === 'ar' ? 'ج.م' : 'EGP'}</p>
+                    <h4 className="font-bold text-white">{lang === 'ar' ? ad.title : ad.titleEn}</h4><p className="text-gray-400 text-xs mt-1">{translateCategory(ad.category, lang)}</p><p className="text-emerald-400 font-bold mt-2">{ad.price} {lang === 'ar' ? 'ج.م' : 'EGP'}</p>
                  </div>
                ))}
                {globalAds.filter(ad => ad.sellerId === viewedProfile.uid && ad.statusEn === 'Active').length === 0 && <p className="text-gray-500 col-span-2 text-center py-6 bg-[#1f2937] rounded-2xl border border-gray-700">لا توجد إعلانات نشطة لهذا البائع حالياً.</p>}
@@ -1338,7 +1355,7 @@ export default function App() {
                 {liveFeedAds.map(ad => (
                   <div key={ad.id} onClick={() => viewAdDetails(ad)} className="bg-[#1f2937] p-4 rounded-2xl flex gap-4 cursor-pointer hover:border-red-500 border border-transparent transition-colors">
                     <img src={ad.images?.[0]} alt="ad" className="w-24 h-24 rounded-xl object-cover" />
-                    <div className="flex-1"><h4 className="font-bold text-lg text-white">{lang === 'ar' ? ad.title : ad.titleEn}</h4><p className="text-gray-400 text-sm mb-1">{ad.category}</p><p className="text-red-400 font-bold">{ad.price} ج.م</p></div>
+                    <div className="flex-1"><h4 className="font-bold text-lg text-white">{lang === 'ar' ? ad.title : ad.titleEn}</h4><p className="text-gray-400 text-sm mb-1">{translateCategory(ad.category, lang)}</p><p className="text-red-400 font-bold">{ad.price} ج.م</p></div>
                   </div>
                 ))}
              </div>
@@ -1362,7 +1379,7 @@ export default function App() {
                        <h4 className="font-bold text-white leading-tight mb-1">{ad.title}</h4>
                        <p className="text-emerald-400 font-bold text-sm mb-1">{ad.price} ج.م</p>
                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-gray-400 text-xs flex items-center gap-2"><span className="bg-gray-800 px-2 py-0.5 rounded">{ad.category}</span><span><Eye size={12} className="inline mr-1 text-blue-400"/>{ad.views || 0}</span></p>
+                          <p className="text-gray-400 text-xs flex items-center gap-2"><span className="bg-gray-800 px-2 py-0.5 rounded">{translateCategory(ad.category, lang)}</span><span><Eye size={12} className="inline mr-1 text-blue-400"/>{ad.views || 0}</span></p>
                           {!isExpired && <span className="text-emerald-400 text-xs font-bold flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded"><Clock size={12}/> متبقي {daysLeft} يوم</span>}
                        </div>
                      </div>
@@ -1387,12 +1404,12 @@ export default function App() {
         {/* --- RESULTS --- */}
         {activeView === 'results' && (
            <div className="w-full animate-fade-in flex flex-col items-center">
-             <div className="w-full flex justify-between items-center mb-6"><h2 className="text-2xl font-bold">النتائج: {filterCategory}</h2><button onClick={goBack} className="bg-[#1f2937] px-4 py-2 rounded-full border border-gray-700">رجوع</button></div>
+             <div className="w-full flex justify-between items-center mb-6"><h2 className="text-2xl font-bold">{lang === 'ar' ? 'النتائج:' : 'Results:'} {filterCategory === 'الكل' ? (lang === 'ar' ? 'الكل' : 'All') : filterCategory.startsWith('بحث:') ? (lang === 'ar' ? filterCategory : filterCategory.replace('بحث:', 'Search:')) : translateCategory(filterCategory, lang)}</h2><button onClick={goBack} className="bg-[#1f2937] px-4 py-2 rounded-full border border-gray-700">رجوع</button></div>
              <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
                {globalAds.filter(ad => ad.statusEn === 'Active' && (Date.now() - ad.createdAt) < AD_EXPIRATION_MS && (filterCategory === 'الكل' || filterCategory.includes('بحث:') || ad.title.includes(filterCategory.replace('بحث: ', '')) || ad.category === filterCategory)).map(ad => (
                  <div key={ad.id} onClick={() => viewAdDetails(ad)} className="bg-[#1f2937] p-4 rounded-2xl border border-gray-700 cursor-pointer hover:border-emerald-500">
                     <img src={ad.images?.[0]} alt="ad" className="w-full h-40 object-cover rounded-xl mb-3" />
-                    <h4 className="font-bold text-white">{ad.title}</h4><p className="text-gray-400 text-xs mt-1">{ad.category}</p><p className="text-emerald-400 font-bold mt-2">{ad.price} ج.م</p>
+                    <h4 className="font-bold text-white">{ad.title}</h4><p className="text-gray-400 text-xs mt-1">{translateCategory(ad.category, lang)}</p><p className="text-emerald-400 font-bold mt-2">{ad.price} ج.م</p>
                  </div>
                ))}
              </div>
@@ -1414,8 +1431,8 @@ export default function App() {
                 </div>
                 <div className="w-full md:w-1/2 flex flex-col">
                    <h2 className="text-3xl font-bold mb-2 text-white">{selectedAd.title}</h2>
-                   <div className="flex items-center gap-2 mb-4"><span className="bg-gray-700 text-gray-300 text-xs px-3 py-1.5 rounded-full font-bold">{selectedAd.category}</span><span className="text-gray-500 text-xs flex items-center gap-1"><Eye size={14}/> {selectedAd.views || 0} مشاهدة</span></div>
-                   <div className="text-emerald-400 font-bold text-3xl mb-6">{selectedAd.price} ج.م</div>
+                   <div className="flex items-center gap-2 mb-4"><span className="bg-gray-700 text-gray-300 text-xs px-3 py-1.5 rounded-full font-bold">{translateCategory(selectedAd.category, lang)}</span><span className="text-gray-500 text-xs flex items-center gap-1"><Eye size={14}/> {selectedAd.views || 0} {lang === 'ar' ? 'مشاهدة' : 'Views'}</span></div>
+                   <div className="text-emerald-400 font-bold text-3xl mb-6">{selectedAd.price} {lang === 'ar' ? 'ج.م' : 'EGP'}</div>
                    
                    <div className="mb-6 flex items-center gap-3 bg-[#111827] p-3 rounded-xl border border-gray-700 cursor-pointer hover:border-emerald-500 transition-colors" onClick={() => { const sellerProf = allProfiles.find(p => p.uid === selectedAd.sellerId); if(sellerProf) { setViewedProfile(sellerProf); navigateTo('user-profile'); } }}>
                       {allProfiles.find(p => p.uid === selectedAd.sellerId)?.photoUrl ? <img src={allProfiles.find(p => p.uid === selectedAd.sellerId).photoUrl} className="w-12 h-12 rounded-full object-cover border border-gray-600"/> : <AvatarFallback size={48} />}
@@ -1670,7 +1687,7 @@ export default function App() {
                       <div key={ad.id} className="bg-[#111827] p-5 rounded-xl border border-gray-700 flex flex-col sm:flex-row justify-between items-center gap-4">
                          <div className="flex gap-4 items-center">
                             <img src={ad.images?.[0]} className="w-16 h-16 rounded-lg object-cover shrink-0" alt="ad" />
-                            <div><p className="text-lg text-white font-bold">{ad.title}</p><p className="text-sm text-gray-400 mt-1">القسم: {ad.category} | السعر: {ad.price} | البائع: {ad.sellerName || ad.sellerId}</p></div>
+                            <div><p className="text-lg text-white font-bold">{ad.title}</p><p className="text-sm text-gray-400 mt-1">{lang === 'ar' ? 'القسم:' : 'Category:'} {translateCategory(ad.category, lang)} | {lang === 'ar' ? 'السعر:' : 'Price:'} {ad.price} | {lang === 'ar' ? 'البائع:' : 'Seller:'} {ad.sellerName || ad.sellerId}</p></div>
                          </div>
                          <div className="flex gap-2 w-full sm:w-auto shrink-0">
                             <button onClick={() => { setConfirmModal({ isOpen: true, title: 'رفض الإعلان', message: 'هل أنت متأكد من رفض وحذف هذا الإعلان نهائياً؟', confirmText: 'رفض وحذف', type: 'danger', onConfirm: async () => { setConfirmModal({ ...confirmModal, isOpen: false }); setIsUploading(true); try { await deleteDoc(publicDoc('ads', ad.id)); setAppAlert('تم حذف الإعلان لعدم الموافقة.'); } catch(e) {} setIsUploading(false); } }); }} className="bg-red-500/20 text-red-500 px-4 py-2 rounded-lg font-bold hover:bg-red-500 hover:text-white flex-1 sm:flex-none">رفض</button>
