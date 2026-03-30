@@ -801,12 +801,17 @@ export default function App() {
 
   // --- 🔴 إعدادات الأدمن (Admin Setup) 🔴 ---
   const ADMIN_EMAILS = ['ramyadnan97@gmail.com', 'admin@filter-egypt.com']; 
-  const ADMIN_PHONES = ['01024059955']; 
   
-  const isAdmin = isAppLoggedIn && userProfile && (
-     (userProfile.email && ADMIN_EMAILS.includes(userProfile.email.toLowerCase())) || 
-     (userProfile.phone && ADMIN_PHONES.some(ap => userProfile.phone.endsWith(ap.replace(/^0/, ''))))
-  );
+  // دالة صارمة جداً للتأكد من هوية الأدمن
+  const checkAdmin = (profile) => {
+     if (!profile) return false;
+     const isEmailAdmin = profile.email && ADMIN_EMAILS.includes(profile.email.toLowerCase());
+     const cleanPhone = profile.phone ? profile.phone.replace(/[^0-9]/g, '') : '';
+     const isPhoneAdmin = cleanPhone.endsWith('1024059955');
+     return isEmailAdmin || isPhoneAdmin;
+  };
+  
+  const isAdmin = isAppLoggedIn && checkAdmin(userProfile);
 
   const AvatarFallback = ({ size = 16, className = "" }) => (
     <div className={`bg-gray-700 flex items-center justify-center rounded-full shrink-0 ${className}`} style={{ width: size, height: size }}>
@@ -1216,6 +1221,7 @@ export default function App() {
               <div onClick={() => navigateTo('live-feed')}><ActionIcon icon={<Activity className="text-red-500 animate-pulse" />} label={lang === 'ar' ? "الرادار المباشر" : "Live Radar"} highlight="red" /></div>
               <div onClick={() => setShowFilterModal(true)}><ActionIcon icon={<SlidersHorizontal />} label={lang === 'ar' ? "فلترة ذكية" : "Smart Filter"} /></div>
               <div onClick={() => navigateTo('directory')}><ActionIcon icon={<UserSearch className="text-blue-400" />} label={lang === 'ar' ? "دليل المشتركين" : "Directory"} /></div>
+              <div onClick={() => { setShowInbox(true); window.scrollTo({top: 0, behavior: 'smooth'}); }}><ActionIcon icon={<MessageSquare className="text-blue-400" />} label={lang === 'ar' ? "رسائلي" : "My Chats"} /></div>
               <div onClick={() => navigateTo('my-ads')}><ActionIcon icon={<Megaphone />} label={lang === 'ar' ? "إعلاناتي" : "My Ads"} /></div>
               <div onClick={() => setShowSettingsModal(true)}><ActionIcon icon={<Settings />} label={lang === 'ar' ? "الإعدادات" : "Settings"} /></div>
             </div>
