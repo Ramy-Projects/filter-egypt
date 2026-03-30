@@ -778,7 +778,7 @@ export default function App() {
   const totalUnread = Object.values(unreadCounts).reduce((a, b) => a + b, 0);
 
   // --- 🔴 إعدادات الأدمن (Admin Setup) 🔴 ---
-  const ADMIN_EMAILS = ['your_email@gmail.com', 'admin@filter-egypt.com']; 
+  const ADMIN_EMAILS = ['ramyadnan97@gmail.com', 'admin@filter-egypt.com']; 
   const isAdmin = isAppLoggedIn && userProfile && userProfile.email && ADMIN_EMAILS.includes(userProfile.email.toLowerCase());
 
   const AvatarFallback = ({ size = 16, className = "" }) => (
@@ -1521,12 +1521,12 @@ export default function App() {
                   <input type="tel" placeholder={lang === 'ar' ? 'رقم الهاتف' : 'Phone Number'} autoComplete="off" value={signupData.phone} onChange={e => setSignupData({...signupData, phone: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white col-span-1 md:col-span-2 outline-none focus:border-emerald-500" />
                   
                   <div className="relative">
-                    <input type={showSignupPass ? "text" : "password"} placeholder={lang === 'ar' ? 'كلمة المرور' : 'Password'} autoComplete="new-password" value={signupData.password} onChange={e => setSignupData({...signupData, password: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-emerald-500" />
-                    <button type="button" onClick={() => setShowSignupPass(!showSignupPass)} className="absolute left-3 top-3 text-gray-400 hover:text-white">{showSignupPass ? <EyeOff size={20} /> : <Eye size={20} />}</button>
+                    <input type={showSignupPass ? "text" : "password"} placeholder={lang === 'ar' ? 'كلمة المرور' : 'Password'} autoComplete="new-password" value={signupData.password} onChange={e => setSignupData({...signupData, password: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 pe-10 text-white outline-none focus:border-emerald-500" />
+                    <button type="button" onClick={() => setShowSignupPass(!showSignupPass)} className="absolute end-3 top-3 text-gray-400 hover:text-white">{showSignupPass ? <EyeOff size={20} /> : <Eye size={20} />}</button>
                   </div>
                   <div className="relative">
-                    <input type={showSignupConfirm ? "text" : "password"} placeholder={lang === 'ar' ? 'تأكيد كلمة المرور' : 'Confirm Password'} autoComplete="new-password" value={signupData.confirmPassword} onChange={e => setSignupData({...signupData, confirmPassword: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-emerald-500" />
-                    <button type="button" onClick={() => setShowSignupConfirm(!showSignupConfirm)} className="absolute left-3 top-3 text-gray-400 hover:text-white">{showSignupConfirm ? <EyeOff size={20} /> : <Eye size={20} />}</button>
+                    <input type={showSignupConfirm ? "text" : "password"} placeholder={lang === 'ar' ? 'تأكيد كلمة المرور' : 'Confirm Password'} autoComplete="new-password" value={signupData.confirmPassword} onChange={e => setSignupData({...signupData, confirmPassword: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 pe-10 text-white outline-none focus:border-emerald-500" />
+                    <button type="button" onClick={() => setShowSignupConfirm(!showSignupConfirm)} className="absolute end-3 top-3 text-gray-400 hover:text-white">{showSignupConfirm ? <EyeOff size={20} /> : <Eye size={20} />}</button>
                   </div>
 
                   <label className="col-span-1 md:col-span-2 border border-dashed border-emerald-500/50 p-6 rounded-xl text-center cursor-pointer text-gray-400 hover:border-emerald-500 transition-colors bg-emerald-500/5 mt-2">
