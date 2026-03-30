@@ -761,6 +761,10 @@ export default function App() {
   const activeChat = globalChats.find(c => c.id === activeChatId);
   const totalUnread = Object.values(unreadCounts).reduce((a, b) => a + b, 0);
 
+  // --- 🔴 إعدادات الأدمن (Admin Setup) 🔴 ---
+  const ADMIN_EMAILS = ['ramyadnan97@gmail.com', 'admin@filter-egypt.com']; 
+  const isAdmin = isAppLoggedIn && userProfile && userProfile.email && ADMIN_EMAILS.includes(userProfile.email.toLowerCase());
+
   const AvatarFallback = ({ size = 16, className = "" }) => (
     <div className={`bg-gray-700 flex items-center justify-center rounded-full shrink-0 ${className}`} style={{ width: size, height: size }}>
       <User size={size * 0.6} className="text-gray-400" />
@@ -1502,7 +1506,16 @@ export default function App() {
         )}
 
         {/* --- ADMIN DASHBOARD --- */}
-        {activeView === 'admin-dashboard' && (
+        {activeView === 'admin-dashboard' && !isAdmin && (
+          <div className="w-full text-center py-20 animate-fade-in">
+             <ShieldAlert size={80} className="mx-auto text-red-500 mb-6 animate-pulse" />
+             <h2 className="text-3xl font-bold text-white mb-4">صلاحيات غير كافية</h2>
+             <p className="text-gray-400 mb-8 text-lg">عذراً، هذه الصفحة مخصصة لمدير الموقع فقط ولن تتمكن من الدخول إليها.</p>
+             <button onClick={() => navigateTo('landing')} className="bg-[#1f2937] text-white px-8 py-3 rounded-full font-bold hover:bg-gray-800 border border-gray-700 transition-colors shadow-lg">العودة للرئيسية</button>
+          </div>
+        )}
+
+        {activeView === 'admin-dashboard' && isAdmin && (
           <div className="w-full max-w-4xl mx-auto animate-fade-in">
             <button onClick={() => navigateTo('landing')} className="mb-6 text-emerald-400 hover:text-white font-bold text-lg">← العودة للرئيسية</button>
             <div className={`${cardBg} p-8 rounded-2xl`}>
@@ -1773,7 +1786,9 @@ export default function App() {
           </div>
           <div className="w-16 h-px bg-gray-700"></div>
           <p className="text-gray-600 text-xs">© {new Date().getFullYear()} {lang === 'ar' ? 'فلتر إيجيبت. جميع الحقوق محفوظة.' : 'Filter Egypt. All rights reserved.'}</p>
-          <button onClick={() => navigateTo('admin-dashboard')} className="text-gray-700 hover:text-emerald-500 text-xs transition-colors">{lang === 'ar' ? 'لوحة الإدارة (Admin)' : 'Admin Dashboard'}</button>
+          {isAdmin && (
+             <button onClick={() => navigateTo('admin-dashboard')} className="text-gray-700 hover:text-emerald-500 text-xs transition-colors font-bold">{lang === 'ar' ? 'لوحة الإدارة (Admin)' : 'Admin Dashboard'}</button>
+          )}
         </div>
       </footer>
     </div>
