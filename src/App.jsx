@@ -1245,11 +1245,11 @@ export default function App() {
         {/* --- MEMBERS DIRECTORY --- */}
         {activeView === 'directory' && (
            <div className="w-full animate-fade-in flex flex-col items-center h-full">
-             <div className="w-full flex justify-between items-center mb-6"><h2 className="text-2xl font-bold flex items-center gap-2"><UserSearch className="text-blue-400"/> دليل المشتركين</h2><button onClick={goBack} className="bg-[#1f2937] px-4 py-2 rounded-full border border-gray-700">رجوع</button></div>
+             <div className="w-full flex justify-between items-center mb-6"><h2 className="text-2xl font-bold flex items-center gap-2"><UserSearch className="text-blue-400"/> {lang === 'ar' ? 'دليل المشتركين' : 'Members Directory'}</h2><button onClick={goBack} className="bg-[#1f2937] px-4 py-2 rounded-full border border-gray-700">{lang === 'ar' ? 'رجوع' : 'Back'}</button></div>
              
              <div className="w-full max-w-2xl mb-8 relative">
                 <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
-                <input type="text" value={directorySearch} onChange={e => setDirectorySearch(e.target.value)} placeholder="ابحث عن متجر، تاجر أو رقم هاتف..." className="w-full bg-[#1f2937] border border-gray-700 rounded-full py-4 pr-12 pl-4 text-white outline-none focus:border-blue-500 shadow-xl" />
+                <input type="text" value={directorySearch} onChange={e => setDirectorySearch(e.target.value)} placeholder={lang === 'ar' ? "ابحث عن متجر، تاجر أو رقم هاتف..." : "Search for a store, merchant, or phone..."} className="w-full bg-[#1f2937] border border-gray-700 rounded-full py-4 pr-12 pl-4 text-white outline-none focus:border-blue-500 shadow-xl" />
              </div>
              
              <div className="w-full max-h-[65vh] overflow-y-auto custom-scrollbar pr-2 pb-8">
@@ -1259,7 +1259,7 @@ export default function App() {
                       {profile.photoUrl ? <img src={profile.photoUrl} alt="User" className="w-20 h-20 rounded-full object-cover border-2 border-gray-600 shrink-0" /> : <AvatarFallback size={80} className="border-2 border-gray-600 shrink-0" />}
                       <div className="flex-1 text-center sm:text-right">
                          <h4 className="font-bold text-white text-lg">{profile.displayName || profile.fullName}</h4>
-                         <p className="text-gray-400 text-sm line-clamp-2 mt-1 min-h-[40px]">{profile.bio || 'لا توجد نبذة تعريفية.'}</p>
+                         <p className="text-gray-400 text-sm line-clamp-2 mt-1 min-h-[40px]">{profile.bio || (lang === 'ar' ? 'لا توجد نبذة تعريفية.' : 'No bio available.')}</p>
                          <div className="flex gap-2 justify-center sm:justify-start mt-3">
                             <button onClick={() => { setViewedProfile(profile); navigateTo('user-profile'); }} className="bg-[#111827] border border-gray-600 text-gray-300 px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-800 transition-colors flex-1">{lang === 'ar' ? 'زيارة البروفايل' : 'View Profile'}</button>
                             {(!isAppLoggedIn || userProfile?.uid !== profile.uid) && (
@@ -1269,7 +1269,7 @@ export default function App() {
                       </div>
                    </div>
                  ))}
-                 {allProfiles.length === 0 && <p className="text-gray-500 text-center py-10 w-full col-span-2">جاري التحميل أو لا يوجد مستخدمين.</p>}
+                 {allProfiles.length === 0 && <p className="text-gray-500 text-center py-10 w-full col-span-2">{lang === 'ar' ? 'جاري التحميل أو لا يوجد مستخدمين.' : 'Loading or no users found.'}</p>}
                </div>
              </div>
            </div>
@@ -1278,7 +1278,7 @@ export default function App() {
         {/* --- USER PROFILE VIEW --- */}
         {activeView === 'user-profile' && viewedProfile && (
            <div className="w-full animate-fade-in flex flex-col items-center">
-             <div className="w-full mb-4"><button onClick={goBack} className="text-gray-400 hover:text-white flex items-center gap-2"><ArrowRight size={20} /> رجوع</button></div>
+             <div className="w-full mb-4"><button onClick={goBack} className="text-gray-400 hover:text-white flex items-center gap-2"><ArrowRight size={20} /> {lang === 'ar' ? 'رجوع' : 'Back'}</button></div>
              
              {/* Profile Card */}
              <div className="w-full bg-[#1f2937] rounded-3xl overflow-hidden shadow-2xl border border-gray-700 mb-8 relative">
@@ -1300,20 +1300,20 @@ export default function App() {
                       
                       {/* Bio Section */}
                       <div className="mt-4 bg-[#111827] p-4 rounded-xl border border-gray-800">
-                        <h4 className="text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider"><FileText size={14} className="inline mr-1"/> النبذة التعريفية (Bio)</h4>
+                        <h4 className="text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider"><FileText size={14} className="inline mr-1"/> {lang === 'ar' ? 'النبذة التعريفية (Bio)' : 'Biography (Bio)'}</h4>
                         {viewedProfile.bio ? (
                           <p className="text-gray-300 leading-relaxed text-sm">{viewedProfile.bio}</p>
                         ) : (
-                          <p className="text-gray-600 text-sm italic">لا توجد نبذة تعريفية حتى الآن.</p>
+                          <p className="text-gray-600 text-sm italic">{lang === 'ar' ? 'لا توجد نبذة تعريفية حتى الآن.' : 'No bio added yet.'}</p>
                         )}
                       </div>
 
                       <div className="flex items-center gap-3 justify-center md:justify-start mt-4 flex-wrap">
-                         {viewedProfile.facebookUrl && <a href={viewedProfile.facebookUrl} target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 flex items-center gap-1 bg-blue-500/10 px-3 py-1.5 rounded-lg text-sm font-bold"><Facebook size={18}/> فيسبوك</a>}
-                         {viewedProfile.youtubeUrl && <a href={viewedProfile.youtubeUrl} target="_blank" rel="noreferrer" className="text-red-400 hover:text-red-300 flex items-center gap-1 bg-red-500/10 px-3 py-1.5 rounded-lg text-sm font-bold"><Youtube size={18}/> يوتيوب</a>}
-                         {viewedProfile.instagramUrl && <a href={viewedProfile.instagramUrl} target="_blank" rel="noreferrer" className="text-pink-400 hover:text-pink-300 flex items-center gap-1 bg-pink-500/10 px-3 py-1.5 rounded-lg text-sm font-bold"><Instagram size={18}/> انستجرام</a>}
-                         {viewedProfile.snapchatUrl && <a href={viewedProfile.snapchatUrl} target="_blank" rel="noreferrer" className="text-yellow-400 hover:text-yellow-300 flex items-center gap-1 bg-yellow-500/10 px-3 py-1.5 rounded-lg text-sm font-bold"><Ghost size={18}/> سناب شات</a>}
-                         {viewedProfile.tiktokUrl && <a href={viewedProfile.tiktokUrl} target="_blank" rel="noreferrer" className="text-cyan-400 hover:text-cyan-300 flex items-center gap-1 bg-cyan-500/10 px-3 py-1.5 rounded-lg text-sm font-bold"><Music size={18}/> تيك توك</a>}
+                         {viewedProfile.facebookUrl && <a href={viewedProfile.facebookUrl} target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 flex items-center gap-1 bg-blue-500/10 px-3 py-1.5 rounded-lg text-sm font-bold"><Facebook size={18}/> {lang === 'ar' ? 'فيسبوك' : 'Facebook'}</a>}
+                         {viewedProfile.youtubeUrl && <a href={viewedProfile.youtubeUrl} target="_blank" rel="noreferrer" className="text-red-400 hover:text-red-300 flex items-center gap-1 bg-red-500/10 px-3 py-1.5 rounded-lg text-sm font-bold"><Youtube size={18}/> {lang === 'ar' ? 'يوتيوب' : 'YouTube'}</a>}
+                         {viewedProfile.instagramUrl && <a href={viewedProfile.instagramUrl} target="_blank" rel="noreferrer" className="text-pink-400 hover:text-pink-300 flex items-center gap-1 bg-pink-500/10 px-3 py-1.5 rounded-lg text-sm font-bold"><Instagram size={18}/> {lang === 'ar' ? 'انستجرام' : 'Instagram'}</a>}
+                         {viewedProfile.snapchatUrl && <a href={viewedProfile.snapchatUrl} target="_blank" rel="noreferrer" className="text-yellow-400 hover:text-yellow-300 flex items-center gap-1 bg-yellow-500/10 px-3 py-1.5 rounded-lg text-sm font-bold"><Ghost size={18}/> {lang === 'ar' ? 'سناب شات' : 'Snapchat'}</a>}
+                         {viewedProfile.tiktokUrl && <a href={viewedProfile.tiktokUrl} target="_blank" rel="noreferrer" className="text-cyan-400 hover:text-cyan-300 flex items-center gap-1 bg-cyan-500/10 px-3 py-1.5 rounded-lg text-sm font-bold"><Music size={18}/> {lang === 'ar' ? 'تيك توك' : 'TikTok'}</a>}
                       </div>
                    </div>
 
@@ -1333,7 +1333,7 @@ export default function App() {
                 </div>
              </div>
 
-             <div className="w-full flex items-center gap-2 mb-6"><Megaphone className="text-emerald-400"/><h3 className="text-2xl font-bold">إعلانات هذا البائع</h3></div>
+             <div className="w-full flex items-center gap-2 mb-6"><Megaphone className="text-emerald-400"/><h3 className="text-2xl font-bold">{lang === 'ar' ? 'إعلانات هذا البائع' : 'Seller Ads'}</h3></div>
              
              <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
                {globalAds.filter(ad => ad.sellerId === viewedProfile.uid && ad.statusEn === 'Active').map(ad => (
@@ -1342,7 +1342,7 @@ export default function App() {
                     <h4 className="font-bold text-white">{lang === 'ar' ? ad.title : ad.titleEn}</h4><p className="text-gray-400 text-xs mt-1">{translateCategory(ad.category, lang)}</p><p className="text-emerald-400 font-bold mt-2">{ad.price} {lang === 'ar' ? 'ج.م' : 'EGP'}</p>
                  </div>
                ))}
-               {globalAds.filter(ad => ad.sellerId === viewedProfile.uid && ad.statusEn === 'Active').length === 0 && <p className="text-gray-500 col-span-2 text-center py-6 bg-[#1f2937] rounded-2xl border border-gray-700">لا توجد إعلانات نشطة لهذا البائع حالياً.</p>}
+               {globalAds.filter(ad => ad.sellerId === viewedProfile.uid && ad.statusEn === 'Active').length === 0 && <p className="text-gray-500 col-span-2 text-center py-6 bg-[#1f2937] rounded-2xl border border-gray-700">{lang === 'ar' ? 'لا توجد إعلانات نشطة لهذا البائع حالياً.' : 'No active ads for this seller currently.'}</p>}
              </div>
            </div>
         )}
@@ -1350,12 +1350,13 @@ export default function App() {
         {/* --- LIVE FEED --- */}
         {activeView === 'live-feed' && (
           <div className="w-full animate-fade-in flex flex-col items-center">
-             <div className="w-full flex justify-between items-center mb-6"><h2 className="text-2xl font-bold flex items-center gap-3"><Activity className="text-red-500 animate-pulse" /> رادار الإعلانات المباشر</h2><button onClick={goBack} className="bg-[#1f2937] px-4 py-2 rounded-full border border-gray-700">رجوع</button></div>
+             <div className="w-full flex justify-between items-center mb-6"><h2 className="text-2xl font-bold flex items-center gap-3"><Activity className="text-red-500 animate-pulse" /> {lang === 'ar' ? 'رادار الإعلانات المباشر' : 'Live Ads Radar'}</h2><button onClick={goBack} className="bg-[#1f2937] px-4 py-2 rounded-full border border-gray-700">{lang === 'ar' ? 'رجوع' : 'Back'}</button></div>
              <div className="w-full flex flex-col gap-4">
+                {liveFeedAds.length === 0 && <p className="text-gray-500 text-center py-10 w-full">{lang === 'ar' ? 'لا توجد إعلانات جديدة حالياً.' : 'No new ads currently.'}</p>}
                 {liveFeedAds.map(ad => (
                   <div key={ad.id} onClick={() => viewAdDetails(ad)} className="bg-[#1f2937] p-4 rounded-2xl flex gap-4 cursor-pointer hover:border-red-500 border border-transparent transition-colors">
                     <img src={ad.images?.[0]} alt="ad" className="w-24 h-24 rounded-xl object-cover" />
-                    <div className="flex-1"><h4 className="font-bold text-lg text-white">{lang === 'ar' ? ad.title : ad.titleEn}</h4><p className="text-gray-400 text-sm mb-1">{translateCategory(ad.category, lang)}</p><p className="text-red-400 font-bold">{ad.price} ج.م</p></div>
+                    <div className="flex-1"><h4 className="font-bold text-lg text-white">{lang === 'ar' ? ad.title : ad.titleEn}</h4><p className="text-gray-400 text-sm mb-1">{translateCategory(ad.category, lang)}</p><p className="text-red-400 font-bold">{ad.price} {lang === 'ar' ? 'ج.م' : 'EGP'}</p></div>
                   </div>
                 ))}
              </div>
@@ -1365,7 +1366,7 @@ export default function App() {
         {/* --- MY ADS --- */}
         {activeView === 'my-ads' && (
            <div className="w-full animate-fade-in flex flex-col items-center">
-             <div className="w-full flex justify-between items-center mb-6"><h2 className="text-2xl font-bold">إعلاناتي</h2><button onClick={goBack} className="bg-[#1f2937] px-4 py-2 rounded-full border border-gray-700">رجوع</button></div>
+             <div className="w-full flex justify-between items-center mb-6"><h2 className="text-2xl font-bold">{lang === 'ar' ? 'إعلاناتي' : 'My Ads'}</h2><button onClick={goBack} className="bg-[#1f2937] px-4 py-2 rounded-full border border-gray-700">{lang === 'ar' ? 'رجوع' : 'Back'}</button></div>
              <div className="w-full flex flex-col gap-4">
                {myAds.map(ad => {
                  const adAge = Date.now() - ad.createdAt;
@@ -1376,27 +1377,27 @@ export default function App() {
                    <div className="flex gap-4 w-full sm:w-auto">
                      <img src={ad.images?.[0]} alt="ad" className="w-20 h-20 rounded-xl object-cover shrink-0" />
                      <div className="flex-1">
-                       <h4 className="font-bold text-white leading-tight mb-1">{ad.title}</h4>
-                       <p className="text-emerald-400 font-bold text-sm mb-1">{ad.price} ج.م</p>
+                       <h4 className="font-bold text-white leading-tight mb-1">{lang === 'ar' ? ad.title : ad.titleEn}</h4>
+                       <p className="text-emerald-400 font-bold text-sm mb-1">{ad.price} {lang === 'ar' ? 'ج.م' : 'EGP'}</p>
                        <div className="flex items-center gap-2 flex-wrap">
                           <p className="text-gray-400 text-xs flex items-center gap-2"><span className="bg-gray-800 px-2 py-0.5 rounded">{translateCategory(ad.category, lang)}</span><span><Eye size={12} className="inline mr-1 text-blue-400"/>{ad.views || 0}</span></p>
-                          {!isExpired && <span className="text-emerald-400 text-xs font-bold flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded"><Clock size={12}/> متبقي {daysLeft} يوم</span>}
+                          {!isExpired && <span className="text-emerald-400 text-xs font-bold flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded"><Clock size={12}/> {lang === 'ar' ? `متبقي ${daysLeft} يوم` : `${daysLeft} days left`}</span>}
                        </div>
                      </div>
                    </div>
                    
                    <div className="flex items-center justify-between w-full sm:w-auto sm:ml-auto gap-2 border-t border-gray-700 sm:border-0 pt-3 sm:pt-0 mt-2 sm:mt-0">
-                     {isExpired ? ( <span className="text-red-500 text-xs font-bold bg-red-500/10 px-3 py-1.5 rounded-lg flex items-center gap-1"><AlertTriangle size={14}/> منتهي</span>
-                     ) : ad.statusEn === 'Pending' ? ( <span className="text-yellow-500 text-xs font-bold bg-yellow-500/10 px-3 py-1.5 rounded-lg flex items-center gap-1"><AlertTriangle size={14}/> للمراجعة</span>
-                     ) : ( <span className="text-emerald-400 text-xs font-bold bg-emerald-500/10 px-3 py-1.5 rounded-lg flex items-center gap-1"><CheckCircle size={14}/> نشط</span> )}
+                     {isExpired ? ( <span className="text-red-500 text-xs font-bold bg-red-500/10 px-3 py-1.5 rounded-lg flex items-center gap-1"><AlertTriangle size={14}/> {lang === 'ar' ? 'منتهي' : 'Expired'}</span>
+                     ) : ad.statusEn === 'Pending' ? ( <span className="text-yellow-500 text-xs font-bold bg-yellow-500/10 px-3 py-1.5 rounded-lg flex items-center gap-1"><AlertTriangle size={14}/> {lang === 'ar' ? 'للمراجعة' : 'Pending'}</span>
+                     ) : ( <span className="text-emerald-400 text-xs font-bold bg-emerald-500/10 px-3 py-1.5 rounded-lg flex items-center gap-1"><CheckCircle size={14}/> {lang === 'ar' ? 'نشط' : 'Active'}</span> )}
                      <div className="flex gap-2">
-                       <button onClick={() => { setAdToEdit({ ...ad, description: ad.description || '' }); setEditNewImages([]); }} className="bg-blue-500/10 text-blue-400 p-2 rounded-lg hover:bg-blue-500/20 transition-colors"><Edit size={18}/></button>
-                       <button onClick={() => { setConfirmModal({ isOpen: true, title: 'حذف إعلانك', message: 'هل أنت متأكد من حذف إعلانك نهائياً؟', confirmText: 'احذف الإعلان', type: 'danger', onConfirm: async () => { setIsUploading(true); try { await deleteDoc(publicDoc('ads', ad.id)); setAppAlert('تم حذف الإعلان بنجاح'); } catch(e) { } setIsUploading(false); setConfirmModal({ ...confirmModal, isOpen: false }); } }); }} className="bg-red-500/10 text-red-500 p-2 rounded-lg hover:bg-red-500/20 transition-colors"><Trash2 size={18}/></button>
+                       <button onClick={() => { setAdToEdit({ ...ad, description: ad.description || '' }); setEditNewImages([]); }} className="bg-blue-500/10 text-blue-400 p-2 rounded-lg hover:bg-blue-500/20 transition-colors" title={lang === 'ar' ? 'تعديل' : 'Edit'}><Edit size={18}/></button>
+                       <button onClick={() => { setConfirmModal({ isOpen: true, title: lang === 'ar' ? 'حذف إعلانك' : 'Delete Ad', message: lang === 'ar' ? 'هل أنت متأكد من حذف إعلانك نهائياً؟' : 'Are you sure you want to permanently delete this ad?', confirmText: lang === 'ar' ? 'احذف الإعلان' : 'Delete', type: 'danger', onConfirm: async () => { setIsUploading(true); try { await deleteDoc(publicDoc('ads', ad.id)); setAppAlert(lang === 'ar' ? 'تم حذف الإعلان بنجاح' : 'Ad deleted successfully'); } catch(e) { } setIsUploading(false); setConfirmModal({ ...confirmModal, isOpen: false }); } }); }} className="bg-red-500/10 text-red-500 p-2 rounded-lg hover:bg-red-500/20 transition-colors" title={lang === 'ar' ? 'حذف' : 'Delete'}><Trash2 size={18}/></button>
                      </div>
                    </div>
                  </div>
                )})}
-               {myAds.length === 0 && <p className="text-gray-500 text-center py-10 w-full">لا توجد إعلانات لك حتى الآن.</p>}
+               {myAds.length === 0 && <p className="text-gray-500 text-center py-10 w-full">{lang === 'ar' ? 'لا توجد إعلانات لك حتى الآن.' : 'You have no ads yet.'}</p>}
              </div>
            </div>
         )}
@@ -1404,14 +1405,15 @@ export default function App() {
         {/* --- RESULTS --- */}
         {activeView === 'results' && (
            <div className="w-full animate-fade-in flex flex-col items-center">
-             <div className="w-full flex justify-between items-center mb-6"><h2 className="text-2xl font-bold">{lang === 'ar' ? 'النتائج:' : 'Results:'} {filterCategory === 'الكل' ? (lang === 'ar' ? 'الكل' : 'All') : filterCategory.startsWith('بحث:') ? (lang === 'ar' ? filterCategory : filterCategory.replace('بحث:', 'Search:')) : translateCategory(filterCategory, lang)}</h2><button onClick={goBack} className="bg-[#1f2937] px-4 py-2 rounded-full border border-gray-700">رجوع</button></div>
+             <div className="w-full flex justify-between items-center mb-6"><h2 className="text-2xl font-bold">{lang === 'ar' ? 'النتائج:' : 'Results:'} {filterCategory === 'الكل' ? (lang === 'ar' ? 'الكل' : 'All') : filterCategory.startsWith('بحث:') ? (lang === 'ar' ? filterCategory : filterCategory.replace('بحث:', 'Search:')) : translateCategory(filterCategory, lang)}</h2><button onClick={goBack} className="bg-[#1f2937] px-4 py-2 rounded-full border border-gray-700">{lang === 'ar' ? 'رجوع' : 'Back'}</button></div>
              <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
                {globalAds.filter(ad => ad.statusEn === 'Active' && (Date.now() - ad.createdAt) < AD_EXPIRATION_MS && (filterCategory === 'الكل' || filterCategory.includes('بحث:') || ad.title.includes(filterCategory.replace('بحث: ', '')) || ad.category === filterCategory)).map(ad => (
                  <div key={ad.id} onClick={() => viewAdDetails(ad)} className="bg-[#1f2937] p-4 rounded-2xl border border-gray-700 cursor-pointer hover:border-emerald-500">
                     <img src={ad.images?.[0]} alt="ad" className="w-full h-40 object-cover rounded-xl mb-3" />
-                    <h4 className="font-bold text-white">{ad.title}</h4><p className="text-gray-400 text-xs mt-1">{translateCategory(ad.category, lang)}</p><p className="text-emerald-400 font-bold mt-2">{ad.price} ج.م</p>
+                    <h4 className="font-bold text-white">{lang === 'ar' ? ad.title : ad.titleEn}</h4><p className="text-gray-400 text-xs mt-1">{translateCategory(ad.category, lang)}</p><p className="text-emerald-400 font-bold mt-2">{ad.price} {lang === 'ar' ? 'ج.م' : 'EGP'}</p>
                  </div>
                ))}
+               {globalAds.filter(ad => ad.statusEn === 'Active' && (Date.now() - ad.createdAt) < AD_EXPIRATION_MS && (filterCategory === 'الكل' || filterCategory.includes('بحث:') || ad.title.includes(filterCategory.replace('بحث: ', '')) || ad.category === filterCategory)).length === 0 && <p className="text-gray-500 text-center py-10 w-full col-span-2">{lang === 'ar' ? 'لا توجد نتائج مطابقة.' : 'No matching results found.'}</p>}
              </div>
            </div>
         )}
@@ -1419,7 +1421,7 @@ export default function App() {
         {/* --- AD DETAILS --- */}
         {activeView === 'ad-details' && selectedAd && (
            <div className="w-full animate-fade-in flex flex-col items-center">
-             <div className="w-full mb-4"><button onClick={goBack} className="text-gray-400 hover:text-white flex items-center gap-2"><ArrowRight size={20} /> رجوع</button></div>
+             <div className="w-full mb-4"><button onClick={goBack} className="text-gray-400 hover:text-white flex items-center gap-2"><ArrowRight size={20} /> {lang === 'ar' ? 'رجوع' : 'Back'}</button></div>
              <div className="w-full bg-[#1f2937] p-6 rounded-3xl flex flex-col md:flex-row gap-8 shadow-2xl border border-gray-700">
                 <div className="w-full md:w-1/2 flex flex-col gap-3">
                    <img src={selectedAd.images?.[detailsImageIdx] || selectedAd.images?.[0]} alt="ad main" className="w-full h-64 md:h-80 object-cover rounded-2xl border border-gray-700 transition-all duration-300" />
@@ -1430,20 +1432,20 @@ export default function App() {
                    )}
                 </div>
                 <div className="w-full md:w-1/2 flex flex-col">
-                   <h2 className="text-3xl font-bold mb-2 text-white">{selectedAd.title}</h2>
+                   <h2 className="text-3xl font-bold mb-2 text-white">{lang === 'ar' ? selectedAd.title : selectedAd.titleEn}</h2>
                    <div className="flex items-center gap-2 mb-4"><span className="bg-gray-700 text-gray-300 text-xs px-3 py-1.5 rounded-full font-bold">{translateCategory(selectedAd.category, lang)}</span><span className="text-gray-500 text-xs flex items-center gap-1"><Eye size={14}/> {selectedAd.views || 0} {lang === 'ar' ? 'مشاهدة' : 'Views'}</span></div>
                    <div className="text-emerald-400 font-bold text-3xl mb-6">{selectedAd.price} {lang === 'ar' ? 'ج.م' : 'EGP'}</div>
                    
                    <div className="mb-6 flex items-center gap-3 bg-[#111827] p-3 rounded-xl border border-gray-700 cursor-pointer hover:border-emerald-500 transition-colors" onClick={() => { const sellerProf = allProfiles.find(p => p.uid === selectedAd.sellerId); if(sellerProf) { setViewedProfile(sellerProf); navigateTo('user-profile'); } }}>
                       {allProfiles.find(p => p.uid === selectedAd.sellerId)?.photoUrl ? <img src={allProfiles.find(p => p.uid === selectedAd.sellerId).photoUrl} className="w-12 h-12 rounded-full object-cover border border-gray-600"/> : <AvatarFallback size={48} />}
-                      <div><p className="text-sm text-gray-400">البائع:</p><p className="text-white font-bold">{selectedAd.sellerName}</p></div>
+                      <div><p className="text-sm text-gray-400">{lang === 'ar' ? 'البائع:' : 'Seller:'}</p><p className="text-white font-bold">{selectedAd.sellerName}</p></div>
                       <UserSearch className="mr-auto text-emerald-400 opacity-50" size={20}/>
                    </div>
                    
-                   {selectedAd.description && ( <div className="bg-[#111827] p-4 rounded-2xl border border-gray-700 mb-6 flex-1"><h4 className="text-sm font-bold text-gray-400 mb-2">الوصف والمواصفات</h4><p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">{selectedAd.description}</p></div> )}
+                   {selectedAd.description && ( <div className="bg-[#111827] p-4 rounded-2xl border border-gray-700 mb-6 flex-1"><h4 className="text-sm font-bold text-gray-400 mb-2">{lang === 'ar' ? 'الوصف والمواصفات' : 'Description'}</h4><p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">{selectedAd.description}</p></div> )}
                    
                    {userProfile?.uid !== selectedAd.sellerId && (
-                      <button onClick={() => openChat(selectedAd)} className="w-full bg-emerald-500 text-white font-bold rounded-xl py-4 flex justify-center items-center gap-2 hover:bg-emerald-600 transition-colors mt-auto shadow-lg shadow-emerald-500/20"><Send size={20} /> تواصل مع البائع</button>
+                      <button onClick={() => openChat(selectedAd)} className="w-full bg-emerald-500 text-white font-bold rounded-xl py-4 flex justify-center items-center gap-2 hover:bg-emerald-600 transition-colors mt-auto shadow-lg shadow-emerald-500/20"><Send size={20} /> {lang === 'ar' ? 'تواصل مع البائع' : 'Contact Seller'}</button>
                    )}
                 </div>
              </div>
@@ -1740,9 +1742,9 @@ export default function App() {
         )}
         
         {/* --- LEGAL PAGES --- */}
-        {activeView === 'terms' && ( <div className="w-full max-w-4xl mx-auto animate-fade-in text-right px-4"><button onClick={goBack} className="mb-6 text-gray-400 hover:text-white flex items-center gap-2"><ArrowRight size={20} /> رجوع</button><div className={`${cardBg} p-8 md:p-12 rounded-3xl shadow-xl border border-gray-700`}><div className="flex items-center gap-4 mb-8 border-b border-gray-700 pb-6"><FileText size={40} className="text-emerald-400" /><h2 className="text-3xl font-bold text-white">شروط الاستخدام</h2></div><div className="text-gray-300 leading-relaxed text-lg">{renderLegalText(legalTexts.terms)}</div></div></div> )}
-        {activeView === 'privacy' && ( <div className="w-full max-w-4xl mx-auto animate-fade-in text-right px-4"><button onClick={goBack} className="mb-6 text-gray-400 hover:text-white flex items-center gap-2"><ArrowRight size={20} /> رجوع</button><div className={`${cardBg} p-8 md:p-12 rounded-3xl shadow-xl border border-gray-700`}><div className="flex items-center gap-4 mb-8 border-b border-gray-700 pb-6"><ShieldCheck size={40} className="text-emerald-400" /><h2 className="text-3xl font-bold text-white">سياسة الخصوصية</h2></div><div className="text-gray-300 leading-relaxed text-lg">{renderLegalText(legalTexts.privacy)}</div></div></div> )}
-        {activeView === 'ip' && ( <div className="w-full max-w-4xl mx-auto animate-fade-in text-right px-4"><button onClick={goBack} className="mb-6 text-gray-400 hover:text-white flex items-center gap-2"><ArrowRight size={20} /> رجوع</button><div className={`${cardBg} p-8 md:p-12 rounded-3xl shadow-xl border border-gray-700`}><div className="flex items-center gap-4 mb-8 border-b border-gray-700 pb-6"><Sparkles size={40} className="text-emerald-400" /><h2 className="text-3xl font-bold text-white">حقوق الملكية الفكرية</h2></div><div className="text-gray-300 leading-relaxed text-lg">{renderLegalText(legalTexts.ip)}</div></div></div> )}
+        {activeView === 'terms' && ( <div className="w-full max-w-4xl mx-auto animate-fade-in text-right px-4"><button onClick={goBack} className="mb-6 text-gray-400 hover:text-white flex items-center gap-2"><ArrowRight size={20} /> {lang === 'ar' ? 'رجوع' : 'Back'}</button><div className={`${cardBg} p-8 md:p-12 rounded-3xl shadow-xl border border-gray-700`}><div className="flex items-center gap-4 mb-8 border-b border-gray-700 pb-6"><FileText size={40} className="text-emerald-400" /><h2 className="text-3xl font-bold text-white">{lang === 'ar' ? 'شروط الاستخدام' : 'Terms of Use'}</h2></div><div className="text-gray-300 leading-relaxed text-lg" dir="auto">{renderLegalText(legalTexts.terms)}</div></div></div> )}
+        {activeView === 'privacy' && ( <div className="w-full max-w-4xl mx-auto animate-fade-in text-right px-4"><button onClick={goBack} className="mb-6 text-gray-400 hover:text-white flex items-center gap-2"><ArrowRight size={20} /> {lang === 'ar' ? 'رجوع' : 'Back'}</button><div className={`${cardBg} p-8 md:p-12 rounded-3xl shadow-xl border border-gray-700`}><div className="flex items-center gap-4 mb-8 border-b border-gray-700 pb-6"><ShieldCheck size={40} className="text-emerald-400" /><h2 className="text-3xl font-bold text-white">{lang === 'ar' ? 'سياسة الخصوصية' : 'Privacy Policy'}</h2></div><div className="text-gray-300 leading-relaxed text-lg" dir="auto">{renderLegalText(legalTexts.privacy)}</div></div></div> )}
+        {activeView === 'ip' && ( <div className="w-full max-w-4xl mx-auto animate-fade-in text-right px-4"><button onClick={goBack} className="mb-6 text-gray-400 hover:text-white flex items-center gap-2"><ArrowRight size={20} /> {lang === 'ar' ? 'رجوع' : 'Back'}</button><div className={`${cardBg} p-8 md:p-12 rounded-3xl shadow-xl border border-gray-700`}><div className="flex items-center gap-4 mb-8 border-b border-gray-700 pb-6"><Sparkles size={40} className="text-emerald-400" /><h2 className="text-3xl font-bold text-white">{lang === 'ar' ? 'حقوق الملكية الفكرية' : 'Intellectual Property'}</h2></div><div className="text-gray-300 leading-relaxed text-lg" dir="auto">{renderLegalText(legalTexts.ip)}</div></div></div> )}
 
       </main>
 
