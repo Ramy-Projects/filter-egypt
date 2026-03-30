@@ -287,7 +287,7 @@ export default function App() {
         const docSnap = await getDoc(publicDoc('users', fbUser.uid));
         if (docSnap.exists()) { 
            if (docSnap.data().isBanned) {
-              setAppAlert('عذراً، هذا الحساب تم حظره من قبل الإدارة.');
+              setAppAlert(lang === 'ar' ? 'عذراً، هذا الحساب تم حظره من قبل الإدارة.' : 'Sorry, this account has been banned by the administration.');
               setIsAppLoggedIn(false);
               setUserProfile(null);
               return;
@@ -298,7 +298,7 @@ export default function App() {
       } catch (error) { console.error(error); }
     };
     fetchProfile();
-  }, [fbUser]);
+  }, [fbUser, lang]);
 
   // Sync Profiles
   useEffect(() => {
@@ -445,27 +445,27 @@ export default function App() {
   const handleAddCategory = async () => {
     if (!newCategoryInput.trim()) return;
     const newCat = newCategoryInput.trim();
-    if (categories.includes(newCat)) { setAppAlert('هذا القسم موجود بالفعل!'); return; }
+    if (categories.includes(newCat)) { setAppAlert(lang === 'ar' ? 'هذا القسم موجود بالفعل!' : 'Category already exists!'); return; }
     const updated = [...categories, newCat];
     setCategories(updated); setNewCategoryInput(''); setIsUploading(true);
-    try { await setDoc(publicDoc('settings', 'categories'), { list: updated }, { merge: true }); setAppAlert('تم إضافة القسم بنجاح'); } catch(e) { console.error(e); } setIsUploading(false);
+    try { await setDoc(publicDoc('settings', 'categories'), { list: updated }, { merge: true }); setAppAlert(lang === 'ar' ? 'تم إضافة القسم بنجاح' : 'Category added successfully'); } catch(e) { console.error(e); } setIsUploading(false);
   };
 
   const handleDeleteCategory = (catToRemove) => {
     setConfirmModal({
-      isOpen: true, title: 'تأكيد الحذف', message: `هل أنت متأكد من حذف قسم "${catToRemove}" نهائياً؟`, confirmText: 'نعم، احذف', type: 'danger',
-      onConfirm: async () => { setConfirmModal({ ...confirmModal, isOpen: false }); setIsUploading(true); try { const updated = categories.filter(c => c !== catToRemove); setCategories(updated); await setDoc(publicDoc('settings', 'categories'), { list: updated }, { merge: true }); setAppAlert('تم حذف القسم بنجاح'); } catch(e) {} setIsUploading(false); }
+      isOpen: true, title: lang === 'ar' ? 'تأكيد الحذف' : 'Confirm Delete', message: lang === 'ar' ? `هل أنت متأكد من حذف قسم "${catToRemove}" نهائياً؟` : `Are you sure you want to delete category "${catToRemove}"?`, confirmText: lang === 'ar' ? 'نعم، احذف' : 'Yes, Delete', type: 'danger',
+      onConfirm: async () => { setConfirmModal({ ...confirmModal, isOpen: false }); setIsUploading(true); try { const updated = categories.filter(c => c !== catToRemove); setCategories(updated); await setDoc(publicDoc('settings', 'categories'), { list: updated }, { merge: true }); setAppAlert(lang === 'ar' ? 'تم حذف القسم بنجاح' : 'Category deleted successfully'); } catch(e) {} setIsUploading(false); }
     });
   };
 
   const saveLegalDocument = async () => {
     setIsUploading(true);
-    try { await setDoc(publicDoc('settings', 'legal'), { ...legalTexts, [legalEditModal.type]: legalEditModal.content }, { merge: true }); setLegalEditModal({ isOpen: false, type: '', content: '', title: '' }); setAppAlert('تم تحديث الصفحة بنجاح وحفظها في قاعدة البيانات!'); } catch(err) {} setIsUploading(false);
+    try { await setDoc(publicDoc('settings', 'legal'), { ...legalTexts, [legalEditModal.type]: legalEditModal.content }, { merge: true }); setLegalEditModal({ isOpen: false, type: '', content: '', title: '' }); setAppAlert(lang === 'ar' ? 'تم تحديث الصفحة بنجاح وحفظها في قاعدة البيانات!' : 'Page updated successfully!'); } catch(err) {} setIsUploading(false);
   };
 
   // Admin Banners
   const handleAddBanner = async () => {
-    if (!newBannerImage) { setAppAlert('يرجى اختيار صورة البنر الإعلاني أولاً.'); return; }
+    if (!newBannerImage) { setAppAlert(lang === 'ar' ? 'يرجى اختيار صورة البنر الإعلاني أولاً.' : 'Please select an ad banner image first.'); return; }
     setIsUploading(true);
     try {
        const formData = new FormData(); formData.append('image', newBannerImage);
@@ -475,11 +475,11 @@ export default function App() {
           const newBanner = { id: Date.now().toString(), imageUrl: url, link: newBannerLink };
           const updatedBanners = [...banners, newBanner];
           await setDoc(publicDoc('settings', 'banners'), { list: updatedBanners }, { merge: true });
-          setAppAlert('تم رفع البنر وإضافته بنجاح!');
+          setAppAlert(lang === 'ar' ? 'تم رفع البنر وإضافته بنجاح!' : 'Banner uploaded and added successfully!');
           setNewBannerImage(null);
           setNewBannerLink('');
        } else { throw new Error('Network error'); }
-    } catch(e) { console.error(e); setAppAlert('خطأ أثناء رفع البنر الإعلاني.'); }
+    } catch(e) { console.error(e); setAppAlert(lang === 'ar' ? 'خطأ أثناء رفع البنر الإعلاني.' : 'Error uploading banner.'); }
     setIsUploading(false);
   };
 
@@ -488,8 +488,8 @@ export default function App() {
     try {
        const updatedBanners = banners.filter(b => b.id !== bannerId);
        await setDoc(publicDoc('settings', 'banners'), { list: updatedBanners }, { merge: true });
-       setAppAlert('تم إزالة البنر بنجاح!');
-    } catch(e) { setAppAlert('خطأ أثناء إزالة البنر.'); }
+       setAppAlert(lang === 'ar' ? 'تم إزالة البنر بنجاح!' : 'Banner removed successfully!');
+    } catch(e) { setAppAlert(lang === 'ar' ? 'خطأ أثناء إزالة البنر.' : 'Error removing banner.'); }
     setIsUploading(false);
   };
 
@@ -504,7 +504,7 @@ export default function App() {
 
   // AD EDITING
   const saveAdEdit = async () => {
-    if (!adToEdit.title || !adToEdit.price) { setAppAlert('يرجى ملء العنوان والسعر.'); return; }
+    if (!adToEdit.title || !adToEdit.price) { setAppAlert(lang === 'ar' ? 'يرجى ملء العنوان والسعر.' : 'Please fill in title and price.'); return; }
     setIsUploading(true);
     try {
       const finalImageUrls = [...(adToEdit.images || [])];
@@ -519,7 +519,7 @@ export default function App() {
       }
       if (finalImageUrls.length === 0) finalImageUrls.push("https://images.unsplash.com/photo-1550355291-bbee04a92027?auto=format&fit=crop&q=80&w=800");
       await updateDoc(publicDoc('ads', adToEdit.id), { title: adToEdit.title, titleEn: adToEdit.title, price: adToEdit.price, category: adToEdit.category, description: adToEdit.description || '', images: finalImageUrls });
-      setAppAlert('تم تعديل الإعلان والصور بنجاح!'); setAdToEdit(null); setEditNewImages([]);
+      setAppAlert(lang === 'ar' ? 'تم تعديل الإعلان والصور بنجاح!' : 'Ad updated successfully!'); setAdToEdit(null); setEditNewImages([]);
     } catch (err) {} setIsUploading(false);
   };
 
@@ -527,14 +527,14 @@ export default function App() {
   const handleSignupSubmit = async () => {
     setSignupError(''); setIsUploading(true); 
     try {
-      if (!signupData.fullName || !signupData.displayName || !signupData.email || !signupData.phone || !signupData.password) throw new Error('يرجى ملء كافة البيانات');
-      if (signupData.password !== signupData.confirmPassword) throw new Error('كلمات المرور غير متطابقة');
-      if (!receiptUploaded || !receiptFile) throw new Error('يرجى إرفاق صورة إيصال الدفع للتحقق');
+      if (!signupData.fullName || !signupData.displayName || !signupData.email || !signupData.phone || !signupData.password) throw new Error(lang === 'ar' ? 'يرجى ملء كافة البيانات' : 'Please fill all fields');
+      if (signupData.password !== signupData.confirmPassword) throw new Error(lang === 'ar' ? 'كلمات المرور غير متطابقة' : 'Passwords do not match');
+      if (!receiptUploaded || !receiptFile) throw new Error(lang === 'ar' ? 'يرجى إرفاق صورة إيصال الدفع للتحقق' : 'Please attach the payment receipt to verify');
 
       const cleanEmail = signupData.email.trim().toLowerCase();
       const cleanPhone = signupData.phone.trim();
-      if (allProfiles.some(p => p.email === cleanEmail)) throw new Error('البريد الإلكتروني مستخدم بالفعل');
-      if (allProfiles.some(p => p.phone === cleanPhone)) throw new Error('رقم الهاتف مستخدم بالفعل');
+      if (allProfiles.some(p => p.email === cleanEmail)) throw new Error(lang === 'ar' ? 'البريد الإلكتروني مستخدم بالفعل' : 'Email already in use');
+      if (allProfiles.some(p => p.phone === cleanPhone)) throw new Error(lang === 'ar' ? 'رقم الهاتف مستخدم بالفعل' : 'Phone number already in use');
 
       let photoUrl = null;
       if (signupProfileImage) {
@@ -546,14 +546,14 @@ export default function App() {
       let receiptUrl = '';
       const formData = new FormData(); formData.append('image', receiptFile);
       const imgbbResponse = await fetch('https://api.imgbb.com/1/upload?key=8c8cec8f9ee7b67db88ba5799154c94d', { method: 'POST', body: formData });
-      if (imgbbResponse.ok) { receiptUrl = (await imgbbResponse.json()).data.url; } else { throw new Error('حدث خطأ بالشبكة'); }
+      if (imgbbResponse.ok) { receiptUrl = (await imgbbResponse.json()).data.url; } else { throw new Error(lang === 'ar' ? 'حدث خطأ بالشبكة' : 'Network error'); }
 
       const newUid = fbUser ? fbUser.uid : Date.now().toString(); 
       const newProfile = { uid: newUid, fullName: signupData.fullName, displayName: signupData.displayName, email: cleanEmail, phone: cleanPhone, password: signupData.password, subscriptionStatus: 'Pending', createdAt: new Date().toISOString(), receiptUrl: receiptUrl, photoUrl: photoUrl, coverUrl: null, bio: '', facebookUrl: '', youtubeUrl: '', instagramUrl: '', snapchatUrl: '', tiktokUrl: '', isBanned: false };
       await setDoc(publicDoc('users', newUid), newProfile); 
       await setDoc(publicDoc('profiles', newUid), newProfile);
-      setAppAlert('تم إرسال طلبك بنجاح! بانتظار المراجعة.'); setTimeout(() => { window.location.reload(); }, 3500);
-    } catch (error) { setSignupError(error.message || 'حدث خطأ أثناء التسجيل'); } finally { setIsUploading(false); }
+      setAppAlert(lang === 'ar' ? 'تم إرسال طلبك بنجاح! بانتظار المراجعة.' : 'Request sent successfully! Pending review.'); setTimeout(() => { window.location.reload(); }, 3500);
+    } catch (error) { setSignupError(error.message || (lang === 'ar' ? 'حدث خطأ أثناء التسجيل' : 'Registration error')); } finally { setIsUploading(false); }
   };
 
   const handleRenewSubmit = async () => {
@@ -565,21 +565,21 @@ export default function App() {
           const url = (await res.json()).data.url;
           await updateDoc(publicDoc('users', userProfile.uid), { subscriptionStatus: 'Pending', receiptUrl: url });
           await updateDoc(publicDoc('profiles', userProfile.uid), { subscriptionStatus: 'Pending', receiptUrl: url });
-          setAppAlert('تم إرسال طلب التجديد بنجاح!'); setShowRenewModal(false); setUserProfile({...userProfile, subscriptionStatus: 'Pending', receiptUrl: url});
+          setAppAlert(lang === 'ar' ? 'تم إرسال طلب التجديد بنجاح!' : 'Renewal request sent successfully!'); setShowRenewModal(false); setUserProfile({...userProfile, subscriptionStatus: 'Pending', receiptUrl: url});
        }
     } catch(e) {} setIsUploading(false);
   };
 
   const handleLoginSubmit = async () => {
     setLoginError('');
-    if (!loginData.identifier || !loginData.password) { setLoginError('يرجى إدخال البيانات'); return; }
+    if (!loginData.identifier || !loginData.password) { setLoginError(lang === 'ar' ? 'يرجى إدخال البيانات' : 'Please enter credentials'); return; }
     try {
       const searchIdentifier = loginData.identifier.trim().toLowerCase();
       const foundUser = allProfiles.filter(p => p.email === searchIdentifier || p.phone === loginData.identifier.trim())
                                    .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
 
       if (foundUser) {
-        if (foundUser.isBanned) { setLoginError('عذراً، هذا الحساب تم حظره من الإدارة.'); return; }
+        if (foundUser.isBanned) { setLoginError(lang === 'ar' ? 'عذراً، هذا الحساب تم حظره من الإدارة.' : 'Account is banned by administration.'); return; }
         if (foundUser.password === loginData.password) { 
            
            if (rememberMe) {
@@ -592,16 +592,16 @@ export default function App() {
            setIsAppLoggedIn(true); 
            setLoginData({ identifier: '', password: '' }); 
            navigateTo('landing');
-        } else { setLoginError('كلمة المرور غير صحيحة'); }
+        } else { setLoginError(lang === 'ar' ? 'كلمة المرور غير صحيحة' : 'Incorrect Password'); }
       } else { 
-        setLoginError('الحساب غير موجود! هل قمت بإنشاء حساب من صفحة "اشتراك"؟'); 
+        setLoginError(lang === 'ar' ? 'الحساب غير موجود! هل قمت بإنشاء حساب من صفحة "اشتراك"؟' : 'Account not found! Did you register?'); 
       }
-    } catch (error) { setLoginError('حدث خطأ غير متوقع'); console.error(error); }
+    } catch (error) { setLoginError(lang === 'ar' ? 'حدث خطأ غير متوقع' : 'Unexpected error'); console.error(error); }
   };
 
   const handlePasswordReset = async () => {
     setResetError(''); setResetSuccess('');
-    if (!resetData.email || !resetData.phone || !resetData.newPassword) { setResetError('يرجى ملء كافة البيانات'); return; }
+    if (!resetData.email || !resetData.phone || !resetData.newPassword) { setResetError(lang === 'ar' ? 'يرجى ملء كافة البيانات' : 'Please fill all fields'); return; }
     try {
       const foundUser = allProfiles.find(p => p.email === resetData.email && p.phone === resetData.phone);
 
@@ -609,9 +609,9 @@ export default function App() {
         const uid = foundUser.uid;
         await updateDoc(publicDoc('users', uid), { password: resetData.newPassword }); 
         await updateDoc(publicDoc('profiles', uid), { password: resetData.newPassword });
-        setResetSuccess('تم تغيير كلمة المرور بنجاح!'); setTimeout(() => { setActiveView('login'); setResetData({ email: '', phone: '', newPassword: '' }); setResetSuccess(''); }, 3000);
-      } else { setResetError('البيانات غير صحيحة'); }
-    } catch (error) { setResetError('حدث خطأ'); console.error(error); }
+        setResetSuccess(lang === 'ar' ? 'تم تغيير كلمة المرور بنجاح!' : 'Password changed successfully!'); setTimeout(() => { setActiveView('login'); setResetData({ email: '', phone: '', newPassword: '' }); setResetSuccess(''); }, 3000);
+      } else { setResetError(lang === 'ar' ? 'البيانات غير صحيحة' : 'Invalid Data'); }
+    } catch (error) { setResetError(lang === 'ar' ? 'حدث خطأ' : 'Error occurred'); console.error(error); }
   };
 
   const handleLogout = () => { setIsAppLoggedIn(false); setUserProfile(null); setOpenChatIds([]); setActiveChatId(null); navigateTo('login'); };
@@ -623,9 +623,9 @@ export default function App() {
        await setDoc(publicDoc('complaints', Date.now().toString()), {
           senderId: userProfile.uid, senderName: userProfile.displayName, text: complaintText, createdAt: Date.now(), phone: userProfile.phone
        });
-       setAppAlert('تم إرسال رسالتك للإدارة بنجاح. شكراً لتواصلك معنا.');
+       setAppAlert(lang === 'ar' ? 'تم إرسال رسالتك للإدارة بنجاح. شكراً لتواصلك معنا.' : 'Your message has been sent to admin successfully. Thank you.');
        setComplaintText(''); setShowComplaintModal(false);
-    } catch (err) { console.error(err); setAppAlert('حدث خطأ. تأكد من إعدادات الـ Rules.'); }
+    } catch (err) { console.error(err); setAppAlert(lang === 'ar' ? 'حدث خطأ. تأكد من إعدادات الـ Rules.' : 'Error occurred.'); }
     setIsUploading(false);
   };
 
@@ -633,9 +633,9 @@ export default function App() {
     if (!broadcastText.trim()) return;
     setConfirmModal({
       isOpen: true,
-      title: 'تأكيد الإرسال الجماعي',
-      message: `سيتم إرسال هذه الرسالة إلى ${allProfiles.length} مشترك مسجل. هل أنت متأكد؟`,
-      confirmText: 'نعم، إرسال للجميع',
+      title: lang === 'ar' ? 'تأكيد الإرسال الجماعي' : 'Confirm Broadcast',
+      message: lang === 'ar' ? `سيتم إرسال هذه الرسالة إلى ${allProfiles.length} مشترك مسجل. هل أنت متأكد؟` : `Message will be sent to ${allProfiles.length} registered members. Are you sure?`,
+      confirmText: lang === 'ar' ? 'نعم، إرسال للجميع' : 'Yes, Broadcast',
       type: 'warning',
       onConfirm: async () => {
         setConfirmModal({ ...confirmModal, isOpen: false });
@@ -667,7 +667,7 @@ export default function App() {
             } else {
               await setDoc(chatRef, {
                 adId: 'system_admin',
-                adTitle: 'رسالة إدارية',
+                adTitle: lang === 'ar' ? 'رسالة إدارية' : 'System Message',
                 participants: [userProfile.uid, profile.uid],
                 buyerId: profile.uid,
                 sellerId: userProfile.uid,
@@ -677,11 +677,11 @@ export default function App() {
             }
             sentCount++;
           }
-          setAppAlert(`تم إرسال الرسالة بنجاح إلى ${sentCount} مشترك.`);
+          setAppAlert(lang === 'ar' ? `تم إرسال الرسالة بنجاح إلى ${sentCount} مشترك.` : `Broadcast sent successfully to ${sentCount} members.`);
           setBroadcastText('');
         } catch (err) {
           console.error(err);
-          setAppAlert('حدث خطأ أثناء الإرسال الجماعي.');
+          setAppAlert(lang === 'ar' ? 'حدث خطأ أثناء الإرسال الجماعي.' : 'Error during broadcast.');
         }
         setIsUploading(false);
       }
@@ -689,12 +689,12 @@ export default function App() {
   };
 
   const openChat = async (adOrProfileId, titleFallback) => {
-    if (!isAppLoggedIn || !userProfile) { setAppAlert('يرجى تسجيل الدخول أولاً.'); return; }
+    if (!isAppLoggedIn || !userProfile) { setAppAlert(lang === 'ar' ? 'يرجى تسجيل الدخول أولاً.' : 'Please login first.'); return; }
     const targetSellerId = typeof adOrProfileId === 'object' ? adOrProfileId.sellerId : adOrProfileId;
     const targetTitle = typeof adOrProfileId === 'object' ? adOrProfileId.title : titleFallback;
     const adIdRef = typeof adOrProfileId === 'object' ? adOrProfileId.id : `direct_${targetSellerId}`;
 
-    if (userProfile.uid === targetSellerId) { setAppAlert('لا يمكنك مراسلة نفسك!'); return; }
+    if (userProfile.uid === targetSellerId) { setAppAlert(lang === 'ar' ? 'لا يمكنك مراسلة نفسك!' : 'You cannot message yourself!'); return; }
     
     const chatId = `${adIdRef}_${userProfile.uid}_${targetSellerId}`;
     const existingChat = globalChats.find(c => c.id === chatId);
@@ -755,8 +755,8 @@ export default function App() {
       };
       await updateDoc(publicDoc('users', userProfile.uid), updatedProfile); 
       await updateDoc(publicDoc('profiles', userProfile.uid), updatedProfile); 
-      setUserProfile(updatedProfile); setAppAlert('تم تحديث الملف الشخصي بنجاح!'); setShowSettingsModal(false);
-    } catch (error) { setAppAlert('خطأ أثناء تحديث الملف الشخصي.'); } finally { setIsUploading(false); }
+      setUserProfile(updatedProfile); setAppAlert(lang === 'ar' ? 'تم تحديث الملف الشخصي بنجاح!' : 'Profile updated successfully!'); setShowSettingsModal(false);
+    } catch (error) { setAppAlert(lang === 'ar' ? 'خطأ أثناء تحديث الملف الشخصي.' : 'Error updating profile.'); } finally { setIsUploading(false); }
   };
 
   const viewAdDetails = async (ad) => {
@@ -797,9 +797,10 @@ export default function App() {
               <div className="absolute inset-0 bg-gradient-to-br from-[#111827] via-gray-800 to-black"></div>
               <Filter className="relative z-10 text-emerald-400 drop-shadow-2xl" size={64} strokeWidth={2.5} />
            </div>
-           <h1 className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 mb-6 animate-pulse">فلتر إيجيبت</h1>
-           <p className="text-gray-300 text-lg md:text-xl font-bold tracking-wide text-center max-w-lg px-6 leading-relaxed opacity-90">
-             المنصة الأولى لبيع وشراء الفلاتر وقطع الغيار في مصر.<br/>تواصل، بيع، واشتري بسهولة وأمان تام.
+           <h1 className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 mb-6 animate-pulse">
+              {lang === 'ar' ? 'فلتر إيجيبت' : 'Filter Egypt'}
+           </h1>
+           <p className="text-gray-300 text-lg md:text-xl font-bold tracking-wide text-center max-w-lg px-6 leading-relaxed opacity-90" dangerouslySetInnerHTML={{ __html: lang === 'ar' ? 'المنصة الأولى لبيع وشراء الفلاتر وقطع الغيار في مصر.<br/>تواصل، بيع، واشتري بسهولة وأمان تام.' : 'The leading platform for buying and selling water filters and spare parts in Egypt.<br/>Connect, buy, and sell easily and safely.' }}>
            </p>
            <div className="mt-12 flex items-center gap-2">
               <div className="w-3 h-3 bg-emerald-500 rounded-full animate-ping"></div>
@@ -825,13 +826,13 @@ export default function App() {
         ))}
       </div>
 
-      {isUploading && ( <div className="fixed inset-0 z-[1100] bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-4 animate-fade-in"><Loader className="text-emerald-500 animate-spin mb-4" size={64} /><h2 className="text-xl font-bold text-white mb-2">جاري معالجة البيانات...</h2></div> )}
+      {isUploading && ( <div className="fixed inset-0 z-[1100] bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-4 animate-fade-in"><Loader className="text-emerald-500 animate-spin mb-4" size={64} /><h2 className="text-xl font-bold text-white mb-2">{lang === 'ar' ? 'جاري معالجة البيانات...' : 'Processing Data...'}</h2></div> )}
       {appAlert && (
         <div className="fixed inset-0 z-[1100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
           <div className={`${cardBg} border border-emerald-500/50 rounded-3xl p-8 max-w-sm w-full relative shadow-2xl text-center`}>
             <div className="w-16 h-16 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-4"><Info size={32} /></div>
-            <h3 className="text-xl font-bold text-white mb-2">إشعار النظام</h3><p className="text-gray-300 text-sm mb-6 leading-relaxed">{appAlert}</p>
-            <button onClick={() => setAppAlert(null)} className={`w-full ${accentBg} text-white font-bold rounded-xl py-3`}>حسناً، فهمت</button>
+            <h3 className="text-xl font-bold text-white mb-2">{lang === 'ar' ? 'إشعار النظام' : 'System Alert'}</h3><p className="text-gray-300 text-sm mb-6 leading-relaxed">{appAlert}</p>
+            <button onClick={() => setAppAlert(null)} className={`w-full ${accentBg} text-white font-bold rounded-xl py-3`}>{lang === 'ar' ? 'حسناً، فهمت' : 'Got it'}</button>
           </div>
         </div>
       )}
@@ -840,7 +841,7 @@ export default function App() {
           <div className="bg-[#1f2937] rounded-3xl p-6 w-full max-w-sm text-center relative shadow-2xl border border-gray-700">
              <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${confirmModal.type === 'danger' ? 'bg-red-500/20 text-red-500' : 'bg-emerald-500/20 text-emerald-400'}`}><AlertTriangle size={32} /></div>
              <h3 className="text-xl font-bold mb-2 text-white">{confirmModal.title}</h3><p className="text-gray-400 mb-6 text-sm">{confirmModal.message}</p>
-             <div className="flex gap-4"><button onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })} className="flex-1 bg-gray-700 text-white py-3 rounded-xl font-bold hover:bg-gray-600 transition-colors">{confirmModal.cancelText || 'إلغاء'}</button><button onClick={confirmModal.onConfirm} className={`flex-1 text-white py-3 rounded-xl font-bold transition-colors ${confirmModal.type === 'danger' ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-500 hover:bg-emerald-600'}`}>{confirmModal.confirmText || 'تأكيد'}</button></div>
+             <div className="flex gap-4"><button onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })} className="flex-1 bg-gray-700 text-white py-3 rounded-xl font-bold hover:bg-gray-600 transition-colors">{confirmModal.cancelText || (lang === 'ar' ? 'إلغاء' : 'Cancel')}</button><button onClick={confirmModal.onConfirm} className={`flex-1 text-white py-3 rounded-xl font-bold transition-colors ${confirmModal.type === 'danger' ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-500 hover:bg-emerald-600'}`}>{confirmModal.confirmText || (lang === 'ar' ? 'تأكيد' : 'Confirm')}</button></div>
           </div>
         </div>
       )}
@@ -892,22 +893,22 @@ export default function App() {
         <div className="fixed inset-0 z-[1000] bg-black/90 flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-[#1f2937] rounded-3xl p-8 w-full max-w-md relative shadow-2xl border border-gray-700">
              <button onClick={() => setShowComplaintModal(false)} className="absolute top-4 left-4 text-gray-400 hover:text-white"><X/></button>
-             <h3 className="text-2xl font-bold mb-4 text-emerald-400 text-center flex items-center justify-center gap-2"><MessageCircleWarning size={28}/> تواصل مع الإدارة</h3>
-             <p className="text-center text-gray-400 mb-6 text-sm">اكتب اقتراحك أو الشكوى الخاصة بك، أو تواصل معنا مباشرة عبر واتساب وسيقوم الدعم الفني بمراجعتها بأقرب وقت.</p>
+             <h3 className="text-2xl font-bold mb-4 text-emerald-400 text-center flex items-center justify-center gap-2"><MessageCircleWarning size={28}/> {lang === 'ar' ? 'تواصل مع الإدارة' : 'Contact Admin'}</h3>
+             <p className="text-center text-gray-400 mb-6 text-sm">{lang === 'ar' ? 'اكتب اقتراحك أو الشكوى الخاصة بك، أو تواصل معنا مباشرة عبر واتساب وسيقوم الدعم الفني بمراجعتها بأقرب وقت.' : 'Write your suggestion or complaint, or contact us directly via WhatsApp and our support team will review it.'}</p>
              
              {/* WhatsApp Button */}
              <a href="https://wa.me/201024059955" target="_blank" rel="noreferrer" className="w-full bg-[#25D366] text-white font-bold py-3 rounded-xl hover:bg-[#20bd5a] transition-colors shadow-lg flex items-center justify-center gap-2 mb-6">
-                <MessageCircle size={22} /> تواصل معنا عبر واتساب
+                <MessageCircle size={22} /> {lang === 'ar' ? 'تواصل معنا عبر واتساب' : 'Contact via WhatsApp'}
              </a>
 
              <div className="flex items-center gap-4 mb-4">
                 <div className="h-px bg-gray-700 flex-1"></div>
-                <span className="text-gray-500 text-xs font-bold">أو أرسل رسالة داخلية</span>
+                <span className="text-gray-500 text-xs font-bold">{lang === 'ar' ? 'أو أرسل رسالة داخلية' : 'Or send internal message'}</span>
                 <div className="h-px bg-gray-700 flex-1"></div>
              </div>
 
-             <textarea rows="4" value={complaintText} onChange={e => setComplaintText(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-4 text-white outline-none focus:border-emerald-500 resize-none mb-4 custom-scrollbar" placeholder="اكتب رسالتك هنا..."></textarea>
-             <button onClick={submitComplaint} className="w-full bg-emerald-500 text-white font-bold py-3 rounded-xl hover:bg-emerald-600 transition-colors shadow-lg">إرسال الرسالة للإدارة</button>
+             <textarea rows="4" value={complaintText} onChange={e => setComplaintText(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-4 text-white outline-none focus:border-emerald-500 resize-none mb-4 custom-scrollbar" placeholder={lang === 'ar' ? 'اكتب رسالتك هنا...' : 'Write your message here...'}></textarea>
+             <button onClick={submitComplaint} className="w-full bg-emerald-500 text-white font-bold py-3 rounded-xl hover:bg-emerald-600 transition-colors shadow-lg">{lang === 'ar' ? 'إرسال الرسالة للإدارة' : 'Send Message to Admin'}</button>
           </div>
         </div>
       )}
@@ -923,13 +924,13 @@ export default function App() {
                <div><label className="block text-gray-400 text-sm mb-1">{lang === 'ar' ? 'عنوان الإعلان' : 'Ad Title'}</label><input type="text" value={adToEdit.title} onChange={e => setAdToEdit({...adToEdit, title: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500" /></div>
                <div><label className="block text-gray-400 text-sm mb-1">{lang === 'ar' ? 'السعر (ج.م)' : 'Price (EGP)'}</label><input type="text" value={adToEdit.price} onChange={e => setAdToEdit({...adToEdit, price: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500" /></div>
                <div><label className="block text-gray-400 text-sm mb-1">{lang === 'ar' ? 'القسم' : 'Category'}</label><select value={adToEdit.category || categories[0]} onChange={e => setAdToEdit({...adToEdit, category: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500 cursor-pointer">{categories.map(cat => <option key={cat} value={cat}>{translateCategory(cat, lang)}</option>)}</select></div>
-               <div><label className="block text-gray-400 text-sm mb-1">{lang === 'ar' ? 'وصف الإعلان والمواصفات' : 'Ad Description'}</label><textarea rows="4" value={adToEdit.description || ''} onChange={e => setAdToEdit({...adToEdit, description: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500 resize-none custom-scrollbar" placeholder="اكتب التفاصيل هنا..."></textarea></div>
+               <div><label className="block text-gray-400 text-sm mb-1">{lang === 'ar' ? 'وصف الإعلان والمواصفات' : 'Ad Description'}</label><textarea rows="4" value={adToEdit.description || ''} onChange={e => setAdToEdit({...adToEdit, description: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500 resize-none custom-scrollbar" placeholder={lang === 'ar' ? "اكتب التفاصيل هنا..." : "Write details here..."}></textarea></div>
                <div>
                  <label className="block text-gray-400 text-sm mb-2">{lang === 'ar' ? 'صور الإعلان (حذف أو إضافة)' : 'Ad Images (Remove or Add)'}</label>
                  <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
                     {adToEdit.images?.map((url, idx) => ( <div key={`old-${idx}`} className="relative w-20 h-20 rounded-xl overflow-hidden shrink-0 border border-gray-600 group"><img src={url} alt="Old Ad" className="w-full h-full object-cover" /><button onClick={() => setAdToEdit({...adToEdit, images: adToEdit.images.filter((_, i) => i !== idx)})} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-90 hover:opacity-100 transition-opacity"><X size={12}/></button></div> ))}
                     {editNewImages.map((imgObj, idx) => ( <div key={`new-${idx}`} className="relative w-20 h-20 rounded-xl overflow-hidden shrink-0 border-2 border-emerald-500/50"><img src={imgObj.preview} alt="New Upload" className="w-full h-full object-cover" /><button onClick={() => setEditNewImages(prev => prev.filter((_, i) => i !== idx))} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1"><X size={12}/></button></div> ))}
-                    <label className="cursor-pointer bg-[#111827] flex flex-col items-center justify-center w-20 h-20 shrink-0 rounded-xl border border-dashed border-gray-600 hover:border-emerald-500 text-gray-500 hover:text-emerald-400 transition-colors"><Plus size={24} /><span className="text-[10px] mt-1 font-bold">إضافة صورة</span><input type="file" multiple className="hidden" onChange={(e) => { if (e.target.files && e.target.files.length > 0) { setEditNewImages(prev => [...prev, ...Array.from(e.target.files).map(file => ({ file, preview: URL.createObjectURL(file) }))]); } }} accept="image/*" /></label>
+                    <label className="cursor-pointer bg-[#111827] flex flex-col items-center justify-center w-20 h-20 shrink-0 rounded-xl border border-dashed border-gray-600 hover:border-emerald-500 text-gray-500 hover:text-emerald-400 transition-colors"><Plus size={24} /><span className="text-[10px] mt-1 font-bold">{lang === 'ar' ? 'إضافة صورة' : 'Add Image'}</span><input type="file" multiple className="hidden" onChange={(e) => { if (e.target.files && e.target.files.length > 0) { setEditNewImages(prev => [...prev, ...Array.from(e.target.files).map(file => ({ file, preview: URL.createObjectURL(file) }))]); } }} accept="image/*" /></label>
                  </div>
                </div>
                <button onClick={saveAdEdit} className="w-full bg-emerald-500 text-white font-bold py-4 rounded-xl hover:bg-emerald-600 mt-6 transition-colors shadow-lg shadow-emerald-500/20">{lang === 'ar' ? 'حفظ التعديلات' : 'Save Changes'}</button>
@@ -943,10 +944,10 @@ export default function App() {
         <div className="fixed inset-0 z-[1000] bg-black/90 flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-[#1f2937] rounded-3xl p-8 w-full max-w-md relative shadow-2xl border border-gray-700">
              <button onClick={() => setShowRenewModal(false)} className="absolute top-4 left-4 text-gray-400 hover:text-white"><X/></button>
-             <h3 className="text-2xl font-bold mb-6 text-emerald-400 text-center">تجديد الاشتراك الشهري</h3>
-             <p className="text-center text-gray-300 mb-6 text-sm leading-relaxed">يرجى تحويل رسوم التجديد (10 جنيه داخل مصر، أو 1 دولار من الخارج) وإرفاق الإيصال هنا ليتم تفعيل حسابك مرة أخرى.</p>
-             <label className="border border-dashed border-gray-600 p-6 rounded-xl text-center cursor-pointer block text-gray-400 hover:border-emerald-500 transition-colors mb-6"><Upload className="mx-auto mb-2" /> {renewFile ? 'تم اختيار إيصال التجديد بنجاح' : 'إرفاق إيصال التجديد'}<input type="file" className="hidden" accept="image/*" onChange={(e) => { if(e.target.files[0]) { setRenewFile(e.target.files[0]); } }} /></label>
-             <button onClick={handleRenewSubmit} className="w-full bg-emerald-500 text-white font-bold py-4 rounded-xl hover:bg-emerald-600 transition-colors shadow-lg">إرسال طلب التجديد</button>
+             <h3 className="text-2xl font-bold mb-6 text-emerald-400 text-center">{lang === 'ar' ? 'تجديد الاشتراك الشهري' : 'Renew Monthly Subscription'}</h3>
+             <p className="text-center text-gray-300 mb-6 text-sm leading-relaxed">{lang === 'ar' ? 'يرجى تحويل رسوم التجديد (10 جنيه داخل مصر، أو 1 دولار من الخارج) وإرفاق الإيصال هنا ليتم تفعيل حسابك مرة أخرى.' : 'Please transfer the renewal fee (10 EGP inside Egypt, or $1 from abroad) and attach the receipt here to reactivate your account.'}</p>
+             <label className="border border-dashed border-gray-600 p-6 rounded-xl text-center cursor-pointer block text-gray-400 hover:border-emerald-500 transition-colors mb-6"><Upload className="mx-auto mb-2" /> {renewFile ? (lang === 'ar' ? 'تم اختيار إيصال التجديد بنجاح' : 'Renewal receipt selected successfully') : (lang === 'ar' ? 'إرفاق إيصال التجديد' : 'Attach Renewal Receipt')}<input type="file" className="hidden" accept="image/*" onChange={(e) => { if(e.target.files[0]) { setRenewFile(e.target.files[0]); } }} /></label>
+             <button onClick={handleRenewSubmit} className="w-full bg-emerald-500 text-white font-bold py-4 rounded-xl hover:bg-emerald-600 transition-colors shadow-lg">{lang === 'ar' ? 'إرسال طلب التجديد' : 'Submit Renewal Request'}</button>
           </div>
         </div>
       )}
@@ -998,11 +999,11 @@ export default function App() {
                   {showInbox && (
                     <div className="absolute left-0 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 mt-3 w-72 bg-[#1f2937] border border-gray-700 rounded-2xl shadow-2xl z-50 p-2 animate-fade-in max-h-96 overflow-y-auto custom-scrollbar">
                        <h4 className="text-sm font-bold text-gray-400 mb-2 px-3 border-b border-gray-700 pb-3 mt-2">{lang === 'ar' ? 'الرسائل (صندوق الوارد)' : 'Inbox'}</h4>
-                       {myActiveChats.length === 0 ? (<p className="text-xs text-gray-500 text-center py-6">لا توجد محادثات سابقة</p>) : (
+                       {myActiveChats.length === 0 ? (<p className="text-xs text-gray-500 text-center py-6">{lang === 'ar' ? 'لا توجد محادثات سابقة' : 'No previous chats'}</p>) : (
                           myActiveChats.map(c => (
                              <div key={c.id} onClick={() => { if (!openChatIds.includes(c.id)) setOpenChatIds(prev => [...prev, c.id]); setActiveChatId(c.id); setShowInbox(false); }} className="p-3 hover:bg-gray-800 rounded-xl cursor-pointer flex items-center gap-3 transition-colors">
                                 <div className="w-10 h-10 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center shrink-0"><User size={18} /></div>
-                                <div className="flex-1 overflow-hidden" dir={lang === 'ar' ? 'rtl' : 'ltr'}><p className="text-sm text-white font-bold truncate">{c.adTitle}</p><p className="text-xs text-gray-400 truncate">{c.messages?.[c.messages.length - 1]?.text || 'بدء المحادثة...'}</p></div>
+                                <div className="flex-1 overflow-hidden" dir={lang === 'ar' ? 'rtl' : 'ltr'}><p className="text-sm text-white font-bold truncate">{lang === 'ar' ? c.adTitle : (c.adTitleEn || c.adTitle)}</p><p className="text-xs text-gray-400 truncate">{c.messages?.[c.messages.length - 1]?.text || (lang === 'ar' ? 'بدء المحادثة...' : 'Start chat...')}</p></div>
                              </div>
                           ))
                        )}
@@ -1015,15 +1016,15 @@ export default function App() {
                   </button>
                   {showNotifications && (
                     <div className="absolute left-0 sm:right-0 mt-3 w-72 bg-[#1f2937] border border-gray-700 rounded-2xl shadow-2xl z-50 p-2 animate-fade-in">
-                       <h4 className="text-sm font-bold text-gray-400 mb-2 px-3 border-b border-gray-700 pb-3 mt-2">الإشعارات الجديدة</h4>
+                       <h4 className="text-sm font-bold text-gray-400 mb-2 px-3 border-b border-gray-700 pb-3 mt-2">{lang === 'ar' ? 'الإشعارات الجديدة' : 'New Notifications'}</h4>
                        {globalChats.filter(c => unreadCounts[c.id] > 0).map(c => (
                           <div key={c.id} onClick={() => { if (!openChatIds.includes(c.id)) setOpenChatIds(prev => [...prev, c.id]); setActiveChatId(c.id); setShowNotifications(false); }} className="p-3 hover:bg-gray-800 rounded-xl cursor-pointer flex items-center gap-3 transition-colors">
                             <div className="w-10 h-10 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center shrink-0"><MessageSquare size={18} /></div>
-                            <div className="flex-1 overflow-hidden"><p className="text-sm text-white font-bold">رسالة جديدة</p><p className="text-xs text-gray-400 truncate w-full">{c.adTitle}</p></div>
+                            <div className="flex-1 overflow-hidden"><p className="text-sm text-white font-bold">{lang === 'ar' ? 'رسالة جديدة' : 'New Message'}</p><p className="text-xs text-gray-400 truncate w-full">{lang === 'ar' ? c.adTitle : (c.adTitleEn || c.adTitle)}</p></div>
                             <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-full">{unreadCounts[c.id]}</span>
                           </div>
                        ))}
-                       {totalUnread === 0 && <p className="text-xs text-gray-500 text-center py-6">لا توجد إشعارات جديدة</p>}
+                       {totalUnread === 0 && <p className="text-xs text-gray-500 text-center py-6">{lang === 'ar' ? 'لا توجد إشعارات جديدة' : 'No new notifications'}</p>}
                     </div>
                   )}
                </div>
@@ -1033,12 +1034,12 @@ export default function App() {
           {isAppLoggedIn ? (
              <div className="flex items-center gap-3">
                {userProfile?.subscriptionStatus === 'Pending' ? (
-                 <span className="text-yellow-500 font-bold text-xs md:text-sm hidden sm:flex bg-yellow-500/10 px-3 py-1.5 rounded-full border border-yellow-500/20 items-center gap-1.5"><AlertTriangle size={14} className="animate-pulse" /> قيد المراجعة</span>
+                 <span className="text-yellow-500 font-bold text-xs md:text-sm hidden sm:flex bg-yellow-500/10 px-3 py-1.5 rounded-full border border-yellow-500/20 items-center gap-1.5"><AlertTriangle size={14} className="animate-pulse" /> {lang === 'ar' ? 'قيد المراجعة' : 'Pending Review'}</span>
                ) : (
                  // --- HEADER PROFILE LINK ---
                  <button onClick={() => { setViewedProfile(userProfile); navigateTo('user-profile'); }} className="text-emerald-400 font-bold text-xs md:text-sm hidden sm:flex bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors px-3 py-1.5 rounded-full border border-emerald-500/20 items-center gap-2 cursor-pointer group">
                    {userProfile?.photoUrl ? <img src={userProfile.photoUrl} alt="profile" className="w-6 h-6 rounded-full object-cover group-hover:scale-110 transition-transform" /> : <AvatarFallback size={24} />} 
-                   <span className="group-hover:text-emerald-300 transition-colors">{userProfile?.displayName || 'مستخدم'}</span>
+                   <span className="group-hover:text-emerald-300 transition-colors">{userProfile?.displayName || (lang === 'ar' ? 'مستخدم' : 'User')}</span>
                  </button>
                )}
                <button onClick={handleLogout} className="text-red-400 hover:text-red-500 hover:bg-red-500/10 px-3 py-1.5 rounded-lg text-xs md:text-sm font-bold">{lang === 'ar' ? 'خروج' : 'Logout'}</button>
@@ -1056,8 +1057,18 @@ export default function App() {
         
         {activeView === 'landing' && (
           <div className="w-full animate-fade-in flex flex-col items-center mt-6">
-            <h2 className="text-3xl md:text-5xl font-bold mb-5 leading-tight text-center">مجتمع حصري <span className={accentColor}>للأعضاء فقط</span></h2>
-            <p className="text-gray-400 text-base md:text-lg mb-12 max-w-2xl leading-relaxed text-center">بيئة مميزة للجودة والثقة باشتراك رمزي (10 جنيهات داخل مصر، أو 1 دولار للمقيمين بالخارج شهرياً). بيع وشراء بأمان بعيداً عن فوضى السوق والتشتت.</p>
+            <h2 className="text-3xl md:text-5xl font-bold mb-5 leading-tight text-center">
+              {lang === 'ar' ? (
+                <>مجتمع حصري <span className={accentColor}>للأعضاء فقط</span></>
+              ) : (
+                <>Exclusive Community for <span className={accentColor}>Members Only</span></>
+              )}
+            </h2>
+            <p className="text-gray-400 text-base md:text-lg mb-12 max-w-2xl leading-relaxed text-center">
+              {lang === 'ar' 
+                ? 'بيئة مميزة للجودة والثقة باشتراك رمزي (10 جنيهات داخل مصر، أو 1 دولار للمقيمين بالخارج شهرياً). بيع وشراء بأمان بعيداً عن فوضى السوق والتشتت.' 
+                : 'A premium environment for quality and trust with a nominal subscription (10 EGP inside Egypt, or $1 for expats monthly). Buy and sell safely away from market chaos.'}
+            </p>
             <div className="flex flex-col md:flex-row gap-6 w-full max-w-2xl justify-center">
               <div onClick={() => isAppLoggedIn ? setActiveView('seller') : navigateTo('login')} className={`${cardBg} flex-1 p-8 rounded-3xl border border-gray-700 hover:border-emerald-500 cursor-pointer group flex flex-col items-center gap-4`}>
                 <div className="w-16 h-16 rounded-full bg-gray-800 group-hover:bg-emerald-500/20 flex items-center justify-center"><Store className="text-gray-400 group-hover:text-emerald-400" size={32} /></div>
@@ -1076,7 +1087,7 @@ export default function App() {
               <div className="w-full mt-16 animate-fade-in">
                  <div className="flex items-center justify-center gap-2 mb-6">
                     <div className="h-px bg-gray-800 flex-1"></div>
-                    <span className="text-gray-500 text-sm font-bold bg-[#111827] px-4">مساحات إعلانية مميزة</span>
+                    <span className="text-gray-500 text-sm font-bold bg-[#111827] px-4">{lang === 'ar' ? 'مساحات إعلانية مميزة' : 'Featured Ad Spaces'}</span>
                     <div className="h-px bg-gray-800 flex-1"></div>
                  </div>
                  <div className="flex flex-col gap-6 w-full">
@@ -1105,17 +1116,19 @@ export default function App() {
           {activeView === 'seller' && userProfile?.subscriptionStatus === 'Pending' ? (
                 <div className="w-full max-w-3xl bg-[#1f2937] border border-yellow-500/50 p-8 rounded-3xl text-center shadow-2xl shadow-yellow-500/10 mb-6">
                   <AlertTriangle size={40} className="mx-auto text-yellow-500 mb-4" />
-                  <h3 className="text-2xl font-bold text-white mb-3">حساب قيد المراجعة</h3><p className="text-gray-300">الإدارة تراجع الإيصال الخاص بك. بمجرد التفعيل، يمكنك النشر والتفاعل.</p>
+                  <h3 className="text-2xl font-bold text-white mb-3">{lang === 'ar' ? 'حساب قيد المراجعة' : 'Account Under Review'}</h3>
+                  <p className="text-gray-300">{lang === 'ar' ? 'الإدارة تراجع الإيصال الخاص بك. بمجرد التفعيل، يمكنك النشر والتفاعل.' : 'Admin is reviewing your receipt. Once activated, you can post and interact.'}</p>
                 </div>
               ) : activeView === 'seller' && subStatus === 'expired' ? (
                 <div className="w-full max-w-3xl bg-[#1f2937] border border-red-500/50 p-8 rounded-3xl text-center shadow-2xl shadow-red-500/10 mb-6">
                   <AlertTriangle size={40} className="mx-auto text-red-500 mb-4" />
-                  <h3 className="text-2xl font-bold text-white mb-3">انتهى الاشتراك الشهري</h3><p className="text-gray-300 mb-6">انتهت باقة الـ 30 يوم الخاصة بك. يرجى تجديد الاشتراك (10 جنيه للمصريين أو 1 دولار للأجانب) وإرسال الإيصال للإدارة للتمكن من نشر إعلانات جديدة والتواصل.</p>
-                  <button onClick={() => setShowRenewModal(true)} className="bg-emerald-500 text-white font-bold py-3 px-8 rounded-xl hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/20">تجديد الاشتراك الآن</button>
+                  <h3 className="text-2xl font-bold text-white mb-3">{lang === 'ar' ? 'انتهى الاشتراك الشهري' : 'Monthly Subscription Expired'}</h3>
+                  <p className="text-gray-300 mb-6">{lang === 'ar' ? 'انتهت باقة الـ 30 يوم الخاصة بك. يرجى تجديد الاشتراك (10 جنيه للمصريين أو 1 دولار للأجانب) وإرسال الإيصال للإدارة للتمكن من نشر إعلانات جديدة والتواصل.' : 'Your 30-day package has expired. Please renew your subscription (10 EGP for locals or $1 for expats) and send the receipt to admin to post new ads and communicate.'}</p>
+                  <button onClick={() => setShowRenewModal(true)} className="bg-emerald-500 text-white font-bold py-3 px-8 rounded-xl hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/20">{lang === 'ar' ? 'تجديد الاشتراك الآن' : 'Renew Subscription Now'}</button>
                 </div>
               ) : (
                 <>
-                  {activeView === 'seller' && subStatus === 'warning' && (<div className="w-full max-w-3xl bg-yellow-500/10 border border-yellow-500/50 text-yellow-500 p-4 rounded-xl mb-6 text-center flex items-center justify-center gap-2 font-bold shadow-lg"><AlertTriangle size={20} className="animate-pulse" />تنبيه: متبقي {subDaysLeft} أيام على انتهاء اشتراكك الشهري.</div>)}
+                  {activeView === 'seller' && subStatus === 'warning' && (<div className="w-full max-w-3xl bg-yellow-500/10 border border-yellow-500/50 text-yellow-500 p-4 rounded-xl mb-6 text-center flex items-center justify-center gap-2 font-bold shadow-lg"><AlertTriangle size={20} className="animate-pulse" />{lang === 'ar' ? `تنبيه: متبقي ${subDaysLeft} أيام على انتهاء اشتراكك الشهري.` : `Warning: ${subDaysLeft} days left on your monthly subscription.`}</div>)}
                   {activeView === 'seller' && uploadedImages.length > 0 && (<div className="w-full flex gap-3 mb-4 overflow-x-auto pb-2 custom-scrollbar"><div className="flex gap-2">{uploadedImages.map((imgObj, idx) => (<div key={idx} className="relative w-20 h-20 rounded-xl overflow-hidden shrink-0 border-2 border-emerald-500/50"><img src={imgObj.preview} alt="Preview" className="w-full h-full object-cover" /><button onClick={() => removeUploadedImage(idx)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full"><X size={12} /></button></div>))}</div></div>)}
                   
                   <div className="relative w-full flex items-center">
@@ -1148,7 +1161,7 @@ export default function App() {
                                     try { const formData = new FormData(); formData.append('image', item.file); const res = await fetch('https://api.imgbb.com/1/upload?key=8c8cec8f9ee7b67db88ba5799154c94d', { method: 'POST', body: formData }); if (res.ok) { finalImageUrls.push((await res.json()).data.url); } } catch (err) { finalImageUrls.push(item.preview); } 
                                   }
                                 }
-                                const newAd = { title: sellerInput || 'إعلان جديد', titleEn: sellerInput || 'New Ad', category: adCategory, description: '', views: 0, statusAr: 'قيد المراجعة', statusEn: 'Pending', date: new Date().toISOString().split('T')[0], location: 'مصر', time: 'الآن', price: 'السعر بالاتفاق', images: finalImageUrls.length > 0 ? finalImageUrls : ["https://images.unsplash.com/photo-1550355291-bbee04a92027?auto=format&fit=crop&q=80&w=800"], sellerId: userProfile.uid, sellerName: userProfile.displayName, createdAt: Date.now() };
+                                const newAd = { title: sellerInput || (lang === 'ar' ? 'إعلان جديد' : 'New Ad'), titleEn: sellerInput || (lang === 'ar' ? 'إعلان جديد' : 'New Ad'), category: adCategory, description: '', views: 0, statusAr: 'قيد المراجعة', statusEn: 'Pending', date: new Date().toISOString().split('T')[0], location: 'مصر', time: 'الآن', price: lang === 'ar' ? 'السعر بالاتفاق' : 'Price on agreement', images: finalImageUrls.length > 0 ? finalImageUrls : ["https://images.unsplash.com/photo-1550355291-bbee04a92027?auto=format&fit=crop&q=80&w=800"], sellerId: userProfile.uid, sellerName: userProfile.displayName, createdAt: Date.now() };
                                 await setDoc(publicDoc('ads', Date.now().toString()), newAd);
                                 setSellerInput(''); setUploadedImages([]); setIsUploading(false); setAppAlert(lang === 'ar' ? 'تم رفع الإعلان بنجاح. وهو الآن قيد المراجعة من الإدارة للحماية. يمكنك تعديل الوصف من صفحة "إعلاناتي".' : 'Ad posted successfully. It is currently under review by admins. You can edit the description from "My Ads" page.');
                               } catch (err) { setIsUploading(false); setAppAlert(lang === 'ar' ? 'حدث خطأ.' : 'An error occurred.'); }
@@ -1185,7 +1198,7 @@ export default function App() {
                      <div className="w-full h-full bg-gradient-to-r from-emerald-600 to-cyan-600"></div>
                   )}
                   <label className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity z-10">
-                     <Camera className="text-white" size={24}/> <span className="text-white font-bold ml-2">تغيير صورة الغلاف</span>
+                     <Camera className="text-white" size={24}/> <span className="text-white font-bold ml-2">{lang === 'ar' ? 'تغيير صورة الغلاف' : 'Change Cover Photo'}</span>
                      <input type="file" className="hidden" accept="image/*" onChange={handleCoverImageUpload} />
                   </label>
                </div>
@@ -1203,40 +1216,40 @@ export default function App() {
                   </label>
                </div>
 
-               <h3 className="text-2xl font-bold mb-6 text-white text-center mt-4">إعدادات الحساب</h3>
+               <h3 className="text-2xl font-bold mb-6 text-white text-center mt-4">{lang === 'ar' ? 'إعدادات الحساب' : 'Account Settings'}</h3>
 
                <div className="space-y-4 px-8">
-                 <div><label className="block text-gray-400 text-sm mb-1">اسم العرض (البراند)</label><input type="text" value={editName} onChange={e => setEditName(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500" /></div>
-                 <div><label className="block text-gray-400 text-sm mb-1">رقم الهاتف</label><input type="tel" value={editPhone} onChange={e => setEditPhone(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500" /></div>
-                 <div><label className="block text-gray-400 text-sm mb-1">نبذة عنك (Bio) - تظهر في بروفايلك</label><textarea rows="3" value={editBio} onChange={e => setEditBio(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500 resize-none custom-scrollbar" placeholder="اكتب نبذة مختصرة عنك وعن منتجاتك..."></textarea></div>
+                 <div><label className="block text-gray-400 text-sm mb-1">{lang === 'ar' ? 'اسم العرض (البراند)' : 'Display Name (Brand)'}</label><input type="text" value={editName} onChange={e => setEditName(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500" /></div>
+                 <div><label className="block text-gray-400 text-sm mb-1">{lang === 'ar' ? 'رقم الهاتف' : 'Phone Number'}</label><input type="tel" value={editPhone} onChange={e => setEditPhone(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500" /></div>
+                 <div><label className="block text-gray-400 text-sm mb-1">{lang === 'ar' ? 'نبذة عنك (Bio) - تظهر في بروفايلك' : 'Bio - Shows on your profile'}</label><textarea rows="3" value={editBio} onChange={e => setEditBio(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500 resize-none custom-scrollbar" placeholder={lang === 'ar' ? "اكتب نبذة مختصرة عنك وعن منتجاتك..." : "Write a short bio about yourself and your products..."}></textarea></div>
                  
                  <div className="grid grid-cols-1 gap-4 mt-2">
-                    <label className="text-gray-400 text-sm font-bold border-b border-gray-700 pb-2">روابط السوشيال ميديا (اختياري)</label>
+                    <label className="text-gray-400 text-sm font-bold border-b border-gray-700 pb-2">{lang === 'ar' ? 'روابط السوشيال ميديا (اختياري)' : 'Social Media Links (Optional)'}</label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                        <div className="relative">
                          <Facebook className="absolute right-3 top-3 text-blue-500" size={18}/>
-                         <input type="url" value={editFacebook} onChange={e => setEditFacebook(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 pr-10 text-white outline-none focus:border-blue-500 text-sm" placeholder="رابط فيسبوك" />
+                         <input type="url" value={editFacebook} onChange={e => setEditFacebook(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 pr-10 text-white outline-none focus:border-blue-500 text-sm" placeholder={lang === 'ar' ? "رابط فيسبوك" : "Facebook Link"} />
                        </div>
                        <div className="relative">
                          <Youtube className="absolute right-3 top-3 text-red-500" size={18}/>
-                         <input type="url" value={editYoutube} onChange={e => setEditYoutube(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 pr-10 text-white outline-none focus:border-red-500 text-sm" placeholder="رابط يوتيوب" />
+                         <input type="url" value={editYoutube} onChange={e => setEditYoutube(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 pr-10 text-white outline-none focus:border-red-500 text-sm" placeholder={lang === 'ar' ? "رابط يوتيوب" : "YouTube Link"} />
                        </div>
                        <div className="relative">
                          <Instagram className="absolute right-3 top-3 text-pink-500" size={18}/>
-                         <input type="url" value={editInstagram} onChange={e => setEditInstagram(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 pr-10 text-white outline-none focus:border-pink-500 text-sm" placeholder="رابط انستجرام" />
+                         <input type="url" value={editInstagram} onChange={e => setEditInstagram(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 pr-10 text-white outline-none focus:border-pink-500 text-sm" placeholder={lang === 'ar' ? "رابط انستجرام" : "Instagram Link"} />
                        </div>
                        <div className="relative">
                          <Ghost className="absolute right-3 top-3 text-yellow-500" size={18}/>
-                         <input type="url" value={editSnapchat} onChange={e => setEditSnapchat(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 pr-10 text-white outline-none focus:border-yellow-500 text-sm" placeholder="رابط سناب شات" />
+                         <input type="url" value={editSnapchat} onChange={e => setEditSnapchat(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 pr-10 text-white outline-none focus:border-yellow-500 text-sm" placeholder={lang === 'ar' ? "رابط سناب شات" : "Snapchat Link"} />
                        </div>
                        <div className="relative md:col-span-2">
                          <Music className="absolute right-3 top-3 text-cyan-400" size={18}/>
-                         <input type="url" value={editTiktok} onChange={e => setEditTiktok(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 pr-10 text-white outline-none focus:border-cyan-400 text-sm" placeholder="رابط تيك توك" />
+                         <input type="url" value={editTiktok} onChange={e => setEditTiktok(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 pr-10 text-white outline-none focus:border-cyan-400 text-sm" placeholder={lang === 'ar' ? "رابط تيك توك" : "TikTok Link"} />
                        </div>
                     </div>
                  </div>
 
-                 <button onClick={saveProfileUpdates} className="w-full bg-emerald-500 text-white font-bold py-4 rounded-xl hover:bg-emerald-600 mt-6 shadow-lg shadow-emerald-500/20">حفظ جميع التغييرات</button>
+                 <button onClick={saveProfileUpdates} className="w-full bg-emerald-500 text-white font-bold py-4 rounded-xl hover:bg-emerald-600 mt-6 shadow-lg shadow-emerald-500/20">{lang === 'ar' ? 'حفظ جميع التغييرات' : 'Save All Changes'}</button>
                </div>
             </div>
           </div>
@@ -1454,74 +1467,74 @@ export default function App() {
 
         {/* --- LOGIN --- */}
         {activeView === 'login' && (
-          <div className="w-full max-w-md animate-fade-in"><button onClick={goBack} className="mb-4 text-gray-400">رجوع</button><div className={`${cardBg} p-8 rounded-2xl shadow-xl border border-gray-700`}><h2 className="text-3xl font-bold mb-6 text-center">دخول</h2>
+          <div className="w-full max-w-md animate-fade-in"><button onClick={goBack} className="mb-4 text-gray-400">{lang === 'ar' ? 'رجوع' : 'Back'}</button><div className={`${cardBg} p-8 rounded-2xl shadow-xl border border-gray-700`}><h2 className="text-3xl font-bold mb-6 text-center">{lang === 'ar' ? 'دخول' : 'Login'}</h2>
             <form onSubmit={(e) => { e.preventDefault(); handleLoginSubmit(); }}>
-              <input type="text" name="email" id="email" autoComplete="username" placeholder="البريد الإلكتروني أو الهاتف" value={loginData.identifier} onChange={e => setLoginData({...loginData, identifier: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 mb-4 text-white outline-none focus:border-emerald-500" />
+              <input type="text" name="email" id="email" autoComplete="username" placeholder={lang === 'ar' ? 'البريد الإلكتروني أو الهاتف' : 'Email or Phone'} value={loginData.identifier} onChange={e => setLoginData({...loginData, identifier: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 mb-4 text-white outline-none focus:border-emerald-500" />
               <div className="relative mb-4">
-                <input type={showPassword ? "text" : "password"} name="password" id="password" autoComplete="current-password" placeholder="كلمة المرور" value={loginData.password} onChange={e => setLoginData({...loginData, password: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-emerald-500" />
+                <input type={showPassword ? "text" : "password"} name="password" id="password" autoComplete="current-password" placeholder={lang === 'ar' ? 'كلمة المرور' : 'Password'} value={loginData.password} onChange={e => setLoginData({...loginData, password: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-emerald-500" />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-3 top-3 text-gray-400 hover:text-white">{showPassword ? <EyeOff size={20} /> : <Eye size={20} />}</button>
               </div>
               <div className="flex justify-between items-center mb-6">
                 <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer hover:text-white transition-colors">
-                  <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} className="w-4 h-4 accent-emerald-500 rounded cursor-pointer" /> تذكر بياناتي
+                  <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} className="w-4 h-4 accent-emerald-500 rounded cursor-pointer" /> {lang === 'ar' ? 'تذكر بياناتي' : 'Remember me'}
                 </label>
-                <button type="button" onClick={() => setActiveView('forgot-password')} className="text-emerald-400 text-sm hover:underline">نسيت كلمة المرور؟</button>
+                <button type="button" onClick={() => setActiveView('forgot-password')} className="text-emerald-400 text-sm hover:underline">{lang === 'ar' ? 'نسيت كلمة المرور؟' : 'Forgot Password?'}</button>
               </div>
               {loginError && <p className="text-red-500 text-sm mb-4 text-center font-bold bg-red-500/10 p-2 rounded-lg">{loginError}</p>}
-              <button type="submit" className="w-full bg-emerald-500 text-white font-bold rounded-lg py-3 hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 transition-all">تسجيل الدخول</button>
+              <button type="submit" className="w-full bg-emerald-500 text-white font-bold rounded-lg py-3 hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 transition-all">{lang === 'ar' ? 'تسجيل الدخول' : 'Login'}</button>
             </form>
           </div></div>
         )}
 
         {/* --- FORGOT PASSWORD --- */}
         {activeView === 'forgot-password' && (
-          <div className="w-full max-w-md animate-fade-in"><button onClick={() => setActiveView('login')} className="mb-4 text-gray-400">العودة لتسجيل الدخول</button><div className={`${cardBg} p-8 rounded-2xl`}><h2 className="text-2xl font-bold mb-2 text-center text-white">استعادة كلمة المرور</h2><p className="text-gray-400 text-sm text-center mb-6">أدخل بياناتك لتعيين كلمة مرور جديدة</p>
-            <input type="email" placeholder="البريد الإلكتروني" autoComplete="off" value={resetData.email} onChange={e => setResetData({...resetData, email: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 mb-4 text-white outline-none focus:border-emerald-500" />
-            <input type="tel" placeholder="رقم الهاتف المسجل للحساب" autoComplete="off" value={resetData.phone} onChange={e => setResetData({...resetData, phone: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 mb-4 text-white outline-none focus:border-emerald-500" />
-            <input type="text" placeholder="اكتب كلمة المرور الجديدة" autoComplete="new-password" value={resetData.newPassword} onChange={e => setResetData({...resetData, newPassword: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 mb-6 text-white outline-none focus:border-emerald-500" />
+          <div className="w-full max-w-md animate-fade-in"><button onClick={() => setActiveView('login')} className="mb-4 text-gray-400">{lang === 'ar' ? 'العودة لتسجيل الدخول' : 'Back to Login'}</button><div className={`${cardBg} p-8 rounded-2xl`}><h2 className="text-2xl font-bold mb-2 text-center text-white">{lang === 'ar' ? 'استعادة كلمة المرور' : 'Reset Password'}</h2><p className="text-gray-400 text-sm text-center mb-6">{lang === 'ar' ? 'أدخل بياناتك لتعيين كلمة مرور جديدة' : 'Enter your details to set a new password'}</p>
+            <input type="email" placeholder={lang === 'ar' ? 'البريد الإلكتروني' : 'Email'} autoComplete="off" value={resetData.email} onChange={e => setResetData({...resetData, email: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 mb-4 text-white outline-none focus:border-emerald-500" />
+            <input type="tel" placeholder={lang === 'ar' ? 'رقم الهاتف المسجل للحساب' : 'Registered Phone Number'} autoComplete="off" value={resetData.phone} onChange={e => setResetData({...resetData, phone: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 mb-4 text-white outline-none focus:border-emerald-500" />
+            <input type="text" placeholder={lang === 'ar' ? 'اكتب كلمة المرور الجديدة' : 'Enter New Password'} autoComplete="new-password" value={resetData.newPassword} onChange={e => setResetData({...resetData, newPassword: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 mb-6 text-white outline-none focus:border-emerald-500" />
             {resetError && <p className="text-red-500 text-sm mb-4 text-center bg-red-500/10 p-2 rounded-lg font-bold">{resetError}</p>}
             {resetSuccess && <p className="text-emerald-400 text-sm mb-4 text-center font-bold">{resetSuccess}</p>}
-            <button onClick={handlePasswordReset} className="w-full bg-emerald-500 text-white font-bold rounded-lg py-3 hover:bg-emerald-600">تغيير كلمة المرور</button>
+            <button onClick={handlePasswordReset} className="w-full bg-emerald-500 text-white font-bold rounded-lg py-3 hover:bg-emerald-600">{lang === 'ar' ? 'تغيير كلمة المرور' : 'Change Password'}</button>
           </div></div>
         )}
 
         {/* --- SIGNUP VIEW --- */}
         {activeView === 'signup' && (
-          <div className="w-full max-w-2xl animate-fade-in"><button onClick={goBack} className="mb-4 text-gray-400">رجوع</button>
+          <div className="w-full max-w-2xl animate-fade-in"><button onClick={goBack} className="mb-4 text-gray-400">{lang === 'ar' ? 'رجوع' : 'Back'}</button>
             <div className={`${cardBg} p-8 rounded-2xl`}>
-               <h2 className="text-3xl font-bold mb-6 text-center">حساب جديد</h2>
+               <h2 className="text-3xl font-bold mb-6 text-center">{lang === 'ar' ? 'حساب جديد' : 'New Account'}</h2>
                
                <div className="flex flex-col items-center mb-8">
                  <div className="relative w-24 h-24 rounded-full border-2 border-emerald-500 overflow-hidden mb-3 shadow-lg shadow-emerald-500/20">
                     {signupProfilePreview ? <img src={signupProfilePreview} alt="Profile" className="w-full h-full object-cover" /> : <AvatarFallback size={96} />}
                  </div>
                  <label className="bg-[#111827] text-emerald-400 px-4 py-2 rounded-lg cursor-pointer text-sm font-bold border border-gray-700 hover:border-emerald-500 transition-colors shadow-md">
-                    <span className="flex items-center gap-2"><ImagePlus size={16} /> أضف صورة للبروفايل (اختياري)</span>
+                    <span className="flex items-center gap-2"><ImagePlus size={16} /> {lang === 'ar' ? 'أضف صورة للبروفايل (اختياري)' : 'Add Profile Picture (Optional)'}</span>
                     <input type="file" className="hidden" accept="image/*" onChange={(e) => { if(e.target.files && e.target.files[0]) { setSignupProfilePreview(URL.createObjectURL(e.target.files[0])); setSignupProfileImage(e.target.files[0]); } }} />
                  </label>
                </div>
 
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <input type="text" placeholder="الاسم الكامل" autoComplete="off" value={signupData.fullName} onChange={e => setSignupData({...signupData, fullName: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-emerald-500" />
-                  <input type="text" placeholder="اسم العرض (البراند الخاص بك)" autoComplete="off" value={signupData.displayName} onChange={e => setSignupData({...signupData, displayName: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-emerald-500" />
-                  <input type="email" placeholder="البريد الإلكتروني" autoComplete="off" value={signupData.email} onChange={e => setSignupData({...signupData, email: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white col-span-1 md:col-span-2 outline-none focus:border-emerald-500" />
-                  <input type="tel" placeholder="رقم الهاتف" autoComplete="off" value={signupData.phone} onChange={e => setSignupData({...signupData, phone: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white col-span-1 md:col-span-2 outline-none focus:border-emerald-500" />
+                  <input type="text" placeholder={lang === 'ar' ? 'الاسم الكامل' : 'Full Name'} autoComplete="off" value={signupData.fullName} onChange={e => setSignupData({...signupData, fullName: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-emerald-500" />
+                  <input type="text" placeholder={lang === 'ar' ? 'اسم العرض (البراند الخاص بك)' : 'Display Name (Brand)'} autoComplete="off" value={signupData.displayName} onChange={e => setSignupData({...signupData, displayName: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-emerald-500" />
+                  <input type="email" placeholder={lang === 'ar' ? 'البريد الإلكتروني' : 'Email'} autoComplete="off" value={signupData.email} onChange={e => setSignupData({...signupData, email: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white col-span-1 md:col-span-2 outline-none focus:border-emerald-500" />
+                  <input type="tel" placeholder={lang === 'ar' ? 'رقم الهاتف' : 'Phone Number'} autoComplete="off" value={signupData.phone} onChange={e => setSignupData({...signupData, phone: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white col-span-1 md:col-span-2 outline-none focus:border-emerald-500" />
                   
                   <div className="relative">
-                    <input type={showSignupPass ? "text" : "password"} placeholder="كلمة المرور" autoComplete="new-password" value={signupData.password} onChange={e => setSignupData({...signupData, password: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-emerald-500" />
+                    <input type={showSignupPass ? "text" : "password"} placeholder={lang === 'ar' ? 'كلمة المرور' : 'Password'} autoComplete="new-password" value={signupData.password} onChange={e => setSignupData({...signupData, password: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-emerald-500" />
                     <button type="button" onClick={() => setShowSignupPass(!showSignupPass)} className="absolute left-3 top-3 text-gray-400 hover:text-white">{showSignupPass ? <EyeOff size={20} /> : <Eye size={20} />}</button>
                   </div>
                   <div className="relative">
-                    <input type={showSignupConfirm ? "text" : "password"} placeholder="تأكيد كلمة المرور" autoComplete="new-password" value={signupData.confirmPassword} onChange={e => setSignupData({...signupData, confirmPassword: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-emerald-500" />
+                    <input type={showSignupConfirm ? "text" : "password"} placeholder={lang === 'ar' ? 'تأكيد كلمة المرور' : 'Confirm Password'} autoComplete="new-password" value={signupData.confirmPassword} onChange={e => setSignupData({...signupData, confirmPassword: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-emerald-500" />
                     <button type="button" onClick={() => setShowSignupConfirm(!showSignupConfirm)} className="absolute left-3 top-3 text-gray-400 hover:text-white">{showSignupConfirm ? <EyeOff size={20} /> : <Eye size={20} />}</button>
                   </div>
 
                   <label className="col-span-1 md:col-span-2 border border-dashed border-emerald-500/50 p-6 rounded-xl text-center cursor-pointer text-gray-400 hover:border-emerald-500 transition-colors bg-emerald-500/5 mt-2">
-                     <Upload className="mx-auto mb-2 text-emerald-400" /> {receiptUploaded ? 'تم إرفاق الإيصال بنجاح' : 'إرفاق صورة إيصال الدفع (10 جنيه للمصريين أو 1 دولار للمقيمين بالخارج) (إلزامي)'}<input type="file" className="hidden" accept="image/*" onChange={(e) => { if(e.target.files[0]) { setReceiptUploaded(true); setReceiptFile(e.target.files[0]); } }} />
+                     <Upload className="mx-auto mb-2 text-emerald-400" /> {receiptUploaded ? (lang === 'ar' ? 'تم إرفاق الإيصال بنجاح' : 'Receipt uploaded successfully') : (lang === 'ar' ? 'إرفاق صورة إيصال الدفع (10 جنيه للمصريين أو 1 دولار للمقيمين بالخارج) (إلزامي)' : 'Upload Payment Receipt (10 EGP or $1 for expats) (Required)')}<input type="file" className="hidden" accept="image/*" onChange={(e) => { if(e.target.files[0]) { setReceiptUploaded(true); setReceiptFile(e.target.files[0]); } }} />
                   </label>
                   
                   {signupError && <p className="col-span-1 md:col-span-2 text-red-500 text-sm text-center font-bold bg-red-500/10 p-3 rounded-lg border border-red-500/20">{signupError}</p>}
-                  <button onClick={handleSignupSubmit} className="col-span-1 md:col-span-2 bg-emerald-500 text-white font-bold rounded-lg py-4 mt-2 hover:bg-emerald-600 shadow-lg transition-colors">تأكيد التسجيل</button>
+                  <button onClick={handleSignupSubmit} className="col-span-1 md:col-span-2 bg-emerald-500 text-white font-bold rounded-lg py-4 mt-2 hover:bg-emerald-600 shadow-lg transition-colors">{lang === 'ar' ? 'تأكيد التسجيل' : 'Confirm Registration'}</button>
                </div>
             </div>
           </div>
