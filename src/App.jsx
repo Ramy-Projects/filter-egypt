@@ -62,6 +62,14 @@ const categoryTranslations = {
   'عيادات': 'Clinics', 'لوحات فنية': 'Artworks', 'اثاث منزلي': 'Home Furniture', 'اثاث مكاتب': 'Office Furniture'
 };
 
+const countryCodesList = [
+  { code: '+20', flag: '🇪🇬' }, { code: '+966', flag: '🇸🇦' }, { code: '+971', flag: '🇦🇪' },
+  { code: '+965', flag: '🇰🇼' }, { code: '+974', flag: '🇶🇦' }, { code: '+968', flag: '🇴🇲' },
+  { code: '+973', flag: '🇧🇭' }, { code: '+962', flag: '🇯🇴' }, { code: '+961', flag: '🇱🇧' },
+  { code: '+964', flag: '🇮🇶' }, { code: '+970', flag: '🇵🇸' }, { code: '+218', flag: '🇱🇾' },
+  { code: '+249', flag: '🇸🇩' }, { code: '+1', flag: '🇺🇸' }, { code: '+44', flag: '🇬🇧' }
+];
+
 const translateCategory = (cat, currentLang) => {
     if (!cat) return '';
     if (currentLang === 'en' && categoryTranslations[cat]) return categoryTranslations[cat];
@@ -115,7 +123,8 @@ export default function App() {
   const [smartFilterCat, setSmartFilterCat] = useState('الكل');
 
   // Forms
-  const [signupData, setSignupData] = useState({ fullName: '', displayName: '', email: '', phone: '', password: '', confirmPassword: '' });
+  const [signupData, setSignupData] = useState({ fullName: '', displayName: '', email: '', phone: '', whatsapp: '', password: '', confirmPassword: '' });
+  const [signupCountryCode, setSignupCountryCode] = useState('+20');
   const [signupError, setSignupError] = useState('');
   const [loginData, setLoginData] = useState({ identifier: '', password: '' });
   const [loginError, setLoginError] = useState('');
@@ -141,6 +150,7 @@ export default function App() {
   const [editInstagram, setEditInstagram] = useState('');
   const [editSnapchat, setEditSnapchat] = useState('');
   const [editTiktok, setEditTiktok] = useState('');
+  const [editWhatsapp, setEditWhatsapp] = useState('');
   const [profileImageFile, setProfileImageFile] = useState(null); 
   const [profileImagePreview, setProfileImagePreview] = useState(null);
   const [coverImageFile, setCoverImageFile] = useState(null);
@@ -170,6 +180,7 @@ export default function App() {
   const [newCategoryInput, setNewCategoryInput] = useState('');
   const [searchQuery, setSearchQuery] = useState(''); 
   const [sellerInput, setSellerInput] = useState(''); 
+  const [sellerDescription, setSellerDescription] = useState(''); // وصف الإعلان المباشر
   const [adCategory, setAdCategory] = useState('');
   const [showAdCategoryMenu, setShowAdCategoryMenu] = useState(false);
   const [filterCategory, setFilterCategory] = useState(() => {
@@ -419,6 +430,7 @@ export default function App() {
     if (showSettingsModal && userProfile) {
       setEditName(userProfile.displayName || '');
       setEditPhone(userProfile.phone || '');
+      setEditWhatsapp(userProfile.whatsapp || '');
       setEditBio(userProfile.bio || '');
       setEditFacebook(userProfile.facebookUrl || '');
       setEditYoutube(userProfile.youtubeUrl || '');
@@ -518,8 +530,9 @@ export default function App() {
         }
       }
       if (finalImageUrls.length === 0) finalImageUrls.push("https://images.unsplash.com/photo-1550355291-bbee04a92027?auto=format&fit=crop&q=80&w=800");
-      await updateDoc(publicDoc('ads', adToEdit.id), { title: adToEdit.title, titleEn: adToEdit.title, price: adToEdit.price, category: adToEdit.category, description: adToEdit.description || '', images: finalImageUrls });
-      setAppAlert(lang === 'ar' ? 'تم تعديل الإعلان والصور بنجاح!' : 'Ad updated successfully!'); setAdToEdit(null); setEditNewImages([]);
+      // تم التعديل هنا: تحويل حالة الإعلان إلى قيد المراجعة عند التعديل
+      await updateDoc(publicDoc('ads', adToEdit.id), { title: adToEdit.title, titleEn: adToEdit.title, price: adToEdit.price, category: adToEdit.category, description: adToEdit.description || '', images: finalImageUrls, statusEn: 'Pending', statusAr: 'قيد المراجعة' });
+      setAppAlert(lang === 'ar' ? 'تم التعديل بنجاح! الإعلان الآن قيد المراجعة من الإدارة للنشر.' : 'Ad updated successfully! It is now pending admin review for publication.'); setAdToEdit(null); setEditNewImages([]);
     } catch (err) {} setIsUploading(false);
   };
 
@@ -532,7 +545,9 @@ export default function App() {
       if (!receiptUploaded || !receiptFile) throw new Error(lang === 'ar' ? 'يرجى إرفاق صورة إيصال الدفع للتحقق' : 'Please attach the payment receipt to verify');
 
       const cleanEmail = signupData.email.trim().toLowerCase();
-      const cleanPhone = signupData.phone.trim();
+      // دمج كود البلد مع رقم الهاتف ليكون رقماً موحداً
+      const cleanPhone = signupCountryCode + signupData.phone.trim();
+      
       if (allProfiles.some(p => p.email === cleanEmail)) throw new Error(lang === 'ar' ? 'البريد الإلكتروني مستخدم بالفعل' : 'Email already in use');
       if (allProfiles.some(p => p.phone === cleanPhone)) throw new Error(lang === 'ar' ? 'رقم الهاتف مستخدم بالفعل' : 'Phone number already in use');
 
@@ -549,7 +564,7 @@ export default function App() {
       if (imgbbResponse.ok) { receiptUrl = (await imgbbResponse.json()).data.url; } else { throw new Error(lang === 'ar' ? 'حدث خطأ بالشبكة' : 'Network error'); }
 
       const newUid = fbUser ? fbUser.uid : Date.now().toString(); 
-      const newProfile = { uid: newUid, fullName: signupData.fullName, displayName: signupData.displayName, email: cleanEmail, phone: cleanPhone, password: signupData.password, subscriptionStatus: 'Pending', createdAt: new Date().toISOString(), receiptUrl: receiptUrl, photoUrl: photoUrl, coverUrl: null, bio: '', facebookUrl: '', youtubeUrl: '', instagramUrl: '', snapchatUrl: '', tiktokUrl: '', isBanned: false };
+      const newProfile = { uid: newUid, fullName: signupData.fullName, displayName: signupData.displayName, email: cleanEmail, phone: cleanPhone, whatsapp: signupData.whatsapp.trim(), password: signupData.password, subscriptionStatus: 'Pending', createdAt: new Date().toISOString(), receiptUrl: receiptUrl, photoUrl: photoUrl, coverUrl: null, bio: '', facebookUrl: '', youtubeUrl: '', instagramUrl: '', snapchatUrl: '', tiktokUrl: '', isBanned: false };
       await setDoc(publicDoc('users', newUid), newProfile); 
       await setDoc(publicDoc('profiles', newUid), newProfile);
       setAppAlert(lang === 'ar' ? 'تم إرسال طلبك بنجاح! بانتظار المراجعة.' : 'Request sent successfully! Pending review.'); setTimeout(() => { window.location.reload(); }, 3500);
@@ -575,8 +590,13 @@ export default function App() {
     if (!loginData.identifier || !loginData.password) { setLoginError(lang === 'ar' ? 'يرجى إدخال البيانات' : 'Please enter credentials'); return; }
     try {
       const searchIdentifier = loginData.identifier.trim().toLowerCase();
-      const foundUser = allProfiles.filter(p => p.email === searchIdentifier || p.phone === loginData.identifier.trim())
-                                   .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+      // السماح بتسجيل الدخول برقم الهاتف حتى لو لم يكتب المستخدم كود البلد (+20)
+      const searchPhone = searchIdentifier.replace(/^0/, ''); 
+      const foundUser = allProfiles.filter(p => 
+        p.email === searchIdentifier || 
+        p.phone === searchIdentifier || 
+        (p.phone && p.phone.endsWith(searchPhone))
+      ).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
 
       if (foundUser) {
         if (foundUser.isBanned) { setLoginError(lang === 'ar' ? 'عذراً، هذا الحساب تم حظره من الإدارة.' : 'Account is banned by administration.'); return; }
@@ -603,7 +623,9 @@ export default function App() {
     setResetError(''); setResetSuccess('');
     if (!resetData.email || !resetData.phone || !resetData.newPassword) { setResetError(lang === 'ar' ? 'يرجى ملء كافة البيانات' : 'Please fill all fields'); return; }
     try {
-      const foundUser = allProfiles.find(p => p.email === resetData.email && p.phone === resetData.phone);
+      // مرونة في التحقق من رقم الهاتف عند استعادة كلمة المرور أيضاً
+      const searchPhone = resetData.phone.trim().replace(/^0/, '');
+      const foundUser = allProfiles.find(p => p.email === resetData.email.trim().toLowerCase() && p.phone && p.phone.endsWith(searchPhone));
 
       if (foundUser) {
         const uid = foundUser.uid;
@@ -749,7 +771,7 @@ export default function App() {
       }
 
       const updatedProfile = { 
-        ...userProfile, displayName: editName, phone: editPhone, photoUrl: newPhotoUrl, coverUrl: newCoverUrl, 
+        ...userProfile, displayName: editName, phone: editPhone, whatsapp: editWhatsapp, photoUrl: newPhotoUrl, coverUrl: newCoverUrl, 
         bio: editBio, facebookUrl: editFacebook, youtubeUrl: editYoutube, instagramUrl: editInstagram, 
         snapchatUrl: editSnapchat, tiktokUrl: editTiktok 
       };
@@ -779,7 +801,12 @@ export default function App() {
 
   // --- 🔴 إعدادات الأدمن (Admin Setup) 🔴 ---
   const ADMIN_EMAILS = ['ramyadnan97@gmail.com', 'admin@filter-egypt.com']; 
-  const isAdmin = isAppLoggedIn && userProfile && userProfile.email && ADMIN_EMAILS.includes(userProfile.email.toLowerCase());
+  const ADMIN_PHONES = ['01024059955']; 
+  
+  const isAdmin = isAppLoggedIn && userProfile && (
+     (userProfile.email && ADMIN_EMAILS.includes(userProfile.email.toLowerCase())) || 
+     (userProfile.phone && ADMIN_PHONES.some(ap => userProfile.phone.endsWith(ap.replace(/^0/, ''))))
+  );
 
   const AvatarFallback = ({ size = 16, className = "" }) => (
     <div className={`bg-gray-700 flex items-center justify-center rounded-full shrink-0 ${className}`} style={{ width: size, height: size }}>
@@ -800,7 +827,7 @@ export default function App() {
            <h1 className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 mb-6 animate-pulse">
               {lang === 'ar' ? 'فلتر إيجيبت' : 'Filter Egypt'}
            </h1>
-           <p className="text-gray-300 text-lg md:text-xl font-bold tracking-wide text-center max-w-lg px-6 leading-relaxed opacity-90" dangerouslySetInnerHTML={{ __html: lang === 'ar' ? 'المنصة الأولى لبيع وشراء الفلاتر وقطع الغيار في مصر.<br/>تواصل، بيع، واشتري بسهولة وأمان تام.' : 'The leading platform for buying and selling water filters and spare parts in Egypt.<br/>Connect, buy, and sell easily and safely.' }}>
+           <p className="text-gray-300 text-lg md:text-xl font-bold tracking-wide text-center max-w-lg px-6 leading-relaxed opacity-90" dangerouslySetInnerHTML={{ __html: lang === 'ar' ? 'المنصة الأولى في مصر لبيع أي حاجة عندك مش محتاجها.<br/>تواصل، بيع، واشتري بسهولة وأمان تام.' : 'The first platform in Egypt to sell anything you don\'t need.<br/>Connect, buy, and sell easily and safely.' }}>
            </p>
            <div className="mt-12 flex items-center gap-2">
               <div className="w-3 h-3 bg-emerald-500 rounded-full animate-ping"></div>
@@ -1134,7 +1161,7 @@ export default function App() {
                   <div className="relative w-full flex items-center">
                     <input type="text" value={activeView === 'buyer' ? searchQuery : sellerInput} onChange={(e) => activeView === 'buyer' ? setSearchQuery(e.target.value) : setSellerInput(e.target.value)} 
                     className={`w-full ${cardBg} border border-gray-700 rounded-full py-4 pe-28 ${activeView === 'seller' ? 'ps-32' : 'ps-6'} text-lg text-white outline-none focus:border-${activeView === 'buyer' ? 'blue' : 'emerald'}-500 shadow-xl`} 
-                    placeholder={activeView === 'buyer' ? (lang === 'ar' ? "عن ماذا تبحث؟" : "What are you looking for?") : (lang === 'ar' ? "اكتب تفاصيل المنتج (عنوان الإعلان)..." : "Write product details (Ad title)...")} />
+                    placeholder={activeView === 'buyer' ? (lang === 'ar' ? "عن ماذا تبحث؟" : "What are you looking for?") : (lang === 'ar' ? "اكتب عنوان المنتج القصير..." : "Write a short product title...")} />
                     
                     {activeView === 'seller' && (
                       <div className="absolute inset-y-1.5 start-1.5 flex items-center z-10">
@@ -1161,15 +1188,26 @@ export default function App() {
                                     try { const formData = new FormData(); formData.append('image', item.file); const res = await fetch('https://api.imgbb.com/1/upload?key=8c8cec8f9ee7b67db88ba5799154c94d', { method: 'POST', body: formData }); if (res.ok) { finalImageUrls.push((await res.json()).data.url); } } catch (err) { finalImageUrls.push(item.preview); } 
                                   }
                                 }
-                                const newAd = { title: sellerInput || (lang === 'ar' ? 'إعلان جديد' : 'New Ad'), titleEn: sellerInput || (lang === 'ar' ? 'إعلان جديد' : 'New Ad'), category: adCategory, description: '', views: 0, statusAr: 'قيد المراجعة', statusEn: 'Pending', date: new Date().toISOString().split('T')[0], location: 'مصر', time: 'الآن', price: lang === 'ar' ? 'السعر بالاتفاق' : 'Price on agreement', images: finalImageUrls.length > 0 ? finalImageUrls : ["https://images.unsplash.com/photo-1550355291-bbee04a92027?auto=format&fit=crop&q=80&w=800"], sellerId: userProfile.uid, sellerName: userProfile.displayName, createdAt: Date.now() };
+                                const newAd = { title: sellerInput || (lang === 'ar' ? 'إعلان جديد' : 'New Ad'), titleEn: sellerInput || (lang === 'ar' ? 'إعلان جديد' : 'New Ad'), category: adCategory, description: sellerDescription.trim() || '', views: 0, statusAr: 'قيد المراجعة', statusEn: 'Pending', date: new Date().toISOString().split('T')[0], location: 'مصر', time: 'الآن', price: lang === 'ar' ? 'السعر بالاتفاق' : 'Price on agreement', images: finalImageUrls.length > 0 ? finalImageUrls : ["https://images.unsplash.com/photo-1550355291-bbee04a92027?auto=format&fit=crop&q=80&w=800"], sellerId: userProfile.uid, sellerName: userProfile.displayName, createdAt: Date.now() };
                                 await setDoc(publicDoc('ads', Date.now().toString()), newAd);
-                                setSellerInput(''); setUploadedImages([]); setIsUploading(false); setAppAlert(lang === 'ar' ? 'تم رفع الإعلان بنجاح. وهو الآن قيد المراجعة من الإدارة للحماية. يمكنك تعديل الوصف من صفحة "إعلاناتي".' : 'Ad posted successfully. It is currently under review by admins. You can edit the description from "My Ads" page.');
+                                setSellerInput(''); setSellerDescription(''); setUploadedImages([]); setIsUploading(false); setAppAlert(lang === 'ar' ? 'تم رفع الإعلان بنجاح. وهو الآن قيد المراجعة من الإدارة للحماية.' : 'Ad posted successfully. It is currently under review by admins.');
                               } catch (err) { setIsUploading(false); setAppAlert(lang === 'ar' ? 'حدث خطأ.' : 'An error occurred.'); }
                             }
                           }
                         }} className={`h-full ${activeView === 'buyer' ? 'bg-blue-600 hover:bg-blue-700' : accentBg} text-white px-6 md:px-8 rounded-full font-bold transition-colors`}>{activeView === 'buyer' ? (lang === 'ar' ? 'بحث' : 'Search') : (lang === 'ar' ? 'إرسال' : 'Post')}</button>
                     </div>
                   </div>
+                  
+                  {activeView === 'seller' && (
+                    <div className="w-full mt-4 animate-fade-in relative z-0">
+                       <textarea 
+                         value={sellerDescription}
+                         onChange={(e) => setSellerDescription(e.target.value)}
+                         placeholder={lang === 'ar' ? 'اكتب وصف تفصيلي للمنتج (المواصفات، السعر، الحالة)...' : 'Write a detailed product description (specs, price, condition)...'}
+                         className={`w-full ${cardBg} border border-gray-700 rounded-2xl p-4 text-white outline-none focus:border-emerald-500 shadow-xl resize-none custom-scrollbar min-h-[120px]`}
+                       ></textarea>
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -1220,7 +1258,8 @@ export default function App() {
 
                <div className="space-y-4 px-8">
                  <div><label className="block text-gray-400 text-sm mb-1">{lang === 'ar' ? 'اسم العرض (البراند)' : 'Display Name (Brand)'}</label><input type="text" value={editName} onChange={e => setEditName(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500" /></div>
-                 <div><label className="block text-gray-400 text-sm mb-1">{lang === 'ar' ? 'رقم الهاتف' : 'Phone Number'}</label><input type="tel" value={editPhone} onChange={e => setEditPhone(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500" /></div>
+                 <div><label className="block text-gray-400 text-sm mb-1">{lang === 'ar' ? 'رقم الهاتف' : 'Phone Number'}</label><input type="tel" value={editPhone} onChange={e => setEditPhone(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500" dir="ltr" /></div>
+                 <div><label className="block text-gray-400 text-sm mb-1">{lang === 'ar' ? 'رقم الواتساب (اختياري)' : 'WhatsApp Number'}</label><input type="tel" value={editWhatsapp} onChange={e => setEditWhatsapp(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500" dir="ltr" placeholder="+2010..." /></div>
                  <div><label className="block text-gray-400 text-sm mb-1">{lang === 'ar' ? 'نبذة عنك (Bio) - تظهر في بروفايلك' : 'Bio - Shows on your profile'}</label><textarea rows="3" value={editBio} onChange={e => setEditBio(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500 resize-none custom-scrollbar" placeholder={lang === 'ar' ? "اكتب نبذة مختصرة عنك وعن منتجاتك..." : "Write a short bio about yourself and your products..."}></textarea></div>
                  
                  <div className="grid grid-cols-1 gap-4 mt-2">
@@ -1337,8 +1376,8 @@ export default function App() {
                       ) : (
                          <>
                            <button onClick={() => openChat(viewedProfile.uid, viewedProfile.displayName)} className="w-full md:w-auto bg-emerald-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"><Send size={20}/> {lang === 'ar' ? 'إرسال رسالة داخلية' : 'Send Message'}</button>
-                           {viewedProfile.phone && (
-                              <a href={`https://wa.me/${viewedProfile.phone.replace(/[^0-9+]/g, '')}`} target="_blank" rel="noreferrer" className="w-full md:w-auto bg-[#25D366] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#20bd5a] transition-colors shadow-lg flex items-center justify-center gap-2"><MessageCircle size={20}/> {lang === 'ar' ? 'تواصل عبر واتساب' : 'WhatsApp'}</a>
+                           {viewedProfile.whatsapp && (
+                              <a href={`https://wa.me/${viewedProfile.whatsapp.replace(/[^0-9+]/g, '')}`} target="_blank" rel="noreferrer" className="w-full md:w-auto bg-[#25D366] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#20bd5a] transition-colors shadow-lg flex items-center justify-center gap-2"><MessageCircle size={20}/> {lang === 'ar' ? 'تواصل عبر واتساب' : 'WhatsApp'}</a>
                            )}
                          </>
                       )}
@@ -1367,9 +1406,14 @@ export default function App() {
              <div className="w-full flex flex-col gap-4">
                 {liveFeedAds.length === 0 && <p className="text-gray-500 text-center py-10 w-full">{lang === 'ar' ? 'لا توجد إعلانات جديدة حالياً.' : 'No new ads currently.'}</p>}
                 {liveFeedAds.map(ad => (
-                  <div key={ad.id} onClick={() => viewAdDetails(ad)} className="bg-[#1f2937] p-4 rounded-2xl flex gap-4 cursor-pointer hover:border-red-500 border border-transparent transition-colors">
-                    <img src={ad.images?.[0]} alt="ad" className="w-24 h-24 rounded-xl object-cover" />
+                  <div key={ad.id} onClick={() => viewAdDetails(ad)} className="bg-[#1f2937] p-4 rounded-2xl flex gap-4 cursor-pointer hover:border-red-500 border border-transparent transition-colors items-center">
+                    <img src={ad.images?.[0]} alt="ad" className="w-24 h-24 rounded-xl object-cover shrink-0" />
                     <div className="flex-1"><h4 className="font-bold text-lg text-white">{lang === 'ar' ? ad.title : ad.titleEn}</h4><p className="text-gray-400 text-sm mb-1">{translateCategory(ad.category, lang)}</p><p className="text-red-400 font-bold">{ad.price} {lang === 'ar' ? 'ج.م' : 'EGP'}</p></div>
+                    {userProfile?.uid === ad.sellerId && (
+                        <button onClick={(e) => { e.stopPropagation(); setAdToEdit({ ...ad, description: ad.description || '' }); setEditNewImages([]); }} className="bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white p-3 rounded-xl transition-colors shrink-0" title={lang === 'ar' ? 'تعديل الإعلان' : 'Edit Ad'}>
+                            <Edit size={20} />
+                        </button>
+                    )}
                   </div>
                 ))}
              </div>
@@ -1457,9 +1501,18 @@ export default function App() {
                    
                    {selectedAd.description && ( <div className="bg-[#111827] p-4 rounded-2xl border border-gray-700 mb-6 flex-1"><h4 className="text-sm font-bold text-gray-400 mb-2">{lang === 'ar' ? 'الوصف والمواصفات' : 'Description'}</h4><p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">{selectedAd.description}</p></div> )}
                    
-                   {userProfile?.uid !== selectedAd.sellerId && (
-                      <button onClick={() => openChat(selectedAd)} className="w-full bg-emerald-500 text-white font-bold rounded-xl py-4 flex justify-center items-center gap-2 hover:bg-emerald-600 transition-colors mt-auto shadow-lg shadow-emerald-500/20"><Send size={20} /> {lang === 'ar' ? 'تواصل مع البائع' : 'Contact Seller'}</button>
-                   )}
+                   <div className="mt-auto flex flex-col gap-3">
+                      {userProfile?.uid === selectedAd.sellerId ? (
+                         <button onClick={() => { setAdToEdit({ ...selectedAd, description: selectedAd.description || '' }); setEditNewImages([]); }} className="w-full bg-blue-600 text-white font-bold rounded-xl py-4 flex justify-center items-center gap-2 hover:bg-blue-700 transition-colors shadow-lg"><Edit size={20} /> {lang === 'ar' ? 'تعديل الإعلان' : 'Edit Ad'}</button>
+                      ) : (
+                         <>
+                           <button onClick={() => openChat(selectedAd)} className="w-full bg-emerald-500 text-white font-bold rounded-xl py-4 flex justify-center items-center gap-2 hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/20"><MessageSquare size={20} /> {lang === 'ar' ? 'شات داخلي (آمن)' : 'Internal Chat'}</button>
+                           {allProfiles.find(p => p.uid === selectedAd.sellerId)?.whatsapp && (
+                              <a href={`https://wa.me/${allProfiles.find(p => p.uid === selectedAd.sellerId).whatsapp.replace(/[^0-9+]/g, '')}`} target="_blank" rel="noreferrer" className="w-full bg-[#25D366] text-white font-bold rounded-xl py-4 flex justify-center items-center gap-2 hover:bg-[#20bd5a] transition-colors shadow-lg"><MessageCircle size={20} /> {lang === 'ar' ? 'تواصل عبر واتساب' : 'WhatsApp'}</a>
+                           )}
+                         </>
+                      )}
+                   </div>
                 </div>
              </div>
            </div>
@@ -1471,8 +1524,8 @@ export default function App() {
             <form onSubmit={(e) => { e.preventDefault(); handleLoginSubmit(); }}>
               <input type="text" name="email" id="email" autoComplete="username" placeholder={lang === 'ar' ? 'البريد الإلكتروني أو الهاتف' : 'Email or Phone'} value={loginData.identifier} onChange={e => setLoginData({...loginData, identifier: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 mb-4 text-white outline-none focus:border-emerald-500" />
               <div className="relative mb-4">
-                <input type={showPassword ? "text" : "password"} name="password" id="password" autoComplete="current-password" placeholder={lang === 'ar' ? 'كلمة المرور' : 'Password'} value={loginData.password} onChange={e => setLoginData({...loginData, password: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-emerald-500" />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-3 top-3 text-gray-400 hover:text-white">{showPassword ? <EyeOff size={20} /> : <Eye size={20} />}</button>
+                <input type={showPassword ? "text" : "password"} name="password" id="password" autoComplete="current-password" placeholder={lang === 'ar' ? 'كلمة المرور' : 'Password'} value={loginData.password} onChange={e => setLoginData({...loginData, password: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg py-3 ps-3 pe-12 text-white outline-none focus:border-emerald-500" />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute end-4 top-3.5 text-gray-400 hover:text-white">{showPassword ? <EyeOff size={20} /> : <Eye size={20} />}</button>
               </div>
               <div className="flex justify-between items-center mb-6">
                 <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer hover:text-white transition-colors">
@@ -1518,15 +1571,27 @@ export default function App() {
                   <input type="text" placeholder={lang === 'ar' ? 'الاسم الكامل' : 'Full Name'} autoComplete="off" value={signupData.fullName} onChange={e => setSignupData({...signupData, fullName: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-emerald-500" />
                   <input type="text" placeholder={lang === 'ar' ? 'اسم العرض (البراند الخاص بك)' : 'Display Name (Brand)'} autoComplete="off" value={signupData.displayName} onChange={e => setSignupData({...signupData, displayName: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-emerald-500" />
                   <input type="email" placeholder={lang === 'ar' ? 'البريد الإلكتروني' : 'Email'} autoComplete="off" value={signupData.email} onChange={e => setSignupData({...signupData, email: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white col-span-1 md:col-span-2 outline-none focus:border-emerald-500" />
-                  <input type="tel" placeholder={lang === 'ar' ? 'رقم الهاتف' : 'Phone Number'} autoComplete="off" value={signupData.phone} onChange={e => setSignupData({...signupData, phone: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white col-span-1 md:col-span-2 outline-none focus:border-emerald-500" />
                   
+                  {/* --- تحديث إدخال الهاتف مع كود البلد --- */}
+                  <div className="col-span-1 md:col-span-2 flex gap-2">
+                    <div className="relative shrink-0 w-[110px] md:w-[130px]">
+                      <select value={signupCountryCode} onChange={e => setSignupCountryCode(e.target.value)} className="w-full h-full bg-[#111827] border border-gray-700 rounded-lg py-3 pl-3 pr-8 text-white outline-none focus:border-emerald-500 appearance-none cursor-pointer text-sm md:text-base font-bold" dir="ltr">
+                         {countryCodesList.map(c => <option key={c.code} value={c.code}>{c.flag} {c.code}</option>)}
+                      </select>
+                      <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
+                    </div>
+                    <input type="tel" placeholder={lang === 'ar' ? 'رقم الهاتف الأساسي' : 'Primary Phone Number'} autoComplete="off" value={signupData.phone} onChange={e => setSignupData({...signupData, phone: e.target.value})} className="flex-1 bg-[#111827] border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-emerald-500" dir="ltr" />
+                  </div>
+                  
+                  <input type="tel" placeholder={lang === 'ar' ? 'رقم الواتساب للتواصل (اختياري)' : 'WhatsApp Number (Optional)'} autoComplete="off" value={signupData.whatsapp} onChange={e => setSignupData({...signupData, whatsapp: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white col-span-1 md:col-span-2 outline-none focus:border-emerald-500" dir="ltr" />
+
                   <div className="relative">
-                    <input type={showSignupPass ? "text" : "password"} placeholder={lang === 'ar' ? 'كلمة المرور' : 'Password'} autoComplete="new-password" value={signupData.password} onChange={e => setSignupData({...signupData, password: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 pe-10 text-white outline-none focus:border-emerald-500" />
-                    <button type="button" onClick={() => setShowSignupPass(!showSignupPass)} className="absolute end-3 top-3 text-gray-400 hover:text-white">{showSignupPass ? <EyeOff size={20} /> : <Eye size={20} />}</button>
+                    <input type={showSignupPass ? "text" : "password"} placeholder={lang === 'ar' ? 'كلمة المرور' : 'Password'} autoComplete="new-password" value={signupData.password} onChange={e => setSignupData({...signupData, password: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg py-3 ps-3 pe-12 text-white outline-none focus:border-emerald-500" />
+                    <button type="button" onClick={() => setShowSignupPass(!showSignupPass)} className="absolute end-4 top-3.5 text-gray-400 hover:text-white">{showSignupPass ? <EyeOff size={20} /> : <Eye size={20} />}</button>
                   </div>
                   <div className="relative">
-                    <input type={showSignupConfirm ? "text" : "password"} placeholder={lang === 'ar' ? 'تأكيد كلمة المرور' : 'Confirm Password'} autoComplete="new-password" value={signupData.confirmPassword} onChange={e => setSignupData({...signupData, confirmPassword: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 pe-10 text-white outline-none focus:border-emerald-500" />
-                    <button type="button" onClick={() => setShowSignupConfirm(!showSignupConfirm)} className="absolute end-3 top-3 text-gray-400 hover:text-white">{showSignupConfirm ? <EyeOff size={20} /> : <Eye size={20} />}</button>
+                    <input type={showSignupConfirm ? "text" : "password"} placeholder={lang === 'ar' ? 'تأكيد كلمة المرور' : 'Confirm Password'} autoComplete="new-password" value={signupData.confirmPassword} onChange={e => setSignupData({...signupData, confirmPassword: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg py-3 ps-3 pe-12 text-white outline-none focus:border-emerald-500" />
+                    <button type="button" onClick={() => setShowSignupConfirm(!showSignupConfirm)} className="absolute end-4 top-3.5 text-gray-400 hover:text-white">{showSignupConfirm ? <EyeOff size={20} /> : <Eye size={20} />}</button>
                   </div>
 
                   <label className="col-span-1 md:col-span-2 border border-dashed border-emerald-500/50 p-6 rounded-xl text-center cursor-pointer text-gray-400 hover:border-emerald-500 transition-colors bg-emerald-500/5 mt-2">
