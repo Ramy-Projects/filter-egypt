@@ -762,7 +762,7 @@ export default function App() {
   const totalUnread = Object.values(unreadCounts).reduce((a, b) => a + b, 0);
 
   // --- 🔴 إعدادات الأدمن (Admin Setup) 🔴 ---
-  const ADMIN_EMAILS = ['ramyadnan97@gmail.com', 'admin@filter-egypt.com']; 
+  const ADMIN_EMAILS = ['your_email@gmail.com', 'admin@filter-egypt.com']; 
   const isAdmin = isAppLoggedIn && userProfile && userProfile.email && ADMIN_EMAILS.includes(userProfile.email.toLowerCase());
 
   const AvatarFallback = ({ size = 16, className = "" }) => (
@@ -1100,21 +1100,24 @@ export default function App() {
               ) : (
                 <>
                   {activeView === 'seller' && subStatus === 'warning' && (<div className="w-full max-w-3xl bg-yellow-500/10 border border-yellow-500/50 text-yellow-500 p-4 rounded-xl mb-6 text-center flex items-center justify-center gap-2 font-bold shadow-lg"><AlertTriangle size={20} className="animate-pulse" />تنبيه: متبقي {subDaysLeft} أيام على انتهاء اشتراكك الشهري.</div>)}
-                  {activeView === 'seller' && uploadedImages.length > 0 && (<div className="w-full flex gap-3 mb-4 overflow-x-auto pb-2"><div className="flex gap-2">{uploadedImages.map((imgObj, idx) => (<div key={idx} className="relative w-20 h-20 rounded-xl overflow-hidden shrink-0 border-2 border-emerald-500/50"><img src={imgObj.preview} alt="Preview" className="w-full h-full object-cover" /><button onClick={() => removeUploadedImage(idx)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full"><X size={12} /></button></div>))}</div></div>)}
+                  {activeView === 'seller' && uploadedImages.length > 0 && (<div className="w-full flex gap-3 mb-4 overflow-x-auto pb-2 custom-scrollbar"><div className="flex gap-2">{uploadedImages.map((imgObj, idx) => (<div key={idx} className="relative w-20 h-20 rounded-xl overflow-hidden shrink-0 border-2 border-emerald-500/50"><img src={imgObj.preview} alt="Preview" className="w-full h-full object-cover" /><button onClick={() => removeUploadedImage(idx)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full"><X size={12} /></button></div>))}</div></div>)}
                   
                   <div className="relative w-full flex items-center">
-                    <input type="text" value={activeView === 'buyer' ? searchQuery : sellerInput} onChange={(e) => activeView === 'buyer' ? setSearchQuery(e.target.value) : setSellerInput(e.target.value)} className={`w-full ${cardBg} border border-gray-700 rounded-full py-4 pl-28 ${activeView === 'seller' ? 'pr-32' : 'pr-6'} text-lg text-white outline-none focus:border-${activeView === 'buyer' ? 'blue' : 'emerald'}-500 shadow-xl`} placeholder={activeView === 'buyer' ? "عن ماذا تبحث؟" : "اكتب تفاصيل المنتج (عنوان الإعلان)..."} />
+                    <input type="text" value={activeView === 'buyer' ? searchQuery : sellerInput} onChange={(e) => activeView === 'buyer' ? setSearchQuery(e.target.value) : setSellerInput(e.target.value)} 
+                    className={`w-full ${cardBg} border border-gray-700 rounded-full py-4 pe-28 ${activeView === 'seller' ? 'ps-32' : 'ps-6'} text-lg text-white outline-none focus:border-${activeView === 'buyer' ? 'blue' : 'emerald'}-500 shadow-xl`} 
+                    placeholder={activeView === 'buyer' ? (lang === 'ar' ? "عن ماذا تبحث؟" : "What are you looking for?") : (lang === 'ar' ? "اكتب تفاصيل المنتج (عنوان الإعلان)..." : "Write product details (Ad title)...")} />
+                    
                     {activeView === 'seller' && (
-                      <div className="absolute inset-y-1.5 right-1.5 flex items-center z-10">
-                        <button onClick={() => setShowAdCategoryMenu(!showAdCategoryMenu)} className="h-full bg-gray-700/50 hover:bg-emerald-500/20 text-emerald-400 rounded-full px-4 flex items-center justify-center gap-1 transition-colors border border-transparent hover:border-emerald-500/50"><span className="text-xs font-bold max-w-[70px] truncate">{adCategory || 'القسم'}</span><ChevronDown size={16} /></button>
+                      <div className="absolute inset-y-1.5 start-1.5 flex items-center z-10">
+                        <button onClick={() => setShowAdCategoryMenu(!showAdCategoryMenu)} className="h-full bg-gray-700/50 hover:bg-emerald-500/20 text-emerald-400 rounded-full px-4 flex items-center justify-center gap-1 transition-colors border border-transparent hover:border-emerald-500/50"><span className="text-xs font-bold max-w-[70px] truncate">{adCategory || (lang === 'ar' ? 'القسم' : 'Category')}</span><ChevronDown size={16} /></button>
                         {showAdCategoryMenu && (
-                          <div className="absolute top-full right-0 mt-2 w-48 max-h-60 bg-[#1f2937] border border-gray-700 rounded-xl shadow-2xl overflow-y-auto custom-scrollbar py-1 z-[50]">
-                            {categories.map(cat => ( <button key={cat} onClick={() => { setAdCategory(cat); setShowAdCategoryMenu(false); }} className={`w-full text-right px-4 py-2.5 text-sm hover:bg-emerald-500/10 transition-colors ${adCategory === cat ? 'text-emerald-400 font-bold bg-emerald-500/10' : 'text-white'}`}>{cat}</button> ))}
+                          <div className="absolute top-full start-0 mt-2 w-48 max-h-60 bg-[#1f2937] border border-gray-700 rounded-xl shadow-2xl overflow-y-auto custom-scrollbar py-1 z-[50]">
+                            {categories.map(cat => ( <button key={cat} onClick={() => { setAdCategory(cat); setShowAdCategoryMenu(false); }} className={`w-full text-start px-4 py-2.5 text-sm hover:bg-emerald-500/10 transition-colors ${adCategory === cat ? 'text-emerald-400 font-bold bg-emerald-500/10' : 'text-white'}`}>{cat}</button> ))}
                           </div>
                         )}
                       </div>
                     )}
-                    <div className="absolute inset-y-1.5 left-1.5 flex gap-1.5 items-center">
+                    <div className="absolute inset-y-1.5 end-1.5 flex gap-1.5 items-center">
                       {activeView === 'seller' && (<label className={`cursor-pointer bg-gray-700/50 p-2.5 rounded-full flex items-center justify-center hover:bg-emerald-500/20 hover:text-emerald-400 transition-colors h-full aspect-square`}><ImagePlus size={20} /><input type="file" multiple className="hidden" onChange={handleImageUpload} accept="image/*" /></label>)}
                       <button onClick={async () => {
                           if (activeView === 'buyer') { setFilterCategory(searchQuery.trim() !== '' ? `بحث: ${searchQuery}` : 'الكل'); navigateTo('results'); } 
@@ -1130,11 +1133,11 @@ export default function App() {
                                 }
                                 const newAd = { title: sellerInput || 'إعلان جديد', titleEn: sellerInput || 'New Ad', category: adCategory, description: '', views: 0, statusAr: 'قيد المراجعة', statusEn: 'Pending', date: new Date().toISOString().split('T')[0], location: 'مصر', time: 'الآن', price: 'السعر بالاتفاق', images: finalImageUrls.length > 0 ? finalImageUrls : ["https://images.unsplash.com/photo-1550355291-bbee04a92027?auto=format&fit=crop&q=80&w=800"], sellerId: userProfile.uid, sellerName: userProfile.displayName, createdAt: Date.now() };
                                 await setDoc(publicDoc('ads', Date.now().toString()), newAd);
-                                setSellerInput(''); setUploadedImages([]); setIsUploading(false); setAppAlert('تم رفع الإعلان بنجاح. وهو الآن قيد المراجعة من الإدارة للحماية. يمكنك تعديل الوصف من صفحة "إعلاناتي".');
-                              } catch (err) { setIsUploading(false); setAppAlert('حدث خطأ.'); }
+                                setSellerInput(''); setUploadedImages([]); setIsUploading(false); setAppAlert(lang === 'ar' ? 'تم رفع الإعلان بنجاح. وهو الآن قيد المراجعة من الإدارة للحماية. يمكنك تعديل الوصف من صفحة "إعلاناتي".' : 'Ad posted successfully. It is currently under review by admins. You can edit the description from "My Ads" page.');
+                              } catch (err) { setIsUploading(false); setAppAlert(lang === 'ar' ? 'حدث خطأ.' : 'An error occurred.'); }
                             }
                           }
-                        }} className={`h-full ${activeView === 'buyer' ? 'bg-blue-600 hover:bg-blue-700' : accentBg} text-white px-6 md:px-8 rounded-full font-bold transition-colors`}>{activeView === 'buyer' ? 'بحث' : 'إرسال'}</button>
+                        }} className={`h-full ${activeView === 'buyer' ? 'bg-blue-600 hover:bg-blue-700' : accentBg} text-white px-6 md:px-8 rounded-full font-bold transition-colors`}>{activeView === 'buyer' ? (lang === 'ar' ? 'بحث' : 'Search') : (lang === 'ar' ? 'إرسال' : 'Post')}</button>
                     </div>
                   </div>
                 </>
