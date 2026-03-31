@@ -1,3 +1,10 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* إضافة لون الخلفية الأساسي للموقع وتعديل شريط التمرير */
+body {
+  background-color: #050505;
+  color: white;
+  direction: rtl; /* لجعل اتجاه الموقع من اليمين لليسار */
+}
