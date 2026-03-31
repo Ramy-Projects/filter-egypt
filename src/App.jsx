@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 // --- FIREBASE IMPORTS ---
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, updateDoc } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, updateDoc, getDocs } from 'firebase/firestore';
 
 import { 
   Search, SlidersHorizontal, Sparkles, CreditCard, Settings, ShieldCheck, 
@@ -90,6 +90,7 @@ function ActionIcon({ icon, label, highlight }) {
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
 
+  // الصفحات الآمنة التي يمكن الرجوع إليها عند الـ Refresh (بدون مشاكل فقدان البيانات المعينة)
   const safeViews = ['landing', 'buyer', 'seller', 'my-ads', 'live-feed', 'directory', 'login', 'signup', 'forgot-password', 'admin-dashboard', 'terms', 'privacy', 'ip', 'ad-details', 'user-profile', 'results'];
   
   const [activeView, setActiveView] = useState(() => {
@@ -98,8 +99,10 @@ export default function App() {
   }); 
 
   const [deferredPrompt, setDeferredPrompt] = useState(null);
+
   const [pendingUsers, setPendingUsers] = useState([]);
   const [history, setHistory] = useState([]); 
+  
   const [lang, setLang] = useState('ar'); 
   const [appAlert, setAppAlert] = useState(null);
   const [isUploading, setIsUploading] = useState(false); 
@@ -720,9 +723,18 @@ export default function App() {
         return;
       }
     }
+    
     if (!openChatIds.includes(chatId)) setOpenChatIds(prev => [...prev, chatId]);
     setActiveChatId(chatId);
-    if (!chatPositions[chatId]) setChatPositions(prev => ({ ...prev, [chatId]: { x: window.innerWidth > 768 ? (window.innerWidth / 2) - 190 : 10, y: window.innerHeight > 768 ? (window.innerHeight / 2) - 275 : 10 } }));
+
+    // Center the chat window if it doesn't have a saved position
+    if (!chatPositions[chatId]) {
+       const chatWidth = window.innerWidth > 768 ? 350 : window.innerWidth * 0.9;
+       const chatHeight = 480;
+       const startX = (window.innerWidth / 2) - (chatWidth / 2);
+       const startY = (window.innerHeight / 2) - (chatHeight / 2);
+       setChatPositions(prev => ({ ...prev, [chatId]: { x: startX, y: startY } }));
+    }
   };
 
   const handleSendMessage = async () => {
@@ -734,16 +746,69 @@ export default function App() {
     try { await updateDoc(publicDoc('chats', activeChatId), { messages: [...(activeChat.messages || []), newMsg], updatedAt: Date.now() }); } catch (error) {}
   };
 
+  const handleDeleteMessage = async (chatId, msgIndex) => {
+    const chat = globalChats.find(c => c.id === chatId);
+    if (!chat) return;
+    const newMessages = chat.messages.filter((_, i) => i !== msgIndex);
+    try { await updateDoc(publicDoc('chats', chatId), { messages: newMessages }); } catch (error) {}
+  };
+
+  const handleClearChat = (chatId) => {
+    setConfirmModal({
+      isOpen: true,
+      title: lang === 'ar' ? 'مسح المحادثة' : 'Clear Chat',
+      message: lang === 'ar' ? 'هل أنت متأكد من مسح جميع الرسائل؟ (سيتم مسحها لك وللطرف الآخر)' : 'Are you sure you want to clear all messages? (Will be cleared for both parties)',
+      type: 'danger',
+      confirmText: lang === 'ar' ? 'مسح الجميع' : 'Clear All',
+      onConfirm: async () => {
+        setConfirmModal({ ...confirmModal, isOpen: false });
+        try { await updateDoc(publicDoc('chats', chatId), { messages: [] }); } catch (error) {}
+      }
+    });
+  };
+
+  const handleDeleteEntireChat = (chatId, e) => {
+    e.stopPropagation();
+    setConfirmModal({
+      isOpen: true,
+      title: lang === 'ar' ? 'حذف المحادثة' : 'Delete Chat',
+      message: lang === 'ar' ? 'هل أنت متأكد من حذف هذه المحادثة بالكامل من صندوق الوارد؟' : 'Are you sure you want to delete this entire chat?',
+      type: 'danger',
+      confirmText: lang === 'ar' ? 'حذف' : 'Delete',
+      onConfirm: async () => {
+        setConfirmModal({ ...confirmModal, isOpen: false });
+        try { await deleteDoc(publicDoc('chats', chatId)); } catch (error) {}
+      }
+    });
+  };
+
+  const handleClearAllChats = () => {
+    setConfirmModal({
+      isOpen: true,
+      title: lang === 'ar' ? 'حذف كل الرسائل' : 'Delete All Chats',
+      message: lang === 'ar' ? 'هل أنت متأكد من حذف جميع محادثاتك السابقة؟' : 'Are you sure you want to delete all your previous chats?',
+      type: 'danger',
+      confirmText: lang === 'ar' ? 'حذف الكل' : 'Delete All',
+      onConfirm: async () => {
+        setConfirmModal({ ...confirmModal, isOpen: false });
+        setIsUploading(true);
+        try {
+          for (const chat of myActiveChats) {
+            await deleteDoc(publicDoc('chats', chat.id));
+          }
+          setAppAlert(lang === 'ar' ? 'تم حذف جميع المحادثات بنجاح.' : 'All chats deleted successfully.');
+          setShowInbox(false);
+        } catch (error) {}
+        setIsUploading(false);
+      }
+    });
+  };
+
   const handleMouseDown = (e, adId) => { 
     if (e.target.closest('button') || e.target.tagName.toLowerCase() === 'input') return; 
     setIsDragging(true); 
-    let initialX = chatPositions[adId]?.x;
-    let initialY = chatPositions[adId]?.y;
-    if (initialX === undefined || initialY === undefined) {
-       const rect = document.getElementById('active-chat-window').getBoundingClientRect();
-       initialX = rect.left;
-       initialY = rect.top;
-    }
+    let initialX = chatPositions[adId]?.x || 20;
+    let initialY = chatPositions[adId]?.y || 20;
     dragRef.current = { startX: e.clientX, startY: e.clientY, initialX, initialY, adId: adId }; 
   };
 
@@ -981,7 +1046,7 @@ export default function App() {
           <div className="bg-[#1f2937] rounded-3xl p-8 w-full max-w-md relative shadow-2xl border border-gray-700">
              <button onClick={() => setShowRenewModal(false)} className="absolute top-4 left-4 text-gray-400 hover:text-white"><X/></button>
              <h3 className="text-2xl font-bold mb-6 text-emerald-400 text-center">{lang === 'ar' ? 'تجديد الاشتراك الشهري' : 'Renew Monthly Subscription'}</h3>
-             <p className="text-center text-gray-300 mb-6 text-sm leading-relaxed">{lang === 'ar' ? 'يرجى تحويل رسوم التجديد (10 جنيه داخل مصر، أو 1 دولار من الخارج) وإرفاق الإيصال هنا ليتم تفعيل حساب مرة أخرى.' : 'Please transfer the renewal fee (10 EGP inside Egypt, or $1 from abroad) and attach the receipt here to reactivate your account.'}</p>
+             <p className="text-center text-gray-300 mb-6 text-sm leading-relaxed">{lang === 'ar' ? 'يرجى تحويل رسوم التجديد (10 جنيه داخل مصر، أو 1 دولار من الخارج) وإرفاق الإيصال هنا ليتم تفعيل حسابك مرة أخرى.' : 'Please transfer the renewal fee (10 EGP inside Egypt, or $1 from abroad) and attach the receipt here to reactivate your account.'}</p>
              <label className="border border-dashed border-gray-600 p-6 rounded-xl text-center cursor-pointer block text-gray-400 hover:border-emerald-500 transition-colors mb-6"><Upload className="mx-auto mb-2" /> {renewFile ? (lang === 'ar' ? 'تم اختيار إيصال التجديد بنجاح' : 'Renewal receipt selected successfully') : (lang === 'ar' ? 'إرفاق إيصال التجديد' : 'Attach Renewal Receipt')}<input type="file" className="hidden" accept="image/*" onChange={(e) => { if(e.target.files[0]) { setRenewFile(e.target.files[0]); } }} /></label>
              <button onClick={handleRenewSubmit} className="w-full bg-emerald-500 text-white font-bold py-4 rounded-xl hover:bg-emerald-600 transition-colors shadow-lg">{lang === 'ar' ? 'إرسال طلب التجديد' : 'Submit Renewal Request'}</button>
           </div>
@@ -1031,12 +1096,18 @@ export default function App() {
                   <button onClick={() => { setShowInbox(!showInbox); setShowNotifications(false); }} className="text-gray-400 hover:text-white relative p-2 bg-[#1f2937] rounded-full border border-gray-700 hover:border-emerald-500 transition-colors"><MessageSquare size={18} /></button>
                   {showInbox && (
                     <div className="absolute left-0 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 mt-3 w-72 bg-[#1f2937] border border-gray-700 rounded-2xl shadow-2xl z-50 p-2 animate-fade-in max-h-96 overflow-y-auto custom-scrollbar">
-                       <h4 className="text-sm font-bold text-gray-400 mb-2 px-3 border-b border-gray-700 pb-3 mt-2">{lang === 'ar' ? 'الرسائل (صندوق الوارد)' : 'Inbox'}</h4>
+                       <div className="flex justify-between items-center mb-2 px-3 border-b border-gray-700 pb-3 mt-2">
+                         <h4 className="text-sm font-bold text-gray-400">{lang === 'ar' ? 'الرسائل (صندوق الوارد)' : 'Inbox'}</h4>
+                         {myActiveChats.length > 0 && (
+                           <button onClick={handleClearAllChats} className="text-xs text-red-500 hover:text-red-400 bg-red-500/10 hover:bg-red-500/20 px-2 py-1 rounded-lg transition-colors flex items-center gap-1"><Trash2 size={12}/> {lang === 'ar' ? 'حذف الكل' : 'Clear All'}</button>
+                         )}
+                       </div>
                        {myActiveChats.length === 0 ? (<p className="text-xs text-gray-500 text-center py-6">{lang === 'ar' ? 'لا توجد محادثات سابقة' : 'No previous chats'}</p>) : (
                           myActiveChats.map(c => (
-                             <div key={c.id} onClick={() => { if (!openChatIds.includes(c.id)) setOpenChatIds(prev => [...prev, c.id]); setActiveChatId(c.id); setShowInbox(false); }} className="p-3 hover:bg-gray-800 rounded-xl cursor-pointer flex items-center gap-3 transition-colors">
+                             <div key={c.id} onClick={() => { if (!openChatIds.includes(c.id)) setOpenChatIds(prev => [...prev, c.id]); setActiveChatId(c.id); setShowInbox(false); }} className="p-3 hover:bg-gray-800 rounded-xl cursor-pointer flex items-center gap-3 transition-colors group">
                                 <div className="w-10 h-10 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center shrink-0"><User size={18} /></div>
                                 <div className="flex-1 overflow-hidden" dir={lang === 'ar' ? 'rtl' : 'ltr'}><p className="text-sm text-white font-bold truncate">{lang === 'ar' ? c.adTitle : (c.adTitleEn || c.adTitle)}</p><p className="text-xs text-gray-400 truncate">{c.messages?.[c.messages.length - 1]?.text || (lang === 'ar' ? 'بدء المحادثة...' : 'Start chat...')}</p></div>
+                                <button onClick={(e) => handleDeleteEntireChat(c.id, e)} className="text-red-500 opacity-0 md:opacity-100 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-red-500/20 rounded-lg shrink-0" title={lang === 'ar' ? 'حذف المحادثة' : 'Delete Chat'}><Trash2 size={16}/></button>
                              </div>
                           ))
                        )}
@@ -1217,7 +1288,7 @@ export default function App() {
               )}
             </div>
 
-            {/* الأزرار الرئيسية - تم إزالة زر رسائلي من هنا */}
+            {/* الأزرار الرئيسية */}
             <div className="flex flex-wrap justify-center gap-4 md:gap-8 mt-12">
               <div onClick={() => navigateTo('live-feed')}><ActionIcon icon={<Activity className="text-red-500 animate-pulse" />} label={lang === 'ar' ? "الرادار المباشر" : "Live Radar"} highlight="red" /></div>
               <div onClick={() => setShowFilterModal(true)}><ActionIcon icon={<SlidersHorizontal />} label={lang === 'ar' ? "فلترة ذكية" : "Smart Filter"} /></div>
@@ -1385,7 +1456,7 @@ export default function App() {
                       ) : (
                          <>
                            <button onClick={() => openChat(viewedProfile.uid, viewedProfile.displayName)} className="w-full md:w-auto bg-emerald-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"><Send size={20}/> {lang === 'ar' ? 'إرسال رسالة داخلية' : 'Send Message'}</button>
-                           {viewedProfile.whatsapp && (
+                           {viewedProfile.whatsapp && viewedProfile.whatsapp.trim().length > 0 && (
                               <a href={`https://wa.me/${viewedProfile.whatsapp.replace(/[^0-9+]/g, '')}`} target="_blank" rel="noreferrer" className="w-full md:w-auto bg-[#25D366] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#20bd5a] transition-colors shadow-lg flex items-center justify-center gap-2"><MessageCircle size={20}/> {lang === 'ar' ? 'تواصل عبر واتساب' : 'WhatsApp'}</a>
                            )}
                          </>
@@ -1516,7 +1587,7 @@ export default function App() {
                       ) : (
                          <>
                            <button onClick={() => openChat(selectedAd)} className="w-full bg-emerald-500 text-white font-bold rounded-xl py-4 flex justify-center items-center gap-2 hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/20"><MessageSquare size={20} /> {lang === 'ar' ? 'شات داخلي (آمن)' : 'Internal Chat'}</button>
-                           {allProfiles.find(p => p.uid === selectedAd.sellerId)?.whatsapp && (
+                           {allProfiles.find(p => p.uid === selectedAd.sellerId)?.whatsapp && allProfiles.find(p => p.uid === selectedAd.sellerId).whatsapp.trim().length > 0 && (
                               <a href={`https://wa.me/${allProfiles.find(p => p.uid === selectedAd.sellerId).whatsapp.replace(/[^0-9+]/g, '')}`} target="_blank" rel="noreferrer" className="w-full bg-[#25D366] text-white font-bold rounded-xl py-4 flex justify-center items-center gap-2 hover:bg-[#20bd5a] transition-colors shadow-lg"><MessageCircle size={20} /> {lang === 'ar' ? 'تواصل عبر واتساب' : 'WhatsApp'}</a>
                            )}
                          </>
@@ -1641,7 +1712,7 @@ export default function App() {
               {pendingUsers.length === 0 ? (
                 <div className="bg-[#111827] p-6 rounded-xl border border-gray-700 text-center"><p className="text-gray-400">لا توجد طلبات في قائمة الانتظار حالياً.</p><p className="text-sm text-gray-500 mt-2">اضغط على "تحديث القائمة" لجلب التحديثات الجديدة.</p></div>
               ) : (
-                <div className="max-h-96 overflow-y-auto custom-scrollbar pr-2 space-y-4">
+                <div className="max-h-[280px] overflow-y-auto custom-scrollbar p-3 space-y-4 border border-gray-700/50 rounded-xl bg-[#111827]/50 shadow-inner">
                   {pendingUsers.filter(u => u.fullName?.includes(adminPendingSearch) || u.phone?.includes(adminPendingSearch) || u.email?.includes(adminPendingSearch)).map(u => (
                     <div key={u.uid} className="bg-[#111827] p-5 rounded-xl border border-gray-700 flex flex-col sm:flex-row justify-between items-center gap-4">
                       <div className="flex gap-4 items-center">
@@ -1692,8 +1763,8 @@ export default function App() {
                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
                  <input type="text" value={adminMembersSearch} onChange={e => setAdminMembersSearch(e.target.value)} placeholder="ابحث عن مشترك بالاسم، الرقم..." className="w-full bg-[#111827] border border-gray-700 rounded-lg py-3 pr-10 pl-4 text-sm text-white outline-none focus:border-orange-500" />
               </div>
-              <div className="bg-[#1f2937] p-6 rounded-2xl border border-gray-700 shadow-xl max-h-96 overflow-y-auto custom-scrollbar">
-                 <div className="space-y-3">
+              <div className="bg-[#1f2937] p-6 rounded-2xl border border-gray-700 shadow-xl">
+                 <div className="max-h-[260px] overflow-y-auto custom-scrollbar p-3 space-y-3 border border-gray-700/50 rounded-xl bg-[#111827]/50 shadow-inner">
                    {allProfiles.filter(p => p.displayName?.includes(adminMembersSearch) || p.fullName?.includes(adminMembersSearch) || p.phone?.includes(adminMembersSearch)).map(p => (
                       <div key={p.uid} className="bg-[#111827] p-4 rounded-xl border border-gray-700 flex flex-col sm:flex-row justify-between items-center gap-3">
                          <div className="flex items-center gap-3">
