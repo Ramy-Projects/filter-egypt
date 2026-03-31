@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 // --- FIREBASE IMPORTS ---
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, updateDoc, getDocs } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, updateDoc } from 'firebase/firestore';
 
 import { 
   Search, SlidersHorizontal, Sparkles, CreditCard, Settings, ShieldCheck, 
@@ -90,7 +90,6 @@ function ActionIcon({ icon, label, highlight }) {
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
 
-  // الصفحات الآمنة التي يمكن الرجوع إليها عند الـ Refresh (بدون مشاكل فقدان البيانات المعينة)
   const safeViews = ['landing', 'buyer', 'seller', 'my-ads', 'live-feed', 'directory', 'login', 'signup', 'forgot-password', 'admin-dashboard', 'terms', 'privacy', 'ip', 'ad-details', 'user-profile', 'results'];
   
   const [activeView, setActiveView] = useState(() => {
@@ -99,10 +98,8 @@ export default function App() {
   }); 
 
   const [deferredPrompt, setDeferredPrompt] = useState(null);
-
   const [pendingUsers, setPendingUsers] = useState([]);
   const [history, setHistory] = useState([]); 
-  
   const [lang, setLang] = useState('ar'); 
   const [appAlert, setAppAlert] = useState(null);
   const [isUploading, setIsUploading] = useState(false); 
@@ -180,7 +177,7 @@ export default function App() {
   const [newCategoryInput, setNewCategoryInput] = useState('');
   const [searchQuery, setSearchQuery] = useState(''); 
   const [sellerInput, setSellerInput] = useState(''); 
-  const [sellerDescription, setSellerDescription] = useState(''); // وصف الإعلان المباشر
+  const [sellerDescription, setSellerDescription] = useState('');
   const [adCategory, setAdCategory] = useState('');
   const [showAdCategoryMenu, setShowAdCategoryMenu] = useState(false);
   const [filterCategory, setFilterCategory] = useState(() => {
@@ -262,7 +259,6 @@ export default function App() {
     }
   };
 
-  // استرجاع بيانات الدخول إذا تم اختيار "تذكرني"
   useEffect(() => {
     const savedLogin = localStorage.getItem('filterEgyptSavedLogin');
     if (savedLogin) {
@@ -530,7 +526,6 @@ export default function App() {
         }
       }
       if (finalImageUrls.length === 0) finalImageUrls.push("https://images.unsplash.com/photo-1550355291-bbee04a92027?auto=format&fit=crop&q=80&w=800");
-      // تم التعديل هنا: تحويل حالة الإعلان إلى قيد المراجعة عند التعديل
       await updateDoc(publicDoc('ads', adToEdit.id), { title: adToEdit.title, titleEn: adToEdit.title, price: adToEdit.price, category: adToEdit.category, description: adToEdit.description || '', images: finalImageUrls, statusEn: 'Pending', statusAr: 'قيد المراجعة' });
       setAppAlert(lang === 'ar' ? 'تم التعديل بنجاح! الإعلان الآن قيد المراجعة من الإدارة للنشر.' : 'Ad updated successfully! It is now pending admin review for publication.'); setAdToEdit(null); setEditNewImages([]);
     } catch (err) {} setIsUploading(false);
@@ -545,7 +540,6 @@ export default function App() {
       if (!receiptUploaded || !receiptFile) throw new Error(lang === 'ar' ? 'يرجى إرفاق صورة إيصال الدفع للتحقق' : 'Please attach the payment receipt to verify');
 
       const cleanEmail = signupData.email.trim().toLowerCase();
-      // دمج كود البلد مع رقم الهاتف ليكون رقماً موحداً
       const cleanPhone = signupCountryCode + signupData.phone.trim();
       
       if (allProfiles.some(p => p.email === cleanEmail)) throw new Error(lang === 'ar' ? 'البريد الإلكتروني مستخدم بالفعل' : 'Email already in use');
@@ -590,7 +584,6 @@ export default function App() {
     if (!loginData.identifier || !loginData.password) { setLoginError(lang === 'ar' ? 'يرجى إدخال البيانات' : 'Please enter credentials'); return; }
     try {
       const searchIdentifier = loginData.identifier.trim().toLowerCase();
-      // السماح بتسجيل الدخول برقم الهاتف حتى لو لم يكتب المستخدم كود البلد (+20)
       const searchPhone = searchIdentifier.replace(/^0/, ''); 
       const foundUser = allProfiles.filter(p => 
         p.email === searchIdentifier || 
@@ -601,13 +594,7 @@ export default function App() {
       if (foundUser) {
         if (foundUser.isBanned) { setLoginError(lang === 'ar' ? 'عذراً، هذا الحساب تم حظره من الإدارة.' : 'Account is banned by administration.'); return; }
         if (foundUser.password === loginData.password) { 
-           
-           if (rememberMe) {
-              localStorage.setItem('filterEgyptSavedLogin', JSON.stringify({ identifier: loginData.identifier, password: loginData.password }));
-           } else {
-              localStorage.removeItem('filterEgyptSavedLogin');
-           }
-
+           if (rememberMe) { localStorage.setItem('filterEgyptSavedLogin', JSON.stringify({ identifier: loginData.identifier, password: loginData.password })); } else { localStorage.removeItem('filterEgyptSavedLogin'); }
            setUserProfile(foundUser); 
            setIsAppLoggedIn(true); 
            setLoginData({ identifier: '', password: '' }); 
@@ -623,7 +610,6 @@ export default function App() {
     setResetError(''); setResetSuccess('');
     if (!resetData.email || !resetData.phone || !resetData.newPassword) { setResetError(lang === 'ar' ? 'يرجى ملء كافة البيانات' : 'Please fill all fields'); return; }
     try {
-      // مرونة في التحقق من رقم الهاتف عند استعادة كلمة المرور أيضاً
       const searchPhone = resetData.phone.trim().replace(/^0/, '');
       const foundUser = allProfiles.find(p => p.email === resetData.email.trim().toLowerCase() && p.phone && p.phone.endsWith(searchPhone));
 
@@ -713,14 +699,27 @@ export default function App() {
   const openChat = async (adOrProfileId, titleFallback) => {
     if (!isAppLoggedIn || !userProfile) { setAppAlert(lang === 'ar' ? 'يرجى تسجيل الدخول أولاً.' : 'Please login first.'); return; }
     const targetSellerId = typeof adOrProfileId === 'object' ? adOrProfileId.sellerId : adOrProfileId;
-    const targetTitle = typeof adOrProfileId === 'object' ? adOrProfileId.title : titleFallback;
-    const adIdRef = typeof adOrProfileId === 'object' ? adOrProfileId.id : `direct_${targetSellerId}`;
+    const targetTitle = typeof adOrProfileId === 'object' ? (lang === 'ar' ? adOrProfileId.title : adOrProfileId.titleEn) : (titleFallback || 'محادثة');
+    const adIdRef = typeof adOrProfileId === 'object' ? adOrProfileId.id : `direct`;
 
     if (userProfile.uid === targetSellerId) { setAppAlert(lang === 'ar' ? 'لا يمكنك مراسلة نفسك!' : 'You cannot message yourself!'); return; }
     
-    const chatId = `${adIdRef}_${userProfile.uid}_${targetSellerId}`;
+    const sortedIds = [userProfile.uid, targetSellerId].sort();
+    const chatId = typeof adOrProfileId === 'object' ? `${adIdRef}_${userProfile.uid}_${targetSellerId}` : `direct_${sortedIds[0]}_${sortedIds[1]}`;
+    
     const existingChat = globalChats.find(c => c.id === chatId);
-    if (!existingChat) { await setDoc(publicDoc('chats', chatId), { adId: adIdRef, adTitle: targetTitle, participants: [userProfile.uid, targetSellerId], buyerId: userProfile.uid, sellerId: targetSellerId, messages: [], updatedAt: Date.now() }); }
+    
+    if (!existingChat) { 
+      try {
+        const newChatData = { id: chatId, adId: adIdRef, adTitle: targetTitle, participants: [userProfile.uid, targetSellerId], buyerId: userProfile.uid, sellerId: targetSellerId, messages: [], updatedAt: Date.now() };
+        setGlobalChats(prev => [...prev, newChatData]);
+        await setDoc(publicDoc('chats', chatId), newChatData); 
+      } catch (err) {
+        console.error(err);
+        setAppAlert(lang === 'ar' ? 'حدث خطأ أثناء فتح المحادثة.' : 'Error opening chat.');
+        return;
+      }
+    }
     if (!openChatIds.includes(chatId)) setOpenChatIds(prev => [...prev, chatId]);
     setActiveChatId(chatId);
     if (!chatPositions[chatId]) setChatPositions(prev => ({ ...prev, [chatId]: { x: window.innerWidth > 768 ? (window.innerWidth / 2) - 190 : 10, y: window.innerHeight > 768 ? (window.innerHeight / 2) - 275 : 10 } }));
@@ -801,16 +800,10 @@ export default function App() {
 
   // --- 🔴 إعدادات الأدمن (Admin Setup) 🔴 ---
   const ADMIN_EMAILS = ['ramyadnan97@gmail.com', 'admin@filter-egypt.com']; 
-  
-  // دالة صارمة جداً للتأكد من هوية الأدمن
   const checkAdmin = (profile) => {
      if (!profile) return false;
-     const isEmailAdmin = profile.email && ADMIN_EMAILS.includes(profile.email.toLowerCase());
-     const cleanPhone = profile.phone ? profile.phone.replace(/[^0-9]/g, '') : '';
-     const isPhoneAdmin = cleanPhone.endsWith('1024059955');
-     return isEmailAdmin || isPhoneAdmin;
+     return profile.email && ADMIN_EMAILS.includes(profile.email.toLowerCase());
   };
-  
   const isAdmin = isAppLoggedIn && checkAdmin(userProfile);
 
   const AvatarFallback = ({ size = 16, className = "" }) => (
@@ -977,7 +970,7 @@ export default function App() {
           <div className="bg-[#1f2937] rounded-3xl p-8 w-full max-w-md relative shadow-2xl border border-gray-700">
              <button onClick={() => setShowRenewModal(false)} className="absolute top-4 left-4 text-gray-400 hover:text-white"><X/></button>
              <h3 className="text-2xl font-bold mb-6 text-emerald-400 text-center">{lang === 'ar' ? 'تجديد الاشتراك الشهري' : 'Renew Monthly Subscription'}</h3>
-             <p className="text-center text-gray-300 mb-6 text-sm leading-relaxed">{lang === 'ar' ? 'يرجى تحويل رسوم التجديد (10 جنيه داخل مصر، أو 1 دولار من الخارج) وإرفاق الإيصال هنا ليتم تفعيل حسابك مرة أخرى.' : 'Please transfer the renewal fee (10 EGP inside Egypt, or $1 from abroad) and attach the receipt here to reactivate your account.'}</p>
+             <p className="text-center text-gray-300 mb-6 text-sm leading-relaxed">{lang === 'ar' ? 'يرجى تحويل رسوم التجديد (10 جنيه داخل مصر، أو 1 دولار من الخارج) وإرفاق الإيصال هنا ليتم تفعيل حساب مرة أخرى.' : 'Please transfer the renewal fee (10 EGP inside Egypt, or $1 from abroad) and attach the receipt here to reactivate your account.'}</p>
              <label className="border border-dashed border-gray-600 p-6 rounded-xl text-center cursor-pointer block text-gray-400 hover:border-emerald-500 transition-colors mb-6"><Upload className="mx-auto mb-2" /> {renewFile ? (lang === 'ar' ? 'تم اختيار إيصال التجديد بنجاح' : 'Renewal receipt selected successfully') : (lang === 'ar' ? 'إرفاق إيصال التجديد' : 'Attach Renewal Receipt')}<input type="file" className="hidden" accept="image/*" onChange={(e) => { if(e.target.files[0]) { setRenewFile(e.target.files[0]); } }} /></label>
              <button onClick={handleRenewSubmit} className="w-full bg-emerald-500 text-white font-bold py-4 rounded-xl hover:bg-emerald-600 transition-colors shadow-lg">{lang === 'ar' ? 'إرسال طلب التجديد' : 'Submit Renewal Request'}</button>
           </div>
@@ -1004,7 +997,6 @@ export default function App() {
         </div>
 
         <div className="flex gap-2 md:gap-4 items-center">
-          
           <button onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')} className="bg-[#1f2937] border border-gray-700 hover:border-emerald-500 text-gray-300 px-3 py-1.5 rounded-full font-bold text-xs md:text-sm transition-colors">
              {lang === 'ar' ? 'EN' : 'عربي'}
           </button>
@@ -1015,9 +1007,7 @@ export default function App() {
                 deferredPrompt.prompt();
                 const { outcome } = await deferredPrompt.userChoice;
                 if (outcome === 'accepted') setDeferredPrompt(null);
-              } else {
-                setShowInstallManualModal(true);
-              }
+              } else { setShowInstallManualModal(true); }
             }} className="bg-gradient-to-r from-emerald-500 to-cyan-500 text-white px-3 py-1.5 rounded-full font-bold flex items-center gap-1.5 text-xs md:text-sm animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:scale-105 transition-transform">
                <Store size={16} /> <span className="hidden sm:inline">{lang === 'ar' ? 'تنزيل التطبيق' : 'Install App'}</span>
             </button>
@@ -1068,7 +1058,6 @@ export default function App() {
                {userProfile?.subscriptionStatus === 'Pending' ? (
                  <span className="text-yellow-500 font-bold text-xs md:text-sm hidden sm:flex bg-yellow-500/10 px-3 py-1.5 rounded-full border border-yellow-500/20 items-center gap-1.5"><AlertTriangle size={14} className="animate-pulse" /> {lang === 'ar' ? 'قيد المراجعة' : 'Pending Review'}</span>
                ) : (
-                 // --- HEADER PROFILE LINK ---
                  <button onClick={() => { setViewedProfile(userProfile); navigateTo('user-profile'); }} className="text-emerald-400 font-bold text-xs md:text-sm hidden sm:flex bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors px-3 py-1.5 rounded-full border border-emerald-500/20 items-center gap-2 cursor-pointer group">
                    {userProfile?.photoUrl ? <img src={userProfile.photoUrl} alt="profile" className="w-6 h-6 rounded-full object-cover group-hover:scale-110 transition-transform" /> : <AvatarFallback size={24} />} 
                    <span className="group-hover:text-emerald-300 transition-colors">{userProfile?.displayName || (lang === 'ar' ? 'مستخدم' : 'User')}</span>
@@ -1217,6 +1206,7 @@ export default function App() {
               )}
             </div>
 
+            {/* الأزرار الرئيسية - تم إزالة زر رسائلي من هنا */}
             <div className="flex flex-wrap justify-center gap-4 md:gap-8 mt-12">
               <div onClick={() => navigateTo('live-feed')}><ActionIcon icon={<Activity className="text-red-500 animate-pulse" />} label={lang === 'ar' ? "الرادار المباشر" : "Live Radar"} highlight="red" /></div>
               <div onClick={() => setShowFilterModal(true)}><ActionIcon icon={<SlidersHorizontal />} label={lang === 'ar' ? "فلترة ذكية" : "Smart Filter"} /></div>
@@ -1577,7 +1567,6 @@ export default function App() {
                   <input type="text" placeholder={lang === 'ar' ? 'اسم العرض (البراند الخاص بك)' : 'Display Name (Brand)'} autoComplete="off" value={signupData.displayName} onChange={e => setSignupData({...signupData, displayName: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white outline-none focus:border-emerald-500" />
                   <input type="email" placeholder={lang === 'ar' ? 'البريد الإلكتروني' : 'Email'} autoComplete="off" value={signupData.email} onChange={e => setSignupData({...signupData, email: e.target.value})} className="w-full bg-[#111827] border border-gray-700 rounded-lg p-3 text-white col-span-1 md:col-span-2 outline-none focus:border-emerald-500" />
                   
-                  {/* --- تحديث إدخال الهاتف مع كود البلد --- */}
                   <div className="col-span-1 md:col-span-2 flex gap-2">
                     <div className="relative shrink-0 w-[110px] md:w-[130px]">
                       <select value={signupCountryCode} onChange={e => setSignupCountryCode(e.target.value)} className="w-full h-full bg-[#111827] border border-gray-700 rounded-lg py-3 pl-3 pr-8 text-white outline-none focus:border-emerald-500 appearance-none cursor-pointer text-sm md:text-base font-bold" dir="ltr">
