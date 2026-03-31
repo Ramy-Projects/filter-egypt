@@ -1221,7 +1221,6 @@ export default function App() {
               <div onClick={() => navigateTo('live-feed')}><ActionIcon icon={<Activity className="text-red-500 animate-pulse" />} label={lang === 'ar' ? "الرادار المباشر" : "Live Radar"} highlight="red" /></div>
               <div onClick={() => setShowFilterModal(true)}><ActionIcon icon={<SlidersHorizontal />} label={lang === 'ar' ? "فلترة ذكية" : "Smart Filter"} /></div>
               <div onClick={() => navigateTo('directory')}><ActionIcon icon={<UserSearch className="text-blue-400" />} label={lang === 'ar' ? "دليل المشتركين" : "Directory"} /></div>
-              <div onClick={() => { setShowInbox(true); window.scrollTo({top: 0, behavior: 'smooth'}); }}><ActionIcon icon={<MessageSquare className="text-blue-400" />} label={lang === 'ar' ? "رسائلي" : "My Chats"} /></div>
               <div onClick={() => navigateTo('my-ads')}><ActionIcon icon={<Megaphone />} label={lang === 'ar' ? "إعلاناتي" : "My Ads"} /></div>
               <div onClick={() => setShowSettingsModal(true)}><ActionIcon icon={<Settings />} label={lang === 'ar' ? "الإعدادات" : "Settings"} /></div>
             </div>
