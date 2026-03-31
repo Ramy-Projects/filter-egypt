@@ -734,7 +734,18 @@ export default function App() {
     try { await updateDoc(publicDoc('chats', activeChatId), { messages: [...(activeChat.messages || []), newMsg], updatedAt: Date.now() }); } catch (error) {}
   };
 
-  const handleMouseDown = (e, adId) => { if (e.target.closest('button') || e.target.tagName.toLowerCase() === 'input') return; setIsDragging(true); dragRef.current = { startX: e.clientX, startY: e.clientY, initialX: chatPositions[adId]?.x || 0, initialY: chatPositions[adId]?.y || 0, adId: adId }; };
+  const handleMouseDown = (e, adId) => { 
+    if (e.target.closest('button') || e.target.tagName.toLowerCase() === 'input') return; 
+    setIsDragging(true); 
+    let initialX = chatPositions[adId]?.x;
+    let initialY = chatPositions[adId]?.y;
+    if (initialX === undefined || initialY === undefined) {
+       const rect = document.getElementById('active-chat-window').getBoundingClientRect();
+       initialX = rect.left;
+       initialY = rect.top;
+    }
+    dragRef.current = { startX: e.clientX, startY: e.clientY, initialX, initialY, adId: adId }; 
+  };
 
   useEffect(() => {
     const handleMouseMove = (e) => { if (!isDragging || !dragRef.current.adId) return; setChatPositions(prev => ({ ...prev, [dragRef.current.adId]: { x: dragRef.current.initialX + (e.clientX - dragRef.current.startX), y: dragRef.current.initialY + (e.clientY - dragRef.current.startY) } })); };
@@ -1367,7 +1378,10 @@ export default function App() {
                    {/* Actions (Chat or Edit Own Profile) */}
                    <div className="mt-4 md:mt-24 w-full md:w-auto flex flex-col gap-3 shrink-0">
                       {(isAppLoggedIn && userProfile?.uid === viewedProfile.uid) ? (
-                         <button onClick={() => setShowSettingsModal(true)} className="w-full md:w-auto bg-gray-700 text-white px-8 py-3 rounded-xl font-bold hover:bg-gray-600 transition-colors shadow-lg flex items-center justify-center gap-2"><Edit size={20}/> {lang === 'ar' ? 'تعديل البروفايل' : 'Edit Profile'}</button>
+                         <div className="w-full flex flex-col gap-2 items-center md:items-start">
+                            <span className="text-gray-500 text-xs mb-1 font-bold">👀 {lang === 'ar' ? 'هذا هو بروفايلك الشخصي' : 'This is your profile'}</span>
+                            <button onClick={() => setShowSettingsModal(true)} className="w-full md:w-auto bg-gray-700 text-white px-8 py-3 rounded-xl font-bold hover:bg-gray-600 transition-colors shadow-lg flex items-center justify-center gap-2"><Edit size={20}/> {lang === 'ar' ? 'تعديل البروفايل' : 'Edit Profile'}</button>
+                         </div>
                       ) : (
                          <>
                            <button onClick={() => openChat(viewedProfile.uid, viewedProfile.displayName)} className="w-full md:w-auto bg-emerald-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"><Send size={20}/> {lang === 'ar' ? 'إرسال رسالة داخلية' : 'Send Message'}</button>
@@ -1753,7 +1767,7 @@ export default function App() {
 
               {/* مراجعة الإعلانات */}
               <div className="flex flex-col sm:flex-row justify-between items-center border-b border-gray-700 pb-4 mb-6 mt-12"><h2 className="text-2xl font-bold text-blue-400 mb-4 sm:mb-0">مراجعة الإعلانات الجديدة</h2></div>
-              <div className="space-y-4 max-h-96 overflow-y-auto custom-scrollbar pr-2">
+              <div className="max-h-[300px] overflow-y-auto custom-scrollbar p-3 space-y-4 border border-gray-700/50 rounded-xl bg-[#111827]/50 shadow-inner">
                  {globalAds.filter(ad => ad.statusEn === 'Pending').length === 0 ? (
                     <div className="bg-[#111827] p-6 rounded-xl border border-gray-700 text-center"><p className="text-gray-400">لا توجد إعلانات في انتظار المراجعة.</p></div>
                  ) : (
@@ -1834,12 +1848,14 @@ export default function App() {
 
       {/* --- ACTIVE CHAT --- */}
       {activeChat && (() => {
-         const pos = chatPositions[activeChatId] || { x: 20, y: 20 };
+         const pos = chatPositions[activeChatId];
+         const styleProps = pos ? { left: pos.x, top: pos.y } : {};
+         const positionClasses = pos ? '' : 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2';
          const otherUserId = activeChat.participants.find(id => id !== userProfile?.uid);
          const otherUserProfile = allProfiles.find(p => p.uid === otherUserId);
 
          return (
-            <div style={{ left: pos.x, top: pos.y }} className={`fixed z-[60] w-[350px] h-[480px] flex flex-col shadow-2xl rounded-2xl overflow-hidden bg-[#111827] border border-gray-600`}>
+            <div id="active-chat-window" style={styleProps} className={`fixed z-[1000] w-[90%] sm:w-[350px] h-[480px] flex flex-col shadow-2xl rounded-2xl overflow-hidden bg-[#111827] border border-gray-600 ${positionClasses}`}>
               <div onMouseDown={(e) => handleMouseDown(e, activeChatId)} className="bg-[#1f2937] p-3 flex justify-between items-center cursor-move border-b border-gray-800">
                 
                 {/* Chat Header -> Clickable to go to profile */}
