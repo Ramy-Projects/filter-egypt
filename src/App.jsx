@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, updateDoc, getDocs } from 'firebase/firestore';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'; // 🔴 تمت إعادة استدعاء مكتبة التخزين للفيديوهات
 
 import { 
   Search, SlidersHorizontal, Sparkles, CreditCard, Settings, ShieldCheck, 
@@ -11,7 +12,7 @@ import {
   CheckCircle, AlertTriangle, Send, MessageSquareX, Minus, MessageSquare, 
   Megaphone, Edit, Trash2, Save, Activity, Info, Loader, Plus, ChevronDown, Clock,
   Facebook, Youtube, Instagram, Ghost, Music, UserSearch, Ban, MessageCircleWarning, 
-  Link as LinkIcon, Camera, MessageCircle, Heart, Smile, Link2, Flag
+  Link as LinkIcon, Camera, MessageCircle, Heart, Smile, Link2, Flag, Film
 } from 'lucide-react';
 
 // ==========================================
@@ -31,6 +32,7 @@ const fbConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebas
 const app = initializeApp(fbConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const storage = getStorage(app); // 🔴 تفعيل التخزين السحابي للفيديوهات
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'filter-egypt-app';
 
 // دوال مساعدة للوصول الآمن للبيانات
@@ -507,12 +509,24 @@ export default function App() {
     setIsUploading(true);
     try {
       let mediaUrl = null;
+      let mediaType = null; // 🔴 لتحديد نوع الميديا (صورة أم فيديو)
 
       if (newPostMedia) {
-          const formData = new FormData(); formData.append('image', newPostMedia);
-          const res = await fetch('https://api.imgbb.com/1/upload?key=8c8cec8f9ee7b67db88ba5799154c94d', { method: 'POST', body: formData });
-          if (res.ok) { 
-              mediaUrl = (await res.json()).data.url; 
+          // رفع الصور كالمعتاد على ImgBB
+          if (newPostMedia.type.startsWith('image/')) {
+              const formData = new FormData(); formData.append('image', newPostMedia);
+              const res = await fetch('https://api.imgbb.com/1/upload?key=8c8cec8f9ee7b67db88ba5799154c94d', { method: 'POST', body: formData });
+              if (res.ok) { 
+                  mediaUrl = (await res.json()).data.url; 
+                  mediaType = 'image';
+              }
+          } 
+          // 🔴 رفع الفيديوهات على Firebase Storage
+          else if (newPostMedia.type.startsWith('video/')) {
+              const videoRef = storageRef(storage, `club_videos/${Date.now()}_${newPostMedia.name}`);
+              await uploadBytes(videoRef, newPostMedia);
+              mediaUrl = await getDownloadURL(videoRef);
+              mediaType = 'video';
           }
       }
 
@@ -523,6 +537,7 @@ export default function App() {
         content: newPostContent.trim(),
         adLink: newPostLink.trim() || null,
         mediaUrl: mediaUrl,
+        mediaType: mediaType, // 🔴 حفظ نوع الميديا
         createdAt: Date.now(),
         likes: [],
         comments: []
@@ -536,7 +551,7 @@ export default function App() {
       setAppAlert(lang === 'ar' ? 'تم نشر البوست بنجاح في النادي!' : 'Post published successfully in the Club!');
     } catch (e) {
       console.error(e);
-      setAppAlert(lang === 'ar' ? 'حدث خطأ أثناء النشر. تأكد من جودة الصورة.' : 'Error publishing post.');
+      setAppAlert(lang === 'ar' ? 'حدث خطأ أثناء النشر. تأكد من فتح إعدادات الـ Storage في Firebase.' : 'Error publishing post. Check Firebase Storage rules.');
     }
     setIsUploading(false);
   };
@@ -1521,27 +1536,33 @@ export default function App() {
                         {userProfile?.photoUrl ? <img src={userProfile.photoUrl} className="w-12 h-12 rounded-full object-cover border-2 border-purple-500/50 hover:scale-105 transition-transform" alt="Avatar" /> : <AvatarFallback size={48} className="border-2 border-purple-500/50 hover:scale-105 transition-transform" />}
                      </div>
                      <div className="flex-1">
-                        <textarea value={newPostContent} onChange={e => setNewPostContent(e.target.value)} placeholder={lang === 'ar' ? "شارك أفكارك، ابحث عن شريك، أو اطرح سؤالاً للمجتمع..." : "Share your thoughts, find a partner, or ask the community..."} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-4 text-white text-lg outline-none focus:border-purple-500 resize-none custom-scrollbar min-h-[100px]"></textarea>
+                        <textarea value={newPostContent} onChange={e => setNewPostContent(e.target.value)} placeholder={lang === 'ar' ? "شارك أفكارك، فيديو، أو اطرح سؤالاً للمجتمع..." : "Share your thoughts, video, or ask a question..."} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-4 text-white text-lg outline-none focus:border-purple-500 resize-none custom-scrollbar min-h-[100px]"></textarea>
                         
-                        {/* New Additions: Link, Image, Emoji */}
+                        {/* New Additions: Link, Image/Video, Emoji */}
                         <div className="mt-3 flex flex-col gap-3 border-t border-gray-800 pt-3">
                            <div className="flex items-center gap-3 bg-[#111827] rounded-xl px-3 py-2 border border-gray-700 focus-within:border-purple-500">
                               <Link2 size={18} className="text-gray-400 shrink-0" />
                               <input type="url" value={newPostLink} onChange={e => setNewPostLink(e.target.value)} placeholder={lang === 'ar' ? "رابط إعلانك أو موقعك (اختياري)" : "Link to your ad/site (optional)"} className="w-full bg-transparent text-white text-sm outline-none" />
                            </div>
                            
+                           {/* 🔴 معاينة الميديا (صورة أو فيديو) */}
                            {newPostMediaPreview && (
-                              <div className="relative w-32 h-32 rounded-xl overflow-hidden border border-purple-500/50">
-                                 <img src={newPostMediaPreview} className="w-full h-full object-cover" />
-                                 <button onClick={() => { setNewPostMedia(null); setNewPostMediaPreview(null); }} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1"><X size={12}/></button>
+                              <div className="relative w-full max-w-[200px] h-32 rounded-xl overflow-hidden border border-purple-500/50 flex justify-center bg-black mx-auto">
+                                 {newPostMedia?.type?.startsWith('video/') ? (
+                                    <video src={newPostMediaPreview} className="w-full h-full object-cover" muted autoPlay loop />
+                                 ) : (
+                                    <img src={newPostMediaPreview} className="w-full h-full object-cover" />
+                                 )}
+                                 <button onClick={() => { setNewPostMedia(null); setNewPostMediaPreview(null); }} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 shadow-lg"><X size={12}/></button>
                               </div>
                            )}
 
                            <div className="flex justify-between items-center relative">
                               <div className="flex gap-2">
-                                 <label className="bg-gray-800 hover:bg-purple-500/20 text-gray-300 hover:text-purple-400 p-2 rounded-full transition-colors cursor-pointer" title={lang === 'ar' ? 'إضافة صورة' : 'Add Image'}>
-                                    <ImagePlus size={18} />
-                                    <input type="file" className="hidden" accept="image/*" onChange={handlePostMediaChange} />
+                                 {/* 🔴 زر رفع الصور والفيديوهات */}
+                                 <label className="bg-gray-800 hover:bg-purple-500/20 text-gray-300 hover:text-purple-400 p-2 rounded-full transition-colors cursor-pointer" title={lang === 'ar' ? 'إضافة صورة أو فيديو' : 'Add Image or Video'}>
+                                    <Film size={18} />
+                                    <input type="file" className="hidden" accept="image/*,video/*" onChange={handlePostMediaChange} />
                                  </label>
                                  <button onClick={() => setShowPostEmojiPicker(!showPostEmojiPicker)} className="bg-gray-800 hover:bg-yellow-500/20 text-gray-300 hover:text-yellow-400 p-2 rounded-full transition-colors" title={lang === 'ar' ? 'إضافة إيموجي' : 'Add Emoji'}>
                                     <Smile size={18} />
@@ -1583,7 +1604,7 @@ export default function App() {
                          {/* Post Header */}
                          <div className="flex justify-between items-start mb-4">
                             <div className="flex items-center gap-3 cursor-pointer group" onClick={() => { const prof = allProfiles.find(p => p.uid === post.authorId); if(prof) { setViewedProfile(prof); navigateTo('user-profile'); } }}>
-                               {post.authorPhoto ? <img src={post.authorPhoto} className="w-12 h-12 rounded-full object-cover border-2 border-transparent group-hover:border-purple-500 transition-colors" alt="Author" /> : <AvatarFallback size={48} />}
+                               {post.authorPhoto ? <img src={post.authorPhoto} className="w-12 h-12 rounded-full object-cover border-2 border-transparent group-hover:border-purple-500 transition-colors" alt="Author" /> : <AvatarFallback size={48} className="border-2 border-transparent group-hover:border-purple-500 transition-colors" />}
                                <div>
                                   <h4 className="font-bold text-white text-lg group-hover:text-purple-400 transition-colors">{post.authorName}</h4>
                                   <p className="text-gray-500 text-xs">{new Date(post.createdAt).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')}</p>
@@ -1599,12 +1620,16 @@ export default function App() {
                          </div>
                          
                          {/* Post Content */}
-                         <p className="text-gray-200 text-base md:text-lg leading-relaxed whitespace-pre-wrap mb-4">{post.content}</p>
+                         {post.content && <p className="text-gray-200 text-base md:text-lg leading-relaxed whitespace-pre-wrap mb-4">{post.content}</p>}
                          
-                         {/* Image Rendering */}
+                         {/* 🔴 Media Rendering (فيديو أو صورة) */}
                          {post.mediaUrl && (
                             <div className="mb-4 rounded-2xl overflow-hidden border border-gray-700 bg-black flex justify-center max-h-[400px]">
-                               <img src={post.mediaUrl} alt="Post Media" className="max-w-full max-h-full object-contain" />
+                               {post.mediaType === 'video' ? (
+                                  <video src={post.mediaUrl} controls preload="metadata" className="max-w-full max-h-[400px] object-contain w-full"></video>
+                               ) : (
+                                  <img src={post.mediaUrl} alt="Post Media" className="max-w-full max-h-[400px] object-contain" />
+                               )}
                             </div>
                          )}
 
@@ -1633,7 +1658,7 @@ export default function App() {
                                {isAppLoggedIn ? (
                                   <div className="flex gap-3 mb-6">
                                      <div className="cursor-pointer shrink-0" onClick={() => { setViewedProfile(userProfile); navigateTo('user-profile'); }} title={lang === 'ar' ? 'زيارة بروفايلي' : 'View My Profile'}>
-                                        {userProfile?.photoUrl ? <img src={userProfile.photoUrl} className="w-10 h-10 rounded-full object-cover" /> : <AvatarFallback size={40} />}
+                                        {userProfile?.photoUrl ? <img src={userProfile.photoUrl} className="w-10 h-10 rounded-full object-cover" /> : <AvatarFallback size={40} className="hover:opacity-80" />}
                                      </div>
                                      <div className="flex-1 relative">
                                         <input type="text" value={commentInputs[post.id] || ''} onChange={e => setCommentInputs(prev => ({...prev, [post.id]: e.target.value}))} onKeyDown={e => e.key === 'Enter' && handleAddComment(post.id, post.comments)} placeholder={lang === 'ar' ? "اكتب تعليقاً..." : "Write a comment..."} className="w-full bg-[#111827] border border-gray-700 rounded-full py-3 pr-4 pl-12 text-sm text-white outline-none focus:border-purple-500 shadow-inner" />
