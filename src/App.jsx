@@ -90,7 +90,7 @@ function ActionIcon({ icon, label, highlight }) {
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
 
-  // الصفحات الآمنة التي يمكن الرجوع إليها عند الـ Refresh (بدون مشاكل فقدان البيانات المعينة)
+  // الصفحات الآمنة التي يمكن الرجوع إليها عند الـ Refresh
   const safeViews = ['landing', 'buyer', 'seller', 'my-ads', 'live-feed', 'directory', 'login', 'signup', 'forgot-password', 'admin-dashboard', 'terms', 'privacy', 'ip', 'ad-details', 'user-profile', 'results'];
   
   const [activeView, setActiveView] = useState(() => {
@@ -217,7 +217,6 @@ export default function App() {
   
   const dragRef = useRef({ startX: 0, startY: 0, initialX: 0, initialY: 0, adId: null });
   const chatMessagesEndRef = useRef(null);
-  const activeChatRef = useRef(null);
 
   const [legalTexts, setLegalTexts] = useState(defaultLegalTexts);
   const [legalEditModal, setLegalEditModal] = useState({ isOpen: false, type: '', content: '', title: '' });
@@ -375,9 +374,9 @@ export default function App() {
             const isNewMessage = prevChat && chat.messages?.length > prevChat.messages?.length;
             const lastMsg = chat.messages?.[chat.messages.length - 1];
             
-            if (isNewMessage && lastMsg?.senderId !== userProfile?.uid) {
+            if (isNewMessage && lastMsg?.senderId !== userProfile?.uid && activeChatId !== chat.id) {
                 setOpenChatIds(prev => prev.includes(chat.id) ? prev : [...prev, chat.id]);
-                if (activeChatRef.current !== chat.id) setUnreadCounts(prev => ({ ...prev, [chat.id]: (prev[chat.id] || 0) + 1 }));
+                setUnreadCounts(prev => ({ ...prev, [chat.id]: (prev[chat.id] || 0) + 1 }));
             }
         }
         prevChatsRef.current[chat.id] = chat;
@@ -385,7 +384,7 @@ export default function App() {
       setGlobalChats(newChats);
     }, (error) => console.error(error));
     return () => unsubscribe();
-  }, [fbUser, userProfile?.uid]);
+  }, [fbUser, userProfile?.uid, activeChatId]);
 
   // Sync Banners
   useEffect(() => {
@@ -399,7 +398,6 @@ export default function App() {
 
   // Scroll to bottom
   useEffect(() => {
-    activeChatRef.current = activeChatId;
     if (activeChatId) {
       chatMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       setUnreadCounts(prev => ({ ...prev, [activeChatId]: 0 }));
@@ -677,6 +675,7 @@ export default function App() {
               });
             } else {
               await setDoc(chatRef, {
+                id: chatId,
                 adId: 'system_admin',
                 adTitle: lang === 'ar' ? 'رسالة إدارية' : 'System Message',
                 participants: [userProfile.uid, profile.uid],
@@ -807,8 +806,13 @@ export default function App() {
   const handleMouseDown = (e, adId) => { 
     if (e.target.closest('button') || e.target.tagName.toLowerCase() === 'input') return; 
     setIsDragging(true); 
-    let initialX = chatPositions[adId]?.x || 20;
-    let initialY = chatPositions[adId]?.y || 20;
+    let initialX = chatPositions[adId]?.x;
+    let initialY = chatPositions[adId]?.y;
+    if (initialX === undefined || initialY === undefined) {
+       const rect = document.getElementById('active-chat-window').getBoundingClientRect();
+       initialX = rect.left;
+       initialY = rect.top;
+    }
     dragRef.current = { startX: e.clientX, startY: e.clientY, initialX, initialY, adId: adId }; 
   };
 
@@ -870,6 +874,7 @@ export default function App() {
   const onlineMembers = totalMembers > 0 ? Math.max(1, Math.floor(totalMembers * 0.4)) : 0;
   
   const myActiveChats = globalChats.filter(c => c.participants?.includes(userProfile?.uid));
+
   const dockedChats = myActiveChats.filter(c => c.id !== activeChatId && openChatIds.includes(c.id));
   const activeChat = globalChats.find(c => c.id === activeChatId);
   const totalUnread = Object.values(unreadCounts).reduce((a, b) => a + b, 0);
@@ -1107,6 +1112,13 @@ export default function App() {
                              <div key={c.id} onClick={() => { if (!openChatIds.includes(c.id)) setOpenChatIds(prev => [...prev, c.id]); setActiveChatId(c.id); setShowInbox(false); }} className="p-3 hover:bg-gray-800 rounded-xl cursor-pointer flex items-center gap-3 transition-colors group">
                                 <div className="w-10 h-10 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center shrink-0"><User size={18} /></div>
                                 <div className="flex-1 overflow-hidden" dir={lang === 'ar' ? 'rtl' : 'ltr'}><p className="text-sm text-white font-bold truncate">{lang === 'ar' ? c.adTitle : (c.adTitleEn || c.adTitle)}</p><p className="text-xs text-gray-400 truncate">{c.messages?.[c.messages.length - 1]?.text || (lang === 'ar' ? 'بدء المحادثة...' : 'Start chat...')}</p></div>
+                                
+                                {unreadCounts[c.id] > 0 && (
+                                   <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-full shrink-0">
+                                      {unreadCounts[c.id]}
+                                   </span>
+                                )}
+                                
                                 <button onClick={(e) => handleDeleteEntireChat(c.id, e)} className="text-red-500 opacity-0 md:opacity-100 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-red-500/20 rounded-lg shrink-0" title={lang === 'ar' ? 'حذف المحادثة' : 'Delete Chat'}><Trash2 size={16}/></button>
                              </div>
                           ))
@@ -1288,7 +1300,6 @@ export default function App() {
               )}
             </div>
 
-            {/* الأزرار الرئيسية */}
             <div className="flex flex-wrap justify-center gap-4 md:gap-8 mt-12">
               <div onClick={() => navigateTo('live-feed')}><ActionIcon icon={<Activity className="text-red-500 animate-pulse" />} label={lang === 'ar' ? "الرادار المباشر" : "Live Radar"} highlight="red" /></div>
               <div onClick={() => setShowFilterModal(true)}><ActionIcon icon={<SlidersHorizontal />} label={lang === 'ar' ? "فلترة ذكية" : "Smart Filter"} /></div>
