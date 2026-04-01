@@ -40,7 +40,7 @@ const publicCol = (colName) => collection(db, 'artifacts', appId, 'public', 'dat
 const publicDoc = (colName, docId) => doc(db, 'artifacts', appId, 'public', 'data', colName, docId);
 // ==========================================
 
-// 🔴 فلتر الكلمات المسيئة (يمكنك زيادة هذه القائمة)
+// 🔴 فلتر الكلمات المسيئة
 const BAD_WORDS = ['شتيمة', 'لفظ_خارج', 'كلمة_سيئة', 'porn', 'sex', 'nsfw', 'nude', 'احا', 'شرموط', 'عرص', 'متناك', 'خول', 'لبوة'];
 const hasProfanity = (text) => {
   if (!text) return false;
@@ -52,8 +52,8 @@ const hasProfanity = (text) => {
 const EMOJI_LIST = ['😀','😂','😅','😍','🥰','😎','🤔','🙄','😡','🤬','👍','🙏','🤝','🔥','✨','🎉','💔','💯','✅','👀'];
 
 const defaultLegalTexts = {
-  terms: "مرحباً بك في منصة فلتر إيجيبت. بمجرد استخدامك لهذه المنصة، فإنك توافق على الالتزام بالشروط والأحكام التالية التي تنظم عملنا كمنصة إعلانات مبوبة متخصصة.\n\n1. طبيعة المنصة وإخلاء المسؤولية\nتعمل منصة فلتر إيجيبت كوسيط إلكتروني (منصة إعلانات مبوبة) يجمع بين البائعين والمشترين في جميع المجالات. نحن لا نمتلك المنتجات المعروضة، ولا نتدخل في عمليات الدفع المباشرة، ولا نقدم أي ضمانات على جودة السلع المشتراة. تقع مسؤولية فحص المنتج والتأكد من جودته بالكامل على المشتري عند الاستلام اليدوي.\n\n2. حسابك والتزاماتك\nأنت مسؤول مسؤولية كاملة عن الحفاظ على سرية بيانات حسابك وكلمة المرور. كما تلتزم بأن جميع البيانات التي قدمتها أثناء التسجيل (بما في ذلك إيصالات الدفع) هي بيانات صحيحة وقانونية. في حال ثبوت أي تلاعب، يحق للمنصة إيقاف حسابك فوراً.\n\n3. المحتوى المحظور\nيُمنع منعاً باتاً نشر إعلانات لمنتجات غير قانونية، مسروقة، أو مقلدة. يمنع استخدام المنصة أو النادي لنشر محتوى مسيء، خادش للحياء، أو التحريض. الإدارة تقوم بمراجعة الإعلانات والبوستات ولها الحق في حذف أي محتوى مخالف دون سابق إنذار.",
-  privacy: "تلتزم فلتر إيجيبت باحترام خصوصيتك وحماية بياناتك الشخصية والتجارية بأعلى المعايير الأمنية.\n\n1. المعلومات التي نجمعها\nنقوم بجمع البيانات الأساسية اللازمة لإنشاء حسابك (الاسم، رقم الهاتف، البريد الإلكتروني، وإيصال تأكيد الاشتراك)، بالإضافة إلى أي رسائل أو تفاعلات تتم عبر نظام المحادثات الداخلي ونادي FILTER EGYPT CLUB لتوفير بيئة تواصل آمنة.\n\n2. استخدام البيانات\nنستخدم بياناتك لتسهيل عمليات البيع والشراء عبر المنصة، توفير الدعم الفني لحسابك، وتحسين تجربة المستخدم. قد نستخدم رقم هاتفك للتواصل معك بشأن تحديثات حسابك أو إعلاناتك.\n\n3. مشاركة وحماية البيانات\nنحن لا نبيع أو نشارك بياناتك الشخصية مع أي جهات تسويقية خارجية بأي شكل من الأشكال. يتم حفظ بياناتك على خوادم سحابية آمنة وموثوقة.\n\n4. استثناء قانوني\nوفقاً للقوانين المصرية، قد نُضطر إلى التعاون ومشاركة معلومات محددة مع السلطات الأمنية أو الجهات الحكومية الرسمية إذا تم طلب ذلك بموجب أمر قانوني رسمي أو في حالة الإبلاغ عن عمليات نصب أو احتيال.",
+  terms: "مرحباً بك في منصة فلتر إيجيبت. بمجرد استخدامك لهذه المنصة، فإنك توافق على الالتزام بالشروط والأحكام التالية التي تنظم عملنا كمنصة إعلانات مبوبة متخصصة.\n\n1. طبيعة المنصة وإخلاء المسؤولية\nتعمل منصة فلتر إيجيبت كوسيط إلكتروني يجمع بين البائعين والمشترين في جميع المجالات. نحن لا نمتلك المنتجات المعروضة، ولا نتدخل في عمليات الدفع المباشرة، ولا نقدم أي ضمانات على جودة السلع المشتراة. تقع مسؤولية فحص المنتج والتأكد من جودته بالكامل على المشتري عند الاستلام اليدوي.\n\n2. حسابك والتزاماتك\nأنت مسؤول مسؤولية كاملة عن الحفاظ على سرية بيانات حسابك وكلمة المرور. كما تلتزم بأن جميع البيانات التي قدمتها أثناء التسجيل هي بيانات صحيحة وقانونية. في حال ثبوت أي تلاعب، يحق للمنصة إيقاف حسابك فوراً.\n\n3. المحتوى المحظور\nيُمنع منعاً باتاً نشر إعلانات لمنتجات غير قانونية، مسروقة، أو مقلدة. يمنع استخدام المنصة أو النادي لنشر محتوى مسيء، خادش للحياء، أو التحريض. الإدارة تقوم بمراجعة الإعلانات والبوستات ولها الحق في حذف أي محتوى مخالف دون سابق إنذار.",
+  privacy: "تلتزم فلتر إيجيبت باحترام خصوصيتك وحماية بياناتك الشخصية والتجارية بأعلى المعايير الأمنية.\n\n1. المعلومات التي نجمعها\nنقوم بجمع البيانات الأساسية اللازمة لإنشاء حسابك (الاسم، رقم الهاتف، البريد الإلكتروني)، بالإضافة إلى أي رسائل أو تفاعلات تتم عبر نظام المحادثات الداخلي ونادي FILTER EGYPT CLUB لتوفير بيئة تواصل آمنة.\n\n2. استخدام البيانات\nنستخدم بياناتك لتسهيل عمليات البيع والشراء عبر المنصة، توفير الدعم الفني لحسابك، وتحسين تجربة المستخدم. قد نستخدم رقم هاتفك للتواصل معك بشأن تحديثات حسابك أو إعلاناتك.\n\n3. مشاركة وحماية البيانات\nنحن لا نبيع أو نشارك بياناتك الشخصية مع أي جهات تسويقية خارجية بأي شكل من الأشكال. يتم حفظ بياناتك على خوادم سحابية آمنة وموثوقة.\n\n4. استثناء قانوني\nوفقاً للقوانين المصرية، قد نُضطر إلى التعاون ومشاركة معلومات محددة مع السلطات الأمنية أو الجهات الحكومية الرسمية إذا تم طلب ذلك بموجب أمر قانوني رسمي أو في حالة الإبلاغ عن عمليات نصب أو احتيال.",
   ip: "نحن في فلتر إيجيبت نحترم ونلتزم بقانون حماية حقوق الملكية الفكرية المصري رقم 82 لسنة 2002 والتعديلات اللاحقة عليه.\n\n1. حقوق فلتر إيجيبت\nإن اسم الموقع، وشعاره، والتصاميم، والأكواد البرمجية، وواجهة المستخدم، وقواعد البيانات الخاصة بالمنصة، هي ملكية فكرية حصرية لـ \"فلتر إيجيبت\". يُمنع منعاً باتاً نسخها أو اقتباسها أو إعادة إنتاجها دون إذن كتابي مسبق.\n\n2. حماية العلامات التجارية الأخرى\nيُحظر على البائعين استخدام العلامات التجارية العالمية أو المحلية بطريقة مضللة للمشتري. يُمنع الترويج للمنتجات المقلدة (Copy/High Copy) على أنها أصلية واستخدام شعار الشركة الأصلية لخداع المستهلك.\n\n3. الإبلاغ عن الانتهاكات\nإذا كنت الممثل القانوني لعلامة تجارية أو شركة، ووجدت أن هناك بائعاً على منصتنا يقوم بانتهاك حقوق الملكية الفكرية الخاصة بشركتك، يُرجى التواصل الفوري مع الإدارة مع تقديم الإثباتات القانونية. سنقوم باتخاذ إجراءات فورية قد تصل إلى حذف الإعلان وحظر المستخدم المخالف نهائياً."
 };
 
@@ -146,8 +146,6 @@ export default function App() {
   const [resetSuccess, setResetSuccess] = useState('');
   
   // Subscription & Settings
-  const [receiptUploaded, setReceiptUploaded] = useState(false); 
-  const [receiptFile, setReceiptFile] = useState(null); 
   const [showRenewModal, setShowRenewModal] = useState(false);
   const [renewFile, setRenewFile] = useState(null);
   const [signupProfileImage, setSignupProfileImage] = useState(null);
@@ -196,7 +194,6 @@ export default function App() {
   const [showPostEmojiPicker, setShowPostEmojiPicker] = useState(false);
   const [commentInputs, setCommentInputs] = useState({});
   const [showComments, setShowComments] = useState({});
-  // 🔴 حالة تكبير الميديا للنافذة الكاملة
   const [fullscreenMedia, setFullscreenMedia] = useState(null);
 
   // Categories & Ads
@@ -478,11 +475,13 @@ export default function App() {
     }
   }, [showSettingsModal, userProfile]);
 
+  // 🔴 منطق حساب أيام الاشتراك (90 يوم للمسجلين الجدد)
   let subStatus = 'active'; let subDaysLeft = 0;
   if (userProfile?.subscriptionStatus === 'Active' && userProfile.activatedAt) {
-     const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+     const packageDays = userProfile.subscriptionDays || 30; // لو مفيش، بيعتبره 30 كافتراضي قديم
+     const packageMs = packageDays * 24 * 60 * 60 * 1000;
      const timeElapsed = Date.now() - userProfile.activatedAt;
-     const timeLeft = thirtyDaysMs - timeElapsed;
+     const timeLeft = packageMs - timeElapsed;
      if (timeLeft <= 0) subStatus = 'expired';
      else if (timeLeft <= (5 * 24 * 60 * 60 * 1000)) { subStatus = 'warning'; subDaysLeft = Math.ceil(timeLeft / (1000 * 60 * 60 * 24)); }
   }
@@ -716,13 +715,12 @@ export default function App() {
     } catch (err) {} setIsUploading(false);
   };
 
-  // SIGNUP
+  // 🔴 SIGNUP (تعديل التسجيل ليكون أوتوماتيك ويمنح 3 شهور مجاناً)
   const handleSignupSubmit = async () => {
     setSignupError(''); setIsUploading(true); 
     try {
       if (!signupData.fullName || !signupData.displayName || !signupData.email || !signupData.phone || !signupData.password) throw new Error(lang === 'ar' ? 'يرجى ملء كافة البيانات' : 'Please fill all fields');
       if (signupData.password !== signupData.confirmPassword) throw new Error(lang === 'ar' ? 'كلمات المرور غير متطابقة' : 'Passwords do not match');
-      if (!receiptUploaded || !receiptFile) throw new Error(lang === 'ar' ? 'يرجى إرفاق صورة إيصال الدفع للتحقق' : 'Please attach the payment receipt to verify');
       
       if (hasProfanity(signupData.fullName) || hasProfanity(signupData.displayName)) {
           throw new Error(lang === 'ar' ? 'عفواً، الاسم يحتوي على كلمات غير لائقة.' : 'Name contains inappropriate words.');
@@ -741,16 +739,30 @@ export default function App() {
           if(resProfile.ok) { const dpData = await resProfile.json(); photoUrl = dpData.data.url; }
       }
 
-      let receiptUrl = '';
-      const formData = new FormData(); formData.append('image', receiptFile);
-      const imgbbResponse = await fetch('https://api.imgbb.com/1/upload?key=8c8cec8f9ee7b67db88ba5799154c94d', { method: 'POST', body: formData });
-      if (imgbbResponse.ok) { receiptUrl = (await imgbbResponse.json()).data.url; } else { throw new Error(lang === 'ar' ? 'حدث خطأ بالشبكة' : 'Network error'); }
-
       const newUid = fbUser ? fbUser.uid : Date.now().toString(); 
-      const newProfile = { uid: newUid, fullName: signupData.fullName, displayName: signupData.displayName, email: cleanEmail, phone: cleanPhone, whatsapp: signupData.whatsapp.trim(), password: signupData.password, subscriptionStatus: 'Pending', createdAt: new Date().toISOString(), receiptUrl: receiptUrl, photoUrl: photoUrl, coverUrl: null, bio: '', facebookUrl: '', youtubeUrl: '', instagramUrl: '', snapchatUrl: '', tiktokUrl: '', isBanned: false };
+      const newProfile = { 
+          uid: newUid, 
+          fullName: signupData.fullName, 
+          displayName: signupData.displayName, 
+          email: cleanEmail, 
+          phone: cleanPhone, 
+          whatsapp: signupData.whatsapp.trim(), 
+          password: signupData.password, 
+          subscriptionStatus: 'Active', // 🔴 تفعيل مباشر
+          activatedAt: Date.now(),      // 🔴 يبدأ الآن
+          subscriptionDays: 90,         // 🔴 مجاناً لمدة 90 يوم (3 شهور)
+          createdAt: new Date().toISOString(), 
+          receiptUrl: null, 
+          photoUrl: photoUrl, 
+          coverUrl: null, 
+          bio: '', facebookUrl: '', youtubeUrl: '', instagramUrl: '', snapchatUrl: '', tiktokUrl: '', 
+          isBanned: false 
+      };
+      
       await setDoc(publicDoc('users', newUid), newProfile); 
       await setDoc(publicDoc('profiles', newUid), newProfile);
-      setAppAlert(lang === 'ar' ? 'تم إرسال طلبك بنجاح! بانتظار المراجعة.' : 'Request sent successfully! Pending review.'); setTimeout(() => { window.location.reload(); }, 3500);
+      setAppAlert(lang === 'ar' ? 'تم إنشاء الحساب وتفعيله بنجاح! 🎉 استمتع بـ 3 شهور مجاناً.' : 'Account created and activated! Enjoy your 3 free months.'); 
+      setTimeout(() => { window.location.reload(); }, 3500);
     } catch (error) { setSignupError(error.message || (lang === 'ar' ? 'حدث خطأ أثناء التسجيل' : 'Registration error')); } finally { setIsUploading(false); }
   };
 
@@ -1253,7 +1265,7 @@ export default function App() {
           <div className="bg-[#1f2937] rounded-3xl p-8 w-full max-w-md relative shadow-2xl border border-gray-700">
              <button onClick={() => setShowRenewModal(false)} className="absolute top-4 left-4 text-gray-400 hover:text-white"><X/></button>
              <h3 className="text-2xl font-bold mb-6 text-emerald-400 text-center">{lang === 'ar' ? 'تجديد الاشتراك الشهري' : 'Renew Monthly Subscription'}</h3>
-             <p className="text-center text-gray-300 mb-6 text-sm leading-relaxed">{lang === 'ar' ? 'يرجى تحويل رسوم التجديد (10 جنيه داخل مصر، أو 1 دولار من الخارج) وإرفاق الإيصال هنا ليتم تفعيل حسابك مرة أخرى.' : 'Please transfer the renewal fee (10 EGP inside Egypt, or $1 from abroad) and attach the receipt here to reactivate your account.'}</p>
+             <p className="text-center text-gray-300 mb-6 text-sm leading-relaxed">{lang === 'ar' ? 'يرجى تحويل رسوم التجديد وإرفاق الإيصال هنا ليتم تفعيل حسابك مرة أخرى.' : 'Please transfer the renewal fee and attach the receipt here to reactivate your account.'}</p>
              <label className="border border-dashed border-gray-600 p-6 rounded-xl text-center cursor-pointer block text-gray-400 hover:border-emerald-500 transition-colors mb-6"><Upload className="mx-auto mb-2" /> {renewFile ? (lang === 'ar' ? 'تم اختيار إيصال التجديد بنجاح' : 'Renewal receipt selected successfully') : (lang === 'ar' ? 'إرفاق إيصال التجديد' : 'Attach Renewal Receipt')}<input type="file" className="hidden" accept="image/*" onChange={(e) => { if(e.target.files[0]) { setRenewFile(e.target.files[0]); } }} /></label>
              <button onClick={handleRenewSubmit} className="w-full bg-emerald-500 text-white font-bold py-4 rounded-xl hover:bg-emerald-600 transition-colors shadow-lg">{lang === 'ar' ? 'إرسال طلب التجديد' : 'Submit Renewal Request'}</button>
           </div>
@@ -1351,8 +1363,9 @@ export default function App() {
           
           {isAppLoggedIn ? (
              <div className="flex items-center gap-3">
-               {userProfile?.subscriptionStatus === 'Pending' ? (
-                 <span className="text-yellow-500 font-bold text-xs md:text-sm hidden sm:flex bg-yellow-500/10 px-3 py-1.5 rounded-full border border-yellow-500/20 items-center gap-1.5"><AlertTriangle size={14} className="animate-pulse" /> {lang === 'ar' ? 'قيد المراجعة' : 'Pending Review'}</span>
+               {/* 🔴 تم تعديل هذا الجزء ليناسب النظام الجديد المجاني */}
+               {subStatus === 'expired' ? (
+                 <span className="text-red-500 font-bold text-xs md:text-sm hidden sm:flex bg-red-500/10 px-3 py-1.5 rounded-full border border-red-500/20 items-center gap-1.5"><AlertTriangle size={14} className="animate-pulse" /> {lang === 'ar' ? 'انتهت الباقة' : 'Expired'}</span>
                ) : (
                  <button onClick={() => { setViewedProfile(userProfile); navigateTo('user-profile'); }} className="text-emerald-400 font-bold text-xs md:text-sm hidden sm:flex bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors px-3 py-1.5 rounded-full border border-emerald-500/20 items-center gap-2 cursor-pointer group">
                    {userProfile?.photoUrl ? <img src={userProfile.photoUrl} alt="profile" className="w-6 h-6 rounded-full object-cover group-hover:scale-110 transition-transform" /> : <AvatarFallback size={24} />} 
@@ -1381,10 +1394,11 @@ export default function App() {
                 <>Exclusive Community for <span className={accentColor}>Members Only</span></>
               )}
             </h2>
+            {/* 🔴 الجملة التسويقية الجديدة */}
             <p className="text-gray-400 text-base md:text-lg mb-12 max-w-2xl leading-relaxed text-center">
               {lang === 'ar' 
-                ? 'بيئة مميزة للجودة والثقة باشتراك رمزي (10 جنيهات داخل مصر، أو 1 دولار للمقيمين بالخارج شهرياً). بيع وشراء بأمان بعيداً عن فوضى السوق والتشتت.' 
-                : 'A premium environment for quality and trust with a nominal subscription (10 EGP inside Egypt, or $1 for expats monthly). Buy and sell safely away from market chaos.'}
+                ? 'بيئة مميزة للجودة والثقة (مجانية بالكامل لأول 3 شهور كعرض إطلاق). بيع وشراء بأمان بعيداً عن فوضى السوق والتشتت.' 
+                : 'A premium environment for quality and trust (Completely FREE for the first 3 months as a launch offer). Buy and sell safely away from market chaos.'}
             </p>
             <div className="flex flex-col md:flex-row gap-6 w-full max-w-2xl justify-center">
               <div onClick={() => isAppLoggedIn ? setActiveView('seller') : navigateTo('login')} className={`${cardBg} flex-1 p-8 rounded-3xl border border-gray-700 hover:border-emerald-500 cursor-pointer group flex flex-col items-center gap-4`}>
@@ -1439,13 +1453,13 @@ export default function App() {
               ) : activeView === 'seller' && subStatus === 'expired' ? (
                 <div className="w-full max-w-3xl bg-[#1f2937] border border-red-500/50 p-8 rounded-3xl text-center shadow-2xl shadow-red-500/10 mb-6">
                   <AlertTriangle size={40} className="mx-auto text-red-500 mb-4" />
-                  <h3 className="text-2xl font-bold text-white mb-3">{lang === 'ar' ? 'انتهى الاشتراك الشهري' : 'Monthly Subscription Expired'}</h3>
-                  <p className="text-gray-300 mb-6">{lang === 'ar' ? 'انتهت باقة الـ 30 يوم الخاصة بك. يرجى تجديد الاشتراك (10 جنيه للمصريين أو 1 دولار للأجانب) وإرسال الإيصال للإدارة للتمكن من نشر إعلانات جديدة والتواصل.' : 'Your 30-day package has expired. Please renew your subscription (10 EGP for locals or $1 for expats) and send the receipt to admin to post new ads and communicate.'}</p>
+                  <h3 className="text-2xl font-bold text-white mb-3">{lang === 'ar' ? 'انتهت الباقة المجانية' : 'Free Package Expired'}</h3>
+                  <p className="text-gray-300 mb-6">{lang === 'ar' ? 'لقد انتهت فترة الـ 3 شهور المجانية الخاصة بك. يرجى تجديد الاشتراك الشهري وإرسال الإيصال للإدارة للتمكن من نشر إعلانات جديدة والتواصل.' : 'Your 3 months free package has expired. Please renew your monthly subscription and send the receipt to admin to post new ads and communicate.'}</p>
                   <button onClick={() => setShowRenewModal(true)} className="bg-emerald-500 text-white font-bold py-3 px-8 rounded-xl hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/20">{lang === 'ar' ? 'تجديد الاشتراك الآن' : 'Renew Subscription Now'}</button>
                 </div>
               ) : (
                 <>
-                  {activeView === 'seller' && subStatus === 'warning' && (<div className="w-full max-w-3xl bg-yellow-500/10 border border-yellow-500/50 text-yellow-500 p-4 rounded-xl mb-6 text-center flex items-center justify-center gap-2 font-bold shadow-lg"><AlertTriangle size={20} className="animate-pulse" />{lang === 'ar' ? `تنبيه: متبقي ${subDaysLeft} أيام على انتهاء اشتراكك الشهري.` : `Warning: ${subDaysLeft} days left on your monthly subscription.`}</div>)}
+                  {activeView === 'seller' && subStatus === 'warning' && (<div className="w-full max-w-3xl bg-yellow-500/10 border border-yellow-500/50 text-yellow-500 p-4 rounded-xl mb-6 text-center flex items-center justify-center gap-2 font-bold shadow-lg"><AlertTriangle size={20} className="animate-pulse" />{lang === 'ar' ? `تنبيه: متبقي ${subDaysLeft} أيام على انتهاء الباقة.` : `Warning: ${subDaysLeft} days left on your package.`}</div>)}
                   {activeView === 'seller' && uploadedImages.length > 0 && (<div className="w-full flex gap-3 mb-4 overflow-x-auto pb-2 custom-scrollbar"><div className="flex gap-2">{uploadedImages.map((imgObj, idx) => (<div key={idx} className="relative w-20 h-20 rounded-xl overflow-hidden shrink-0 border-2 border-emerald-500/50"><img src={imgObj.preview} alt="Preview" className="w-full h-full object-cover" /><button onClick={() => removeUploadedImage(idx)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full"><X size={12} /></button></div>))}</div></div>)}
                   
                   <div className="relative w-full flex items-center">
@@ -1605,7 +1619,6 @@ export default function App() {
                 
                 {clubPosts.map(post => {
                    const isLiked = post.likes?.includes(userProfile?.uid);
-                   // 🔴 هنا الكود اللي بيخلي صاحب البوست والأدمن بس يمسحوه (isAuthor || isAdmin)
                    const isAuthor = userProfile?.uid === post.authorId;
                    return (
                       <div key={post.id} className="bg-[#1f2937] p-5 md:p-6 rounded-3xl shadow-xl border border-gray-800 hover:border-gray-700 transition-colors">
@@ -2086,12 +2099,8 @@ export default function App() {
                     <button type="button" onClick={() => setShowSignupConfirm(!showSignupConfirm)} className="absolute end-4 top-3.5 text-gray-400 hover:text-white">{showSignupConfirm ? <EyeOff size={20} /> : <Eye size={20} />}</button>
                   </div>
 
-                  <label className="col-span-1 md:col-span-2 border border-dashed border-emerald-500/50 p-6 rounded-xl text-center cursor-pointer text-gray-400 hover:border-emerald-500 transition-colors bg-emerald-500/5 mt-2">
-                     <Upload className="mx-auto mb-2 text-emerald-400" /> {receiptUploaded ? (lang === 'ar' ? 'تم إرفاق الإيصال بنجاح' : 'Receipt uploaded successfully') : (lang === 'ar' ? 'إرفاق صورة إيصال الدفع (10 جنيه للمصريين أو 1 دولار للمقيمين بالخارج) (إلزامي)' : 'Upload Payment Receipt (10 EGP or $1 for expats) (Required)')}<input type="file" className="hidden" accept="image/*" onChange={(e) => { if(e.target.files[0]) { setReceiptUploaded(true); setReceiptFile(e.target.files[0]); } }} />
-                  </label>
-                  
                   {signupError && <p className="col-span-1 md:col-span-2 text-red-500 text-sm text-center font-bold bg-red-500/10 p-3 rounded-lg border border-red-500/20">{signupError}</p>}
-                  <button onClick={handleSignupSubmit} className="col-span-1 md:col-span-2 bg-emerald-500 text-white font-bold rounded-lg py-4 mt-2 hover:bg-emerald-600 shadow-lg transition-colors">{lang === 'ar' ? 'تأكيد التسجيل' : 'Confirm Registration'}</button>
+                  <button onClick={handleSignupSubmit} className="col-span-1 md:col-span-2 bg-emerald-500 text-white font-bold rounded-lg py-4 mt-2 hover:bg-emerald-600 shadow-lg transition-colors">{lang === 'ar' ? 'تأكيد التسجيل وإنشاء الحساب' : 'Confirm Registration'}</button>
                </div>
             </div>
           </div>
@@ -2117,22 +2126,23 @@ export default function App() {
                 <button onClick={() => { setPendingUsers(allProfiles.filter(u => u.subscriptionStatus === 'Pending')); setAppAlert('تم جلب وتحديث الطلبات بنجاح!'); }} className="bg-emerald-600 px-6 py-2 rounded-lg text-white font-bold hover:bg-emerald-500 transition-colors">تحديث القائمة (جلب الطلبات)</button>
               </div>
               
-              {/* قسم طلبات التفعيل */}
+              {/* قسم طلبات التفعيل والتجديد */}
               <div className="mb-4 relative">
                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
                  <input type="text" value={adminPendingSearch} onChange={e => setAdminPendingSearch(e.target.value)} placeholder="ابحث في الطلبات بالاسم، الرقم، الإيميل..." className="w-full bg-[#111827] border border-gray-700 rounded-lg py-3 pr-10 pl-4 text-sm text-white outline-none focus:border-emerald-500" />
               </div>
               {pendingUsers.length === 0 ? (
-                <div className="bg-[#111827] p-6 rounded-xl border border-gray-700 text-center"><p className="text-gray-400">لا توجد طلبات في قائمة الانتظار حالياً.</p><p className="text-sm text-gray-500 mt-2">اضغط على "تحديث القائمة" لجلب التحديثات الجديدة.</p></div>
+                <div className="bg-[#111827] p-6 rounded-xl border border-gray-700 text-center"><p className="text-gray-400">لا توجد طلبات تجديد في قائمة الانتظار حالياً.</p><p className="text-sm text-gray-500 mt-2">اضغط على "تحديث القائمة" لجلب التحديثات الجديدة.</p></div>
               ) : (
                 <div className="max-h-[280px] overflow-y-auto custom-scrollbar p-3 space-y-4 border border-gray-700/50 rounded-xl bg-[#111827]/50 shadow-inner">
                   {pendingUsers.filter(u => u.fullName?.includes(adminPendingSearch) || u.phone?.includes(adminPendingSearch) || u.email?.includes(adminPendingSearch)).map(u => (
                     <div key={u.uid} className="bg-[#111827] p-5 rounded-xl border border-gray-700 flex flex-col sm:flex-row justify-between items-center gap-4">
                       <div className="flex gap-4 items-center">
                          {u.photoUrl ? <img src={u.photoUrl} alt="User" className="w-14 h-14 rounded-full object-cover border border-gray-600" /> : <AvatarFallback size={56} />}
-                         <div><p className="text-xl text-white font-bold">{u.fullName}</p><p className="text-sm text-gray-400 mt-1">الإيميل: {u.email} | الهاتف: {u.phone}</p><a href={u.receiptUrl} target="_blank" rel="noreferrer" className="text-emerald-400 text-sm hover:underline mt-2 inline-block font-bold">👀 عرض إيصال الدفع (نافذة جديدة)</a></div>
+                         <div><p className="text-xl text-white font-bold">{u.fullName}</p><p className="text-sm text-gray-400 mt-1">الإيميل: {u.email} | الهاتف: {u.phone}</p><a href={u.receiptUrl} target="_blank" rel="noreferrer" className="text-emerald-400 text-sm hover:underline mt-2 inline-block font-bold">👀 عرض إيصال التجديد (نافذة جديدة)</a></div>
                       </div>
-                      <button onClick={async () => { setIsUploading(true); try { const activationTime = Date.now(); await updateDoc(publicDoc('users', u.uid), { subscriptionStatus: 'Active', activatedAt: activationTime }); await updateDoc(publicDoc('profiles', u.uid), { subscriptionStatus: 'Active', activatedAt: activationTime }); setPendingUsers(pendingUsers.filter(user => user.uid !== u.uid)); setAppAlert('تم تفعيل الحساب وتجديد الـ 30 يوم بنجاح!'); } catch(err) { setAppAlert('خطأ: تم رفض الإذن من قاعدة البيانات.'); } setIsUploading(false); }} className="bg-emerald-500 text-white px-6 py-3 rounded-lg hover:bg-emerald-600 font-bold w-full sm:w-auto shrink-0">تفعيل الحساب (30 يوم)</button>
+                      {/* 🔴 زرار التجديد بيدي 30 يوم بس للمشتركين القدام */}
+                      <button onClick={async () => { setIsUploading(true); try { const activationTime = Date.now(); await updateDoc(publicDoc('users', u.uid), { subscriptionStatus: 'Active', activatedAt: activationTime, subscriptionDays: 30 }); await updateDoc(publicDoc('profiles', u.uid), { subscriptionStatus: 'Active', activatedAt: activationTime, subscriptionDays: 30 }); setPendingUsers(pendingUsers.filter(user => user.uid !== u.uid)); setAppAlert('تم تفعيل الحساب وتجديد الباقة (30 يوم) بنجاح!'); } catch(err) { setAppAlert('خطأ: تم رفض الإذن من قاعدة البيانات.'); } setIsUploading(false); }} className="bg-emerald-500 text-white px-6 py-3 rounded-lg hover:bg-emerald-600 font-bold w-full sm:w-auto shrink-0">تجديد الباقة (30 يوم)</button>
                     </div>
                   ))}
                   {pendingUsers.filter(u => u.fullName?.includes(adminPendingSearch) || u.phone?.includes(adminPendingSearch) || u.email?.includes(adminPendingSearch)).length === 0 && <p className="text-gray-500 text-center py-4">لا توجد نتائج مطابقة لبحثك.</p>}
