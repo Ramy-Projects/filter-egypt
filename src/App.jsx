@@ -1073,8 +1073,8 @@ export default function App() {
   };
   const isAdmin = isAppLoggedIn && checkAdmin(userProfile);
 
-  const AvatarFallback = ({ size = 16, className = "" }) => (
-    <div className={`bg-gray-700 flex items-center justify-center rounded-full shrink-0 ${className}`} style={{ width: size, height: size }}>
+  const AvatarFallback = ({ size = 16, className = "", onClick }) => (
+    <div onClick={onClick} className={`bg-gray-700 flex items-center justify-center rounded-full shrink-0 ${onClick ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''} ${className}`} style={{ width: size, height: size }}>
       <User size={size * 0.6} className="text-gray-400" />
     </div>
   );
@@ -1517,7 +1517,9 @@ export default function App() {
              {isAppLoggedIn ? (
                <div className="w-full max-w-2xl bg-[#1f2937]/80 backdrop-blur-sm p-5 md:p-6 rounded-3xl shadow-2xl border border-purple-500/20 mb-10">
                   <div className="flex gap-4">
-                     {userProfile?.photoUrl ? <img src={userProfile.photoUrl} className="w-12 h-12 rounded-full object-cover border-2 border-purple-500/50 shrink-0" alt="Avatar" /> : <AvatarFallback size={48} />}
+                     <div className="cursor-pointer shrink-0" onClick={() => { setViewedProfile(userProfile); navigateTo('user-profile'); }} title={lang === 'ar' ? 'زيارة بروفايلي' : 'View My Profile'}>
+                        {userProfile?.photoUrl ? <img src={userProfile.photoUrl} className="w-12 h-12 rounded-full object-cover border-2 border-purple-500/50 hover:scale-105 transition-transform" alt="Avatar" /> : <AvatarFallback size={48} className="border-2 border-purple-500/50 hover:scale-105 transition-transform" />}
+                     </div>
                      <div className="flex-1">
                         <textarea value={newPostContent} onChange={e => setNewPostContent(e.target.value)} placeholder={lang === 'ar' ? "شارك أفكارك، ابحث عن شريك، أو اطرح سؤالاً للمجتمع..." : "Share your thoughts, find a partner, or ask the community..."} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-4 text-white text-lg outline-none focus:border-purple-500 resize-none custom-scrollbar min-h-[100px]"></textarea>
                         
@@ -1630,7 +1632,9 @@ export default function App() {
                                {/* Comment Input */}
                                {isAppLoggedIn ? (
                                   <div className="flex gap-3 mb-6">
-                                     {userProfile?.photoUrl ? <img src={userProfile.photoUrl} className="w-10 h-10 rounded-full object-cover shrink-0" /> : <AvatarFallback size={40} />}
+                                     <div className="cursor-pointer shrink-0" onClick={() => { setViewedProfile(userProfile); navigateTo('user-profile'); }} title={lang === 'ar' ? 'زيارة بروفايلي' : 'View My Profile'}>
+                                        {userProfile?.photoUrl ? <img src={userProfile.photoUrl} className="w-10 h-10 rounded-full object-cover" /> : <AvatarFallback size={40} />}
+                                     </div>
                                      <div className="flex-1 relative">
                                         <input type="text" value={commentInputs[post.id] || ''} onChange={e => setCommentInputs(prev => ({...prev, [post.id]: e.target.value}))} onKeyDown={e => e.key === 'Enter' && handleAddComment(post.id, post.comments)} placeholder={lang === 'ar' ? "اكتب تعليقاً..." : "Write a comment..."} className="w-full bg-[#111827] border border-gray-700 rounded-full py-3 pr-4 pl-12 text-sm text-white outline-none focus:border-purple-500 shadow-inner" />
                                         <button onClick={() => handleAddComment(post.id, post.comments)} className="absolute left-2 top-1/2 -translate-y-1/2 bg-purple-600 hover:bg-purple-500 text-white p-2 rounded-full transition-colors"><Send size={14}/></button>
