@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, updateDoc, getDocs } from 'firebase/firestore';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 import { 
   Search, SlidersHorizontal, Sparkles, CreditCard, Settings, ShieldCheck, 
@@ -11,7 +12,7 @@ import {
   CheckCircle, AlertTriangle, Send, MessageSquareX, Minus, MessageSquare, 
   Megaphone, Edit, Trash2, Save, Activity, Info, Loader, Plus, ChevronDown, Clock,
   Facebook, Youtube, Instagram, Ghost, Music, UserSearch, Ban, MessageCircleWarning, 
-  Link as LinkIcon, Camera, MessageCircle
+  Link as LinkIcon, Camera, MessageCircle, Heart, Smile, Link2, Film, Flag, PlayCircle
 } from 'lucide-react';
 
 // ==========================================
@@ -31,6 +32,7 @@ const fbConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebas
 const app = initializeApp(fbConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const storage = getStorage(app); // إضافة التخزين للفيديوهات
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'filter-egypt-app';
 
 // دوال مساعدة للوصول الآمن للبيانات
@@ -38,10 +40,21 @@ const publicCol = (colName) => collection(db, 'artifacts', appId, 'public', 'dat
 const publicDoc = (colName, docId) => doc(db, 'artifacts', appId, 'public', 'data', colName, docId);
 // ==========================================
 
+// 🔴 فلتر الكلمات المسيئة (يمكنك زيادة هذه القائمة)
+const BAD_WORDS = ['شتيمة', 'لفظ_خارج', 'كلمة_سيئة', 'porn', 'sex', 'nsfw', 'nude', 'احا', 'شرموط', 'عرص', 'متناك', 'خول', 'لبوة'];
+const hasProfanity = (text) => {
+  if (!text) return false;
+  const lowerText = text.toLowerCase();
+  return BAD_WORDS.some(word => lowerText.includes(word));
+};
+
+// 🔴 قائمة الإيموجي
+const EMOJI_LIST = ['😀','😂','😅','😍','🥰','😎','🤔','🙄','😡','🤬','👍','🙏','🤝','🔥','✨','🎉','💔','💯','✅','👀'];
+
 const defaultLegalTexts = {
-  terms: "مرحباً بك في منصة فلتر إيجيبت. بمجرد استخدامك لهذه المنصة، فإنك توافق على الالتزام بالشروط والأحكام التالية التي تنظم عملنا كمنصة إعلانات مبوبة متخصصة.\n\n1. طبيعة المنصة وإخلاء المسؤولية\nتعمل منصة فلتر إيجيبت كوسيط إلكتروني (منصة إعلانات مبوبة) يجمع بين البائعين والمشترين في مجال فلاتر المياه. نحن لا نمتلك المنتجات المعروضة، ولا نتدخل في عمليات الدفع المباشرة، ولا نقدم أي ضمانات على جودة السلع المشتراة. تقع مسؤولية فحص المنتج والتأكد من جودته بالكامل على المشتري عند الاستلام اليدوي.\n\n2. حسابك والتزاماتك\nأنت مسؤول مسؤولية كاملة عن الحفاظ على سرية بيانات حسابك وكلمة المرور. كما تلتزم بأن جميع البيانات التي قدمتها أثناء التسجيل (بما في ذلك إيصالات الدفع) هي بيانات صحيحة وقانونية. في حال ثبوت أي تلاعب، يحق للمنصة إيقاف حسابك فوراً.\n\n3. المحتوى المحظور\nيُمنع منعاً باتاً نشر إعلانات لمنتجات غير قانونية، مسروقة، أو مقلدة بشكل ينتهك حقوق الشركات الكبرى لفلاتر المياه. يمنع استخدام المنصة لنشر محتوى مسيء، خادش للحياء، أو لا يتعلق بطبيعة تخصص الموقع. الإدارة تقوم بمراجعة الإعلانات ولها الحق في حذف أي إعلان مخالف دون سابق إنذار.",
-  privacy: "تلتزم فلتر إيجيبت باحترام خصوصيتك وحماية بياناتك الشخصية والتجارية بأعلى المعايير الأمنية.\n\n1. المعلومات التي نجمعها\nنقوم بجمع البيانات الأساسية اللازمة لإنشاء حسابك (الاسم، رقم الهاتف، البريد الإلكتروني، وإيصال تأكيد الاشتراك)، بالإضافة إلى أي رسائل أو تفاعلات تتم عبر نظام المحادثات الداخلي لتوفير بيئة تواصل آمنة.\n\n2. استخدام البيانات\nنستخدم بياناتك لتسهيل عمليات البيع والشراء عبر المنصة، توفير الدعم الفني لحسابك، وتحسين تجربة المستخدم. قد نستخدم رقم هاتفك للتواصل معك بشأن تحديثات حسابك أو إعلاناتك.\n\n3. مشاركة وحماية البيانات\nنحن لا نبيع أو نشارك بياناتك الشخصية مع أي جهات تسويقية خارجية بأي شكل من الأشكال. يتم حفظ بياناتك على خوادم سحابية آمنة وموثوقة.\n\n4. استثناء قانوني\nوفقاً للقوانين المصرية، قد نُضطر إلى التعاون ومشاركة معلومات محددة مع السلطات الأمنية أو الجهات الحكومية الرسمية إذا تم طلب ذلك بموجب أمر قانوني رسمي أو في حالة الإبلاغ عن عمليات نصب أو احتيال.",
-  ip: "نحن في فلتر إيجيبت نحترم ونلتزم بقانون حماية حقوق الملكية الفكرية المصري رقم 82 لسنة 2002 والتعديلات اللاحقة عليه.\n\n1. حقوق فلتر إيجيبت\nإن اسم الموقع، وشعاره، والتصاميم، والأكواد البرمجية، وواجهة المستخدم، وقواعد البيانات الخاصة بالمنصة، هي ملكية فكرية حصرية لـ \"فلتر إيجيبت\". يُمنع منعاً باتاً نسخها أو اقتباسها أو إعادة إنتاجها دون إذن كتابي مسبق.\n\n2. حماية العلامات التجارية الأخرى\nيُحظر على البائعين استخدام العلامات التجارية العالمية أو المحلية لفلاتر المياه، أو الشمعات، أو قطع الغيار بطريقة مضللة للمشتري. يُمنع الترويج للمنتجات المقلدة (Copy/High Copy) على أنها أصلية واستخدام شعار الشركة الأصلية لخداع المستهلك.\n\n3. الإبلاغ عن الانتهاكات\nإذا كنت الممثل القانوني لعلامة تجارية أو شركة، ووجدت أن هناك بائعاً على منصتنا يقوم بانتهاك حقوق الملكية الفكرية الخاصة بشركتك (سواء ببيع منتجات مقلدة أو استخدام شعارك دون وجه حق)، يُرجى التواصل الفوري مع الإدارة مع تقديم الإثباتات القانونية (شهادة تسجيل العلامة التجارية أو التوكيل الرسمي). سنقوم باتخاذ إجراءات فورية قد تصل إلى حذف الإعلان وحظر المستخدم المخالف نهائياً."
+  terms: "مرحباً بك في منصة فلتر إيجيبت. بمجرد استخدامك لهذه المنصة، فإنك توافق على الالتزام بالشروط والأحكام التالية التي تنظم عملنا كمنصة إعلانات مبوبة متخصصة.\n\n1. طبيعة المنصة وإخلاء المسؤولية\nتعمل منصة فلتر إيجيبت كوسيط إلكتروني (منصة إعلانات مبوبة) يجمع بين البائعين والمشترين في جميع المجالات. نحن لا نمتلك المنتجات المعروضة، ولا نتدخل في عمليات الدفع المباشرة، ولا نقدم أي ضمانات على جودة السلع المشتراة. تقع مسؤولية فحص المنتج والتأكد من جودته بالكامل على المشتري عند الاستلام اليدوي.\n\n2. حسابك والتزاماتك\nأنت مسؤول مسؤولية كاملة عن الحفاظ على سرية بيانات حسابك وكلمة المرور. كما تلتزم بأن جميع البيانات التي قدمتها أثناء التسجيل (بما في ذلك إيصالات الدفع) هي بيانات صحيحة وقانونية. في حال ثبوت أي تلاعب، يحق للمنصة إيقاف حسابك فوراً.\n\n3. المحتوى المحظور\nيُمنع منعاً باتاً نشر إعلانات لمنتجات غير قانونية، مسروقة، أو مقلدة. يمنع استخدام المنصة أو النادي لنشر محتوى مسيء، خادش للحياء، أو التحريض. الإدارة تقوم بمراجعة الإعلانات والبوستات ولها الحق في حذف أي محتوى مخالف دون سابق إنذار.",
+  privacy: "تلتزم فلتر إيجيبت باحترام خصوصيتك وحماية بياناتك الشخصية والتجارية بأعلى المعايير الأمنية.\n\n1. المعلومات التي نجمعها\nنقوم بجمع البيانات الأساسية اللازمة لإنشاء حسابك (الاسم، رقم الهاتف، البريد الإلكتروني، وإيصال تأكيد الاشتراك)، بالإضافة إلى أي رسائل أو تفاعلات تتم عبر نظام المحادثات الداخلي ونادي FILTER EGYPT CLUB لتوفير بيئة تواصل آمنة.\n\n2. استخدام البيانات\nنستخدم بياناتك لتسهيل عمليات البيع والشراء عبر المنصة، توفير الدعم الفني لحسابك، وتحسين تجربة المستخدم. قد نستخدم رقم هاتفك للتواصل معك بشأن تحديثات حسابك أو إعلاناتك.\n\n3. مشاركة وحماية البيانات\nنحن لا نبيع أو نشارك بياناتك الشخصية مع أي جهات تسويقية خارجية بأي شكل من الأشكال. يتم حفظ بياناتك على خوادم سحابية آمنة وموثوقة.\n\n4. استثناء قانوني\nوفقاً للقوانين المصرية، قد نُضطر إلى التعاون ومشاركة معلومات محددة مع السلطات الأمنية أو الجهات الحكومية الرسمية إذا تم طلب ذلك بموجب أمر قانوني رسمي أو في حالة الإبلاغ عن عمليات نصب أو احتيال.",
+  ip: "نحن في فلتر إيجيبت نحترم ونلتزم بقانون حماية حقوق الملكية الفكرية المصري رقم 82 لسنة 2002 والتعديلات اللاحقة عليه.\n\n1. حقوق فلتر إيجيبت\nإن اسم الموقع، وشعاره، والتصاميم، والأكواد البرمجية، وواجهة المستخدم، وقواعد البيانات الخاصة بالمنصة، هي ملكية فكرية حصرية لـ \"فلتر إيجيبت\". يُمنع منعاً باتاً نسخها أو اقتباسها أو إعادة إنتاجها دون إذن كتابي مسبق.\n\n2. حماية العلامات التجارية الأخرى\nيُحظر على البائعين استخدام العلامات التجارية العالمية أو المحلية بطريقة مضللة للمشتري. يُمنع الترويج للمنتجات المقلدة (Copy/High Copy) على أنها أصلية واستخدام شعار الشركة الأصلية لخداع المستهلك.\n\n3. الإبلاغ عن الانتهاكات\nإذا كنت الممثل القانوني لعلامة تجارية أو شركة، ووجدت أن هناك بائعاً على منصتنا يقوم بانتهاك حقوق الملكية الفكرية الخاصة بشركتك، يُرجى التواصل الفوري مع الإدارة مع تقديم الإثباتات القانونية. سنقوم باتخاذ إجراءات فورية قد تصل إلى حذف الإعلان وحظر المستخدم المخالف نهائياً."
 };
 
 const defaultCategoriesList = [
@@ -81,7 +94,7 @@ const AD_EXPIRATION_DAYS = 30;
 function ActionIcon({ icon, label, highlight }) {
   return (
     <div className="flex flex-col items-center gap-2 group cursor-pointer w-20">
-      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:-translate-y-1 ${highlight === 'red' ? 'bg-red-500/10 text-red-500 border border-red-500/20' : highlight ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-[#1f2937] text-gray-300 border border-gray-700 group-hover:border-emerald-500'}`}>{React.cloneElement(icon, { size: 26 })}</div>
+      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:-translate-y-1 ${highlight === 'red' ? 'bg-red-500/10 text-red-500 border border-red-500/20' : highlight === 'purple' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20 shadow-purple-500/20' : highlight ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-[#1f2937] text-gray-300 border border-gray-700 group-hover:border-emerald-500'}`}>{React.cloneElement(icon, { size: 26 })}</div>
       <span className="text-[11px] text-gray-400 text-center font-bold">{label}</span>
     </div>
   );
@@ -90,8 +103,7 @@ function ActionIcon({ icon, label, highlight }) {
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
 
-  // الصفحات الآمنة التي يمكن الرجوع إليها عند الـ Refresh
-  const safeViews = ['landing', 'buyer', 'seller', 'my-ads', 'live-feed', 'directory', 'login', 'signup', 'forgot-password', 'admin-dashboard', 'terms', 'privacy', 'ip', 'ad-details', 'user-profile', 'results'];
+  const safeViews = ['landing', 'buyer', 'seller', 'my-ads', 'live-feed', 'directory', 'login', 'signup', 'forgot-password', 'admin-dashboard', 'terms', 'privacy', 'ip', 'ad-details', 'user-profile', 'results', 'club'];
   
   const [activeView, setActiveView] = useState(() => {
      const savedView = typeof window !== 'undefined' ? localStorage.getItem('filterEgyptActiveView') : null;
@@ -175,6 +187,16 @@ export default function App() {
   const [adminPendingSearch, setAdminPendingSearch] = useState('');
   const [adminMembersSearch, setAdminMembersSearch] = useState('');
 
+  // FILTER EGYPT CLUB States
+  const [clubPosts, setClubPosts] = useState([]);
+  const [newPostContent, setNewPostContent] = useState('');
+  const [newPostLink, setNewPostLink] = useState('');
+  const [newPostMedia, setNewPostMedia] = useState(null);
+  const [newPostMediaPreview, setNewPostMediaPreview] = useState(null);
+  const [showPostEmojiPicker, setShowPostEmojiPicker] = useState(false);
+  const [commentInputs, setCommentInputs] = useState({});
+  const [showComments, setShowComments] = useState({});
+
   // Categories & Ads
   const [categories, setCategories] = useState(defaultCategoriesList);
   const [newCategoryInput, setNewCategoryInput] = useState('');
@@ -213,6 +235,7 @@ export default function App() {
   const [unreadCounts, setUnreadCounts] = useState({});
   const [chatPositions, setChatPositions] = useState({}); 
   const [chatInputs, setChatInputs] = useState({}); 
+  const [showChatEmojiPicker, setShowChatEmojiPicker] = useState({}); // Per chat ID
   const [isDragging, setIsDragging] = useState(false);
   
   const dragRef = useRef({ startX: 0, startY: 0, initialX: 0, initialY: 0, adId: null });
@@ -386,6 +409,18 @@ export default function App() {
     return () => unsubscribe();
   }, [fbUser, userProfile?.uid, activeChatId]);
 
+  // Sync Club Posts
+  useEffect(() => {
+    if (!fbUser) return;
+    const unsubscribe = onSnapshot(publicCol('club_posts'), (snapshot) => {
+      const posts = [];
+      snapshot.forEach(doc => posts.push({ id: doc.id, ...doc.data() }));
+      posts.sort((a, b) => b.createdAt - a.createdAt);
+      setClubPosts(posts);
+    }, (error) => console.log("Club Posts sync issue, ignoring."));
+    return () => unsubscribe();
+  }, [fbUser]);
+
   // Sync Banners
   useEffect(() => {
     if (!fbUser) return;
@@ -449,6 +484,147 @@ export default function App() {
      if (timeLeft <= 0) subStatus = 'expired';
      else if (timeLeft <= (5 * 24 * 60 * 60 * 1000)) { subStatus = 'warning'; subDaysLeft = Math.ceil(timeLeft / (1000 * 60 * 60 * 24)); }
   }
+
+  // --- FILTER EGYPT CLUB Handlers ---
+  const handlePostMediaChange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+          setNewPostMediaPreview(URL.createObjectURL(file));
+          setNewPostMedia(file);
+      }
+  };
+
+  const handleCreatePost = async () => {
+    if (!newPostContent.trim() && !newPostMedia) return;
+    if (!userProfile) {
+        setAppAlert(lang === 'ar' ? 'يرجى تسجيل الدخول أولاً' : 'Please login first');
+        return;
+    }
+
+    if (hasProfanity(newPostContent)) {
+        setAppAlert(lang === 'ar' ? 'عفواً، البوست يحتوي على كلمات مخالفة لسياسة المجتمع.' : 'Post contains inappropriate words.');
+        return;
+    }
+
+    setIsUploading(true);
+    try {
+      let mediaUrl = null;
+      let mediaType = null;
+
+      if (newPostMedia) {
+          if (newPostMedia.type.startsWith('image/')) {
+              const formData = new FormData(); formData.append('image', newPostMedia);
+              const res = await fetch('https://api.imgbb.com/1/upload?key=8c8cec8f9ee7b67db88ba5799154c94d', { method: 'POST', body: formData });
+              if (res.ok) { 
+                  mediaUrl = (await res.json()).data.url; 
+                  mediaType = 'image'; 
+              }
+          } else if (newPostMedia.type.startsWith('video/')) {
+              // Upload video to Firebase Storage
+              const fileRef = storageRef(storage, `club_videos/${Date.now()}_${newPostMedia.name}`);
+              await uploadBytes(fileRef, newPostMedia);
+              mediaUrl = await getDownloadURL(fileRef);
+              mediaType = 'video';
+          }
+      }
+
+      const newPost = {
+        authorId: userProfile.uid,
+        authorName: userProfile.displayName || userProfile.fullName,
+        authorPhoto: userProfile.photoUrl || null,
+        content: newPostContent.trim(),
+        adLink: newPostLink.trim() || null,
+        mediaUrl: mediaUrl,
+        mediaType: mediaType,
+        createdAt: Date.now(),
+        likes: [],
+        comments: []
+      };
+      await setDoc(publicDoc('club_posts', Date.now().toString()), newPost);
+      setNewPostContent('');
+      setNewPostLink('');
+      setNewPostMedia(null);
+      setNewPostMediaPreview(null);
+      setShowPostEmojiPicker(false);
+      setAppAlert(lang === 'ar' ? 'تم نشر البوست بنجاح في النادي!' : 'Post published successfully in the Club!');
+    } catch (e) {
+      console.error(e);
+      setAppAlert(lang === 'ar' ? 'حدث خطأ أثناء النشر.' : 'Error publishing post.');
+    }
+    setIsUploading(false);
+  };
+
+  const handleLikePost = async (postId, currentLikes) => {
+    if (!userProfile) {
+       setAppAlert(lang === 'ar' ? 'يرجى تسجيل الدخول أولاً للتفاعل.' : 'Please login first to interact.');
+       return;
+    }
+    const hasLiked = currentLikes.includes(userProfile.uid);
+    const newLikes = hasLiked
+      ? currentLikes.filter(id => id !== userProfile.uid)
+      : [...currentLikes, userProfile.uid];
+    try {
+      await updateDoc(publicDoc('club_posts', postId), { likes: newLikes });
+    } catch (e) {}
+  };
+
+  const handleAddComment = async (postId, currentComments) => {
+    const commentText = commentInputs[postId];
+    if (!commentText?.trim() || !userProfile) return;
+    
+    if (hasProfanity(commentText)) {
+        setAppAlert(lang === 'ar' ? 'عفواً، التعليق يحتوي على كلمات مخالفة لسياسة المجتمع.' : 'Comment contains inappropriate words.');
+        return;
+    }
+
+    const newComment = {
+      id: Date.now().toString(),
+      authorId: userProfile.uid,
+      authorName: userProfile.displayName || userProfile.fullName,
+      authorPhoto: userProfile.photoUrl || null,
+      content: commentText.trim(),
+      createdAt: Date.now()
+    };
+    try {
+      await updateDoc(publicDoc('club_posts', postId), {
+        comments: [...(currentComments || []), newComment]
+      });
+      setCommentInputs(prev => ({ ...prev, [postId]: '' }));
+      setShowComments(prev => ({ ...prev, [postId]: true }));
+    } catch (e) {}
+  };
+
+  const handleDeletePost = async (postId) => {
+    setConfirmModal({
+      isOpen: true,
+      title: lang === 'ar' ? 'حذف البوست' : 'Delete Post',
+      message: lang === 'ar' ? 'هل أنت متأكد من حذف هذا البوست نهائياً؟' : 'Are you sure you want to permanently delete this post?',
+      type: 'danger',
+      confirmText: lang === 'ar' ? 'حذف' : 'Delete',
+      onConfirm: async () => {
+        setConfirmModal({ ...confirmModal, isOpen: false });
+        try {
+          await deleteDoc(publicDoc('club_posts', postId));
+          setAppAlert(lang === 'ar' ? 'تم مسح البوست بنجاح' : 'Post deleted successfully');
+        } catch (e) {}
+      }
+    });
+  };
+
+  const handleReportContent = async (postId, contentType = 'post') => {
+      if (!userProfile) return;
+      try {
+           await setDoc(publicDoc('complaints', `report_${Date.now()}`), {
+              type: `report_${contentType}`,
+              contentId: postId,
+              reporterId: userProfile.uid,
+              reporterName: userProfile.displayName || userProfile.fullName,
+              createdAt: Date.now(),
+              phone: userProfile.phone || 'N/A'
+           });
+           setAppAlert(lang === 'ar' ? 'تم الإبلاغ بنجاح. ستقوم الإدارة بمراجعة المحتوى واتخاذ اللازم.' : 'Reported successfully. Admin will review the content.');
+      } catch (e) {}
+  };
 
   // Admin Categories
   const handleAddCategory = async () => {
@@ -514,6 +690,12 @@ export default function App() {
   // AD EDITING
   const saveAdEdit = async () => {
     if (!adToEdit.title || !adToEdit.price) { setAppAlert(lang === 'ar' ? 'يرجى ملء العنوان والسعر.' : 'Please fill in title and price.'); return; }
+    
+    if (hasProfanity(adToEdit.title) || hasProfanity(adToEdit.description)) {
+        setAppAlert(lang === 'ar' ? 'عفواً، الإعلان يحتوي على كلمات مخالفة.' : 'Ad contains inappropriate words.');
+        return;
+    }
+
     setIsUploading(true);
     try {
       const finalImageUrls = [...(adToEdit.images || [])];
@@ -539,6 +721,10 @@ export default function App() {
       if (!signupData.fullName || !signupData.displayName || !signupData.email || !signupData.phone || !signupData.password) throw new Error(lang === 'ar' ? 'يرجى ملء كافة البيانات' : 'Please fill all fields');
       if (signupData.password !== signupData.confirmPassword) throw new Error(lang === 'ar' ? 'كلمات المرور غير متطابقة' : 'Passwords do not match');
       if (!receiptUploaded || !receiptFile) throw new Error(lang === 'ar' ? 'يرجى إرفاق صورة إيصال الدفع للتحقق' : 'Please attach the payment receipt to verify');
+      
+      if (hasProfanity(signupData.fullName) || hasProfanity(signupData.displayName)) {
+          throw new Error(lang === 'ar' ? 'عفواً، الاسم يحتوي على كلمات غير لائقة.' : 'Name contains inappropriate words.');
+      }
 
       const cleanEmail = signupData.email.trim().toLowerCase();
       const cleanPhone = signupCountryCode + signupData.phone.trim();
@@ -739,9 +925,16 @@ export default function App() {
   const handleSendMessage = async () => {
     const currentInput = chatInputs[activeChatId] || '';
     if(currentInput.trim() === '' || !activeChatId || !userProfile) return;
+    
+    if (hasProfanity(currentInput)) {
+        setAppAlert(lang === 'ar' ? 'عفواً، رسالتك تحتوي على كلمات غير لائقة. يرجى احترام قواعد المنصة.' : 'Message contains inappropriate words.');
+        return;
+    }
+
     const activeChat = globalChats.find(c => c.id === activeChatId); if (!activeChat) return;
     const newMsg = { text: currentInput, senderId: userProfile.uid, timestamp: Date.now(), time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) };
     setChatInputs(prev => ({...prev, [activeChatId]: ''}));
+    setShowChatEmojiPicker(prev => ({...prev, [activeChatId]: false}));
     try { await updateDoc(publicDoc('chats', activeChatId), { messages: [...(activeChat.messages || []), newMsg], updatedAt: Date.now() }); } catch (error) {}
   };
 
@@ -832,7 +1025,13 @@ export default function App() {
   const handleCoverImageUpload = async (e) => { if (e.target.files && e.target.files[0]) { setCoverImagePreview(URL.createObjectURL(e.target.files[0])); setCoverImageFile(e.target.files[0]); } };
 
   const saveProfileUpdates = async () => {
-    if (!isAppLoggedIn || !userProfile) return; setIsUploading(true);
+    if (!isAppLoggedIn || !userProfile) return; 
+    if (hasProfanity(editName) || hasProfanity(editBio)) {
+        setAppAlert(lang === 'ar' ? 'عفواً، بياناتك تحتوي على كلمات غير لائقة.' : 'Profile contains inappropriate words.');
+        return;
+    }
+    
+    setIsUploading(true);
     try {
       let newPhotoUrl = userProfile.photoUrl || null;
       let newCoverUrl = userProfile.coverUrl || null;
@@ -900,8 +1099,9 @@ export default function App() {
       {showSplash && (
         <div className="fixed inset-0 z-[1200] bg-[#050505] flex flex-col items-center justify-center">
            <div className="relative w-32 h-32 rounded-3xl overflow-hidden flex items-center justify-center shadow-[0_0_50px_rgba(16,185,129,0.3)] mb-8 animate-bounce" style={{ animationDuration: '2.5s' }}>
-              <div className="absolute inset-0 bg-gradient-to-br from-[#111827] via-gray-800 to-black"></div>
-              <Filter className="relative z-10 text-emerald-400 drop-shadow-2xl" size={64} strokeWidth={2.5} />
+              <div className="absolute inset-0 bg-gradient-to-br from-[#CE1126] via-white to-black animate-flag-wave bg-[length:200%_200%] opacity-90"></div>
+              <div className="absolute inset-0 bg-black/20"></div>
+              <Filter className="relative z-10 text-[#C09300] drop-shadow-md" size={64} strokeWidth={2.5} />
            </div>
            <h1 className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 mb-6 animate-pulse">
               {lang === 'ar' ? 'فلتر إيجيبت' : 'Filter Egypt'}
@@ -1268,6 +1468,10 @@ export default function App() {
                           if (activeView === 'buyer') { setFilterCategory(searchQuery.trim() !== '' ? `بحث: ${searchQuery}` : 'الكل'); navigateTo('results'); } 
                           else {
                             if (sellerInput.trim() !== '' || uploadedImages.length > 0) {
+                              if (hasProfanity(sellerInput) || hasProfanity(sellerDescription)) {
+                                  setAppAlert(lang === 'ar' ? 'عفواً، الإعلان يحتوي على كلمات مخالفة لسياسة المجتمع.' : 'Ad contains inappropriate words.');
+                                  return;
+                              }
                               setIsUploading(true); 
                               try {
                                 const finalImageUrls = [];
@@ -1300,13 +1504,187 @@ export default function App() {
               )}
             </div>
 
+            {/* الأزرار الرئيسية + زرار FILTER EGYPT CLUB */}
             <div className="flex flex-wrap justify-center gap-4 md:gap-8 mt-12">
-              <div onClick={() => navigateTo('live-feed')}><ActionIcon icon={<Activity className="text-red-500 animate-pulse" />} label={lang === 'ar' ? "الرادار المباشر" : "Live Radar"} highlight="red" /></div>
+              <div onClick={() => navigateTo('club')}><ActionIcon icon={<Sparkles className="text-purple-400 animate-pulse" />} label="FILTER EGYPT CLUB" highlight="purple" /></div>
+              <div onClick={() => navigateTo('live-feed')}><ActionIcon icon={<Activity className="text-red-500" />} label={lang === 'ar' ? "الرادار المباشر" : "Live Radar"} highlight="red" /></div>
               <div onClick={() => setShowFilterModal(true)}><ActionIcon icon={<SlidersHorizontal />} label={lang === 'ar' ? "فلترة ذكية" : "Smart Filter"} /></div>
               <div onClick={() => navigateTo('directory')}><ActionIcon icon={<UserSearch className="text-blue-400" />} label={lang === 'ar' ? "دليل المشتركين" : "Directory"} /></div>
               <div onClick={() => navigateTo('my-ads')}><ActionIcon icon={<Megaphone />} label={lang === 'ar' ? "إعلاناتي" : "My Ads"} /></div>
               <div onClick={() => setShowSettingsModal(true)}><ActionIcon icon={<Settings />} label={lang === 'ar' ? "الإعدادات" : "Settings"} /></div>
             </div>
+          </div>
+        )}
+
+        {/* --- FILTER EGYPT CLUB VIEW --- */}
+        {activeView === 'club' && (
+          <div className="w-full animate-fade-in flex flex-col items-center pb-12">
+             <div className="w-full flex justify-between items-center mb-8 border-b border-gray-800 pb-4">
+                <h2 className="text-2xl md:text-4xl font-black flex items-center gap-3 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500 tracking-tight">
+                   <Sparkles className="text-purple-400 animate-pulse" size={32} /> FILTER EGYPT CLUB
+                </h2>
+                <button onClick={goBack} className="bg-[#1f2937] text-gray-300 px-5 py-2.5 rounded-full border border-gray-700 hover:border-gray-500 transition-colors font-bold text-sm">{lang === 'ar' ? 'رجوع' : 'Back'}</button>
+             </div>
+
+             {/* Create Post Section */}
+             {isAppLoggedIn ? (
+               <div className="w-full max-w-2xl bg-[#1f2937]/80 backdrop-blur-sm p-5 md:p-6 rounded-3xl shadow-2xl border border-purple-500/20 mb-10">
+                  <div className="flex gap-4">
+                     {userProfile?.photoUrl ? <img src={userProfile.photoUrl} className="w-12 h-12 rounded-full object-cover border-2 border-purple-500/50 shrink-0" alt="Avatar" /> : <AvatarFallback size={48} />}
+                     <div className="flex-1">
+                        <textarea value={newPostContent} onChange={e => setNewPostContent(e.target.value)} placeholder={lang === 'ar' ? "شارك أفكارك، ابحث عن شريك، أو اطرح سؤالاً للمجتمع..." : "Share your thoughts, find a partner, or ask the community..."} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-4 text-white text-lg outline-none focus:border-purple-500 resize-none custom-scrollbar min-h-[100px]"></textarea>
+                        
+                        {/* New Additions: Link, Media, Emoji */}
+                        <div className="mt-3 flex flex-col gap-3 border-t border-gray-800 pt-3">
+                           <div className="flex items-center gap-3 bg-[#111827] rounded-xl px-3 py-2 border border-gray-700 focus-within:border-purple-500">
+                              <Link2 size={18} className="text-gray-400 shrink-0" />
+                              <input type="url" value={newPostLink} onChange={e => setNewPostLink(e.target.value)} placeholder={lang === 'ar' ? "رابط إعلانك أو موقعك (اختياري)" : "Link to your ad/site (optional)"} className="w-full bg-transparent text-white text-sm outline-none" />
+                           </div>
+                           
+                           {newPostMediaPreview && (
+                              <div className="relative w-32 h-32 rounded-xl overflow-hidden border border-purple-500/50">
+                                 {newPostMedia?.type?.startsWith('video/') ? (
+                                    <video src={newPostMediaPreview} className="w-full h-full object-cover" muted />
+                                 ) : (
+                                    <img src={newPostMediaPreview} className="w-full h-full object-cover" />
+                                 )}
+                                 <button onClick={() => { setNewPostMedia(null); setNewPostMediaPreview(null); }} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1"><X size={12}/></button>
+                              </div>
+                           )}
+
+                           <div className="flex justify-between items-center relative">
+                              <div className="flex gap-2">
+                                 <label className="bg-gray-800 hover:bg-purple-500/20 text-gray-300 hover:text-purple-400 p-2 rounded-full transition-colors cursor-pointer" title={lang === 'ar' ? 'إضافة صورة أو فيديو' : 'Add Image or Video'}>
+                                    <Film size={18} />
+                                    <input type="file" className="hidden" accept="image/*,video/*" onChange={handlePostMediaChange} />
+                                 </label>
+                                 <button onClick={() => setShowPostEmojiPicker(!showPostEmojiPicker)} className="bg-gray-800 hover:bg-yellow-500/20 text-gray-300 hover:text-yellow-400 p-2 rounded-full transition-colors" title={lang === 'ar' ? 'إضافة إيموجي' : 'Add Emoji'}>
+                                    <Smile size={18} />
+                                 </button>
+                                 
+                                 {showPostEmojiPicker && (
+                                    <div className="absolute top-10 left-0 z-50 bg-[#1f2937] border border-gray-700 rounded-xl p-2 grid grid-cols-5 gap-2 shadow-2xl animate-fade-in">
+                                       {EMOJI_LIST.map(emoji => (
+                                          <button key={emoji} onClick={() => { setNewPostContent(prev => prev + emoji); setShowPostEmojiPicker(false); }} className="hover:bg-gray-700 p-1.5 rounded-lg text-lg transition-colors">{emoji}</button>
+                                       ))}
+                                    </div>
+                                 )}
+                              </div>
+
+                              <button onClick={handleCreatePost} className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold px-8 py-2.5 rounded-xl shadow-lg transition-transform hover:scale-105 flex items-center gap-2">
+                                <Send size={18} /> {lang === 'ar' ? 'نشر البوست' : 'Post'}
+                              </button>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+             ) : (
+               <div className="w-full max-w-2xl bg-[#1f2937]/50 p-6 rounded-3xl border border-gray-700 mb-10 text-center">
+                  <h3 className="text-xl font-bold text-gray-300 mb-4">{lang === 'ar' ? 'سجل دخولك لتتمكن من النشر والتفاعل في النادي' : 'Login to post and interact in the Club'}</h3>
+                  <button onClick={() => navigateTo('login')} className="bg-purple-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-purple-500 transition-colors">تسجيل الدخول</button>
+               </div>
+             )}
+
+             {/* Posts Feed */}
+             <div className="w-full max-w-2xl flex flex-col gap-6">
+                {clubPosts.length === 0 && <p className="text-gray-500 text-center py-10 text-lg">{lang === 'ar' ? 'لا توجد بوستات حالياً. كُن أول من يشارك في النادي!' : 'No posts yet. Be the first to share!'}</p>}
+                
+                {clubPosts.map(post => {
+                   const isLiked = post.likes?.includes(userProfile?.uid);
+                   const isAuthor = userProfile?.uid === post.authorId;
+                   return (
+                      <div key={post.id} className="bg-[#1f2937] p-5 md:p-6 rounded-3xl shadow-xl border border-gray-800 hover:border-gray-700 transition-colors">
+                         {/* Post Header */}
+                         <div className="flex justify-between items-start mb-4">
+                            <div className="flex items-center gap-3 cursor-pointer group" onClick={() => { const prof = allProfiles.find(p => p.uid === post.authorId); if(prof) { setViewedProfile(prof); navigateTo('user-profile'); } }}>
+                               {post.authorPhoto ? <img src={post.authorPhoto} className="w-12 h-12 rounded-full object-cover border-2 border-transparent group-hover:border-purple-500 transition-colors" alt="Author" /> : <AvatarFallback size={48} />}
+                               <div>
+                                  <h4 className="font-bold text-white text-lg group-hover:text-purple-400 transition-colors">{post.authorName}</h4>
+                                  <p className="text-gray-500 text-xs">{new Date(post.createdAt).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')}</p>
+                               </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                               {(isAuthor || isAdmin) ? (
+                                  <button onClick={() => handleDeletePost(post.id)} className="text-gray-500 hover:text-red-500 bg-gray-800 hover:bg-red-500/10 p-2 rounded-full transition-colors" title={lang === 'ar' ? 'حذف البوست' : 'Delete Post'}><Trash2 size={16}/></button>
+                               ) : (
+                                  <button onClick={() => handleReportContent(post.id, 'post')} className="text-gray-500 hover:text-red-500 bg-gray-800 hover:bg-red-500/10 p-2 rounded-full transition-colors" title={lang === 'ar' ? 'إبلاغ عن محتوى مسيء' : 'Report Content'}><Flag size={16}/></button>
+                               )}
+                            </div>
+                         </div>
+                         
+                         {/* Post Content */}
+                         <p className="text-gray-200 text-base md:text-lg leading-relaxed whitespace-pre-wrap mb-4">{post.content}</p>
+                         
+                         {/* Optional Media */}
+                         {post.mediaUrl && (
+                            <div className="mb-4 rounded-2xl overflow-hidden border border-gray-700 bg-black flex justify-center max-h-[400px]">
+                               {post.mediaType === 'video' ? (
+                                  <video src={post.mediaUrl} controls className="max-w-full max-h-full object-contain"></video>
+                               ) : (
+                                  <img src={post.mediaUrl} alt="Post Media" className="max-w-full max-h-full object-contain" />
+                               )}
+                            </div>
+                         )}
+
+                         {/* Optional Link */}
+                         {post.adLink && (
+                            <a href={post.adLink.startsWith('http') ? post.adLink : `https://${post.adLink}`} target="_blank" rel="noreferrer" className="mb-6 bg-purple-500/10 border border-purple-500/30 text-purple-400 px-4 py-3 rounded-xl flex items-center justify-between hover:bg-purple-500/20 transition-colors">
+                               <span className="font-bold flex items-center gap-2"><Link2 size={18} /> {lang === 'ar' ? 'زيارة الرابط المرفق' : 'Visit Link'}</span>
+                               <ArrowRight size={18} />
+                            </a>
+                         )}
+                         
+                         {/* Post Actions */}
+                         <div className="flex items-center gap-6 border-t border-gray-800 pt-4">
+                            <button onClick={() => handleLikePost(post.id, post.likes || [])} className={`flex items-center gap-2 font-bold transition-colors ${isLiked ? 'text-pink-500' : 'text-gray-400 hover:text-pink-400'}`}>
+                               <Heart size={20} className={isLiked ? 'fill-current' : ''} /> {post.likes?.length || 0}
+                            </button>
+                            <button onClick={() => setShowComments(prev => ({...prev, [post.id]: !prev[post.id]}))} className={`flex items-center gap-2 font-bold transition-colors ${showComments[post.id] ? 'text-purple-400' : 'text-gray-400 hover:text-purple-400'}`}>
+                               <MessageSquare size={20} /> {post.comments?.length || 0} {lang === 'ar' ? 'تعليق' : 'Comments'}
+                            </button>
+                         </div>
+
+                         {/* Comments Section */}
+                         {showComments[post.id] && (
+                            <div className="mt-5 pt-5 border-t border-gray-800 animate-fade-in">
+                               {/* Comment Input */}
+                               {isAppLoggedIn ? (
+                                  <div className="flex gap-3 mb-6">
+                                     {userProfile?.photoUrl ? <img src={userProfile.photoUrl} className="w-10 h-10 rounded-full object-cover shrink-0" /> : <AvatarFallback size={40} />}
+                                     <div className="flex-1 relative">
+                                        <input type="text" value={commentInputs[post.id] || ''} onChange={e => setCommentInputs(prev => ({...prev, [post.id]: e.target.value}))} onKeyDown={e => e.key === 'Enter' && handleAddComment(post.id, post.comments)} placeholder={lang === 'ar' ? "اكتب تعليقاً..." : "Write a comment..."} className="w-full bg-[#111827] border border-gray-700 rounded-full py-3 pr-4 pl-12 text-sm text-white outline-none focus:border-purple-500 shadow-inner" />
+                                        <button onClick={() => handleAddComment(post.id, post.comments)} className="absolute left-2 top-1/2 -translate-y-1/2 bg-purple-600 hover:bg-purple-500 text-white p-2 rounded-full transition-colors"><Send size={14}/></button>
+                                     </div>
+                                  </div>
+                               ) : (
+                                  <p className="text-sm text-gray-500 text-center mb-6">سجل دخولك لكتابة تعليق.</p>
+                               )}
+                               
+                               {/* Comments List */}
+                               <div className="space-y-4">
+                                  {(post.comments || []).map(comment => (
+                                     <div key={comment.id} className="flex gap-3">
+                                        {comment.authorPhoto ? <img src={comment.authorPhoto} className="w-8 h-8 rounded-full object-cover cursor-pointer mt-1" onClick={() => { const prof = allProfiles.find(p => p.uid === comment.authorId); if(prof) { setViewedProfile(prof); navigateTo('user-profile'); } }} /> : <AvatarFallback size={32} className="mt-1" />}
+                                        <div className="bg-[#111827] p-3 md:p-4 rounded-2xl rounded-tr-none flex-1 border border-gray-800 relative group">
+                                           <div className="flex justify-between items-start">
+                                              <h5 className="font-bold text-sm text-gray-300 cursor-pointer hover:text-purple-400 inline-block mb-1" onClick={() => { const prof = allProfiles.find(p => p.uid === comment.authorId); if(prof) { setViewedProfile(prof); navigateTo('user-profile'); } }}>{comment.authorName}</h5>
+                                              {(!isAuthor && userProfile?.uid !== comment.authorId) && (
+                                                 <button onClick={() => handleReportContent(comment.id, 'comment')} className="text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" title="إبلاغ"><Flag size={12}/></button>
+                                              )}
+                                           </div>
+                                           <p className="text-sm text-white leading-relaxed">{comment.content}</p>
+                                           <span className="text-[10px] text-gray-500 mt-2 block">{new Date(comment.createdAt).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')}</span>
+                                        </div>
+                                     </div>
+                                  ))}
+                               </div>
+                            </div>
+                         )}
+                      </div>
+                   );
+                })}
+             </div>
           </div>
         )}
 
@@ -1470,6 +1848,7 @@ export default function App() {
                            {viewedProfile.whatsapp && viewedProfile.whatsapp.trim().length > 0 && (
                               <a href={`https://wa.me/${viewedProfile.whatsapp.replace(/[^0-9+]/g, '')}`} target="_blank" rel="noreferrer" className="w-full md:w-auto bg-[#25D366] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#20bd5a] transition-colors shadow-lg flex items-center justify-center gap-2"><MessageCircle size={20}/> {lang === 'ar' ? 'تواصل عبر واتساب' : 'WhatsApp'}</a>
                            )}
+                           <button onClick={() => handleReportContent(viewedProfile.uid, 'profile')} className="mt-2 text-gray-500 hover:text-red-500 text-sm flex items-center justify-center gap-1 transition-colors"><Flag size={14}/> {lang === 'ar' ? 'إبلاغ عن هذا المستخدم' : 'Report User'}</button>
                          </>
                       )}
                    </div>
@@ -1601,6 +1980,7 @@ export default function App() {
                            {allProfiles.find(p => p.uid === selectedAd.sellerId)?.whatsapp && allProfiles.find(p => p.uid === selectedAd.sellerId).whatsapp.trim().length > 0 && (
                               <a href={`https://wa.me/${allProfiles.find(p => p.uid === selectedAd.sellerId).whatsapp.replace(/[^0-9+]/g, '')}`} target="_blank" rel="noreferrer" className="w-full bg-[#25D366] text-white font-bold rounded-xl py-4 flex justify-center items-center gap-2 hover:bg-[#20bd5a] transition-colors shadow-lg"><MessageCircle size={20} /> {lang === 'ar' ? 'تواصل عبر واتساب' : 'WhatsApp'}</a>
                            )}
+                           <button onClick={() => handleReportContent(selectedAd.id, 'ad')} className="mt-2 text-gray-500 hover:text-red-500 text-sm flex items-center justify-center gap-1 transition-colors"><Flag size={14}/> {lang === 'ar' ? 'إبلاغ عن هذا الإعلان (محتوى مسيء أو مضلل)' : 'Report Ad'}</button>
                          </>
                       )}
                    </div>
@@ -1803,19 +2183,29 @@ export default function App() {
               </div>
 
               {/* قسم الشكاوى */}
-              <div className="flex flex-col sm:flex-row justify-between items-center border-b border-gray-700 pb-4 mb-6 mt-12"><h2 className="text-2xl font-bold text-blue-400 mb-4 sm:mb-0 flex items-center gap-2"><MessageCircleWarning/> صندوق الشكاوى</h2></div>
+              <div className="flex flex-col sm:flex-row justify-between items-center border-b border-gray-700 pb-4 mb-6 mt-12"><h2 className="text-2xl font-bold text-blue-400 mb-4 sm:mb-0 flex items-center gap-2"><MessageCircleWarning/> صندوق الشكاوى والإبلاغات</h2></div>
               <div className="bg-[#1f2937] p-6 rounded-2xl border border-gray-700 shadow-xl max-h-96 overflow-y-auto custom-scrollbar">
-                 {adminComplaints.length === 0 ? ( <p className="text-gray-500 text-center py-4">لا توجد شكاوى حالياً.</p> ) : (
+                 {adminComplaints.length === 0 ? ( <p className="text-gray-500 text-center py-4">لا توجد شكاوى أو بلاغات حالياً.</p> ) : (
                    <div className="space-y-4">
                      {adminComplaints.map(comp => (
                         <div key={comp.id} className="bg-[#111827] p-4 rounded-xl border border-gray-700">
                            <div className="flex justify-between items-start mb-2 border-b border-gray-800 pb-2">
-                              <div><p className="text-emerald-400 font-bold text-sm">مُرسل من: {comp.senderName}</p><p className="text-gray-400 text-xs">رقم الهاتف: {comp.phone}</p></div>
-                              <span className="text-gray-500 text-xs">{new Date(comp.createdAt).toLocaleDateString()}</span>
+                              <div>
+                                 <p className="text-emerald-400 font-bold text-sm">مُرسل من: {comp.senderName || comp.reporterName}</p>
+                                 <p className="text-gray-400 text-xs">رقم الهاتف: {comp.phone}</p>
+                              </div>
+                              <div className="text-left">
+                                 {comp.type && comp.type.startsWith('report_') ? (
+                                    <span className="text-red-500 text-xs font-bold bg-red-500/10 px-2 py-1 rounded">إبلاغ عن محتوى ({comp.type.replace('report_', '')})</span>
+                                 ) : (
+                                    <span className="text-blue-400 text-xs font-bold bg-blue-500/10 px-2 py-1 rounded">شكوى عامة</span>
+                                 )}
+                                 <span className="text-gray-500 text-[10px] block mt-1">{new Date(comp.createdAt).toLocaleDateString()}</span>
+                              </div>
                            </div>
-                           <p className="text-white text-sm leading-relaxed whitespace-pre-wrap">{comp.text}</p>
-                           <button onClick={() => openChat(comp.senderId, comp.senderName)} className="mt-4 bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors flex items-center gap-2 w-fit">
-                              <MessageSquare size={16} /> رد على المشترك 
+                           <p className="text-white text-sm leading-relaxed whitespace-pre-wrap">{comp.text || `إبلاغ آلي عن محتوى يحمل ID: ${comp.contentId || comp.postId}`}</p>
+                           <button onClick={() => openChat(comp.senderId || comp.reporterId, comp.senderName || comp.reporterName)} className="mt-4 bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors flex items-center gap-2 w-fit">
+                              <MessageSquare size={16} /> رد على المُبلّغ 
                            </button>
                         </div>
                      ))}
@@ -1972,9 +2362,21 @@ export default function App() {
                  })}
                  <div ref={chatMessagesEndRef} />
               </div>
-              <div className="p-2 flex gap-2 bg-[#1f2937]">
-                 <input type="text" value={chatInputs[activeChatId] || ''} onChange={(e) => setChatInputs(prev => ({...prev, [activeChatId]: e.target.value}))} onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()} className="flex-1 bg-[#111827] rounded-full px-3 text-white text-sm outline-none" placeholder={lang === 'ar' ? "رسالة..." : "Message..."} />
-                 <button onClick={handleSendMessage} className="bg-emerald-500 text-white p-2 rounded-full"><Send size={16}/></button>
+              <div className="p-2 flex flex-col gap-2 bg-[#1f2937] relative">
+                 {showChatEmojiPicker[activeChatId] && (
+                    <div className="absolute bottom-full left-2 mb-2 z-50 bg-[#111827] border border-gray-700 rounded-xl p-2 grid grid-cols-5 gap-2 shadow-2xl">
+                       {EMOJI_LIST.map(emoji => (
+                          <button key={emoji} onClick={() => setChatInputs(prev => ({...prev, [activeChatId]: (prev[activeChatId] || '') + emoji}))} className="hover:bg-gray-700 p-1.5 rounded-lg text-lg transition-colors">{emoji}</button>
+                       ))}
+                    </div>
+                 )}
+                 <div className="flex gap-2">
+                    <button onClick={() => setShowChatEmojiPicker(prev => ({...prev, [activeChatId]: !prev[activeChatId]}))} className="bg-[#111827] text-yellow-500 p-2 rounded-full hover:bg-gray-800 transition-colors shrink-0">
+                       <Smile size={20}/>
+                    </button>
+                    <input type="text" value={chatInputs[activeChatId] || ''} onChange={(e) => setChatInputs(prev => ({...prev, [activeChatId]: e.target.value}))} onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()} className="flex-1 bg-[#111827] rounded-full px-4 text-white text-sm outline-none border border-transparent focus:border-emerald-500 transition-colors" placeholder={lang === 'ar' ? "اكتب رسالة..." : "Type a message..."} />
+                    <button onClick={handleSendMessage} className="bg-emerald-500 text-white p-2 rounded-full hover:bg-emerald-600 transition-colors shrink-0"><Send size={20}/></button>
+                 </div>
               </div>
             </div>
          );
