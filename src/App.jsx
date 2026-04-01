@@ -1644,7 +1644,9 @@ export default function App() {
                                <div className="space-y-4">
                                   {(post.comments || []).map(comment => (
                                      <div key={comment.id} className="flex gap-3">
-                                        {comment.authorPhoto ? <img src={comment.authorPhoto} className="w-8 h-8 rounded-full object-cover cursor-pointer mt-1" onClick={() => { const prof = allProfiles.find(p => p.uid === comment.authorId); if(prof) { setViewedProfile(prof); navigateTo('user-profile'); } }} /> : <AvatarFallback size={32} className="mt-1" />}
+                                        <div className="cursor-pointer shrink-0 mt-1" onClick={() => { const prof = allProfiles.find(p => p.uid === comment.authorId); if(prof) { setViewedProfile(prof); navigateTo('user-profile'); } }}>
+                                           {comment.authorPhoto ? <img src={comment.authorPhoto} className="w-8 h-8 rounded-full object-cover hover:opacity-80 transition-opacity" alt="Commenter" /> : <AvatarFallback size={32} className="hover:opacity-80 transition-opacity" />}
+                                        </div>
                                         <div className="bg-[#111827] p-3 md:p-4 rounded-2xl rounded-tr-none flex-1 border border-gray-800 relative group">
                                            <div className="flex justify-between items-start">
                                               <h5 className="font-bold text-sm text-gray-300 cursor-pointer hover:text-purple-400 inline-block mb-1" onClick={() => { const prof = allProfiles.find(p => p.uid === comment.authorId); if(prof) { setViewedProfile(prof); navigateTo('user-profile'); } }}>{comment.authorName}</h5>
