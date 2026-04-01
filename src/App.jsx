@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, updateDoc, getDocs } from 'firebase/firestore';
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'; // 🔴 تمت إعادة استدعاء مكتبة التخزين للفيديوهات
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 import { 
   Search, SlidersHorizontal, Sparkles, CreditCard, Settings, ShieldCheck, 
@@ -12,7 +12,7 @@ import {
   CheckCircle, AlertTriangle, Send, MessageSquareX, Minus, MessageSquare, 
   Megaphone, Edit, Trash2, Save, Activity, Info, Loader, Plus, ChevronDown, Clock,
   Facebook, Youtube, Instagram, Ghost, Music, UserSearch, Ban, MessageCircleWarning, 
-  Link as LinkIcon, Camera, MessageCircle, Heart, Smile, Link2, Flag, Film
+  Link as LinkIcon, Camera, MessageCircle, Heart, Smile, Link2, Flag, Film, Maximize
 } from 'lucide-react';
 
 // ==========================================
@@ -32,7 +32,7 @@ const fbConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebas
 const app = initializeApp(fbConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const storage = getStorage(app); // 🔴 تفعيل التخزين السحابي للفيديوهات
+const storage = getStorage(app); 
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'filter-egypt-app';
 
 // دوال مساعدة للوصول الآمن للبيانات
@@ -196,6 +196,8 @@ export default function App() {
   const [showPostEmojiPicker, setShowPostEmojiPicker] = useState(false);
   const [commentInputs, setCommentInputs] = useState({});
   const [showComments, setShowComments] = useState({});
+  // 🔴 حالة تكبير الميديا للنافذة الكاملة
+  const [fullscreenMedia, setFullscreenMedia] = useState(null);
 
   // Categories & Ads
   const [categories, setCategories] = useState(defaultCategoriesList);
@@ -509,10 +511,9 @@ export default function App() {
     setIsUploading(true);
     try {
       let mediaUrl = null;
-      let mediaType = null; // 🔴 لتحديد نوع الميديا (صورة أم فيديو)
+      let mediaType = null; 
 
       if (newPostMedia) {
-          // رفع الصور كالمعتاد على ImgBB
           if (newPostMedia.type.startsWith('image/')) {
               const formData = new FormData(); formData.append('image', newPostMedia);
               const res = await fetch('https://api.imgbb.com/1/upload?key=8c8cec8f9ee7b67db88ba5799154c94d', { method: 'POST', body: formData });
@@ -521,7 +522,6 @@ export default function App() {
                   mediaType = 'image';
               }
           } 
-          // 🔴 رفع الفيديوهات على Firebase Storage
           else if (newPostMedia.type.startsWith('video/')) {
               const videoRef = storageRef(storage, `club_videos/${Date.now()}_${newPostMedia.name}`);
               await uploadBytes(videoRef, newPostMedia);
@@ -537,7 +537,7 @@ export default function App() {
         content: newPostContent.trim(),
         adLink: newPostLink.trim() || null,
         mediaUrl: mediaUrl,
-        mediaType: mediaType, // 🔴 حفظ نوع الميديا
+        mediaType: mediaType, 
         createdAt: Date.now(),
         likes: [],
         comments: []
@@ -1545,25 +1545,32 @@ export default function App() {
                               <input type="url" value={newPostLink} onChange={e => setNewPostLink(e.target.value)} placeholder={lang === 'ar' ? "رابط إعلانك أو موقعك (اختياري)" : "Link to your ad/site (optional)"} className="w-full bg-transparent text-white text-sm outline-none" />
                            </div>
                            
-                           {/* 🔴 معاينة الميديا (صورة أو فيديو) */}
+                           {/* 🔴 معاينة الميديا (صورة أو فيديو) قبل النشر */}
                            {newPostMediaPreview && (
-                              <div className="relative w-full max-w-[200px] h-32 rounded-xl overflow-hidden border border-purple-500/50 flex justify-center bg-black mx-auto">
+                              <div className="relative w-full max-w-[200px] h-32 rounded-xl overflow-hidden border border-purple-500/50 flex justify-center bg-black mx-auto group">
                                  {newPostMedia?.type?.startsWith('video/') ? (
                                     <video src={newPostMediaPreview} className="w-full h-full object-cover" muted autoPlay loop />
                                  ) : (
                                     <img src={newPostMediaPreview} className="w-full h-full object-cover" />
                                  )}
-                                 <button onClick={() => { setNewPostMedia(null); setNewPostMediaPreview(null); }} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 shadow-lg"><X size={12}/></button>
+                                 {/* زر تكبير المعاينة */}
+                                 <button onClick={() => setFullscreenMedia({url: newPostMediaPreview, type: newPostMedia?.type?.startsWith('video/') ? 'video' : 'image'})} className="absolute top-2 start-2 bg-black/60 text-white rounded-md p-1.5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80" title="تكبير الشاشة"><Maximize size={16}/></button>
+                                 <button onClick={() => { setNewPostMedia(null); setNewPostMediaPreview(null); }} className="absolute top-2 end-2 bg-red-500 text-white rounded-full p-1 shadow-lg"><X size={12}/></button>
                               </div>
                            )}
 
                            <div className="flex justify-between items-center relative">
                               <div className="flex gap-2">
-                                 {/* 🔴 زر رفع الصور والفيديوهات */}
-                                 <label className="bg-gray-800 hover:bg-purple-500/20 text-gray-300 hover:text-purple-400 p-2 rounded-full transition-colors cursor-pointer" title={lang === 'ar' ? 'إضافة صورة أو فيديو' : 'Add Image or Video'}>
-                                    <Film size={18} />
-                                    <input type="file" className="hidden" accept="image/*,video/*" onChange={handlePostMediaChange} />
+                                 {/* 🔴 فصل زرار الصورة عن الفيديو */}
+                                 <label className="bg-gray-800 hover:bg-emerald-500/20 text-gray-300 hover:text-emerald-400 p-2 rounded-full transition-colors cursor-pointer" title={lang === 'ar' ? 'إضافة صورة' : 'Add Image'}>
+                                    <ImagePlus size={18} />
+                                    <input type="file" className="hidden" accept="image/*" onChange={handlePostMediaChange} />
                                  </label>
+                                 <label className="bg-gray-800 hover:bg-purple-500/20 text-gray-300 hover:text-purple-400 p-2 rounded-full transition-colors cursor-pointer" title={lang === 'ar' ? 'إضافة فيديو' : 'Add Video'}>
+                                    <Film size={18} />
+                                    <input type="file" className="hidden" accept="video/*" onChange={handlePostMediaChange} />
+                                 </label>
+
                                  <button onClick={() => setShowPostEmojiPicker(!showPostEmojiPicker)} className="bg-gray-800 hover:bg-yellow-500/20 text-gray-300 hover:text-yellow-400 p-2 rounded-full transition-colors" title={lang === 'ar' ? 'إضافة إيموجي' : 'Add Emoji'}>
                                     <Smile size={18} />
                                  </button>
@@ -1598,6 +1605,7 @@ export default function App() {
                 
                 {clubPosts.map(post => {
                    const isLiked = post.likes?.includes(userProfile?.uid);
+                   // 🔴 هنا الكود اللي بيخلي صاحب البوست والأدمن بس يمسحوه (isAuthor || isAdmin)
                    const isAuthor = userProfile?.uid === post.authorId;
                    return (
                       <div key={post.id} className="bg-[#1f2937] p-5 md:p-6 rounded-3xl shadow-xl border border-gray-800 hover:border-gray-700 transition-colors">
@@ -1622,14 +1630,18 @@ export default function App() {
                          {/* Post Content */}
                          {post.content && <p className="text-gray-200 text-base md:text-lg leading-relaxed whitespace-pre-wrap mb-4">{post.content}</p>}
                          
-                         {/* 🔴 Media Rendering (فيديو أو صورة) */}
+                         {/* 🔴 Media Rendering (فيديو أو صورة) بعد النشر */}
                          {post.mediaUrl && (
-                            <div className="mb-4 rounded-2xl overflow-hidden border border-gray-700 bg-black flex justify-center max-h-[400px]">
+                            <div className="mb-4 rounded-2xl overflow-hidden border border-gray-700 bg-black flex justify-center max-h-[400px] relative group">
                                {post.mediaType === 'video' ? (
                                   <video src={post.mediaUrl} controls preload="metadata" className="max-w-full max-h-[400px] object-contain w-full"></video>
                                ) : (
-                                  <img src={post.mediaUrl} alt="Post Media" className="max-w-full max-h-[400px] object-contain" />
+                                  <img src={post.mediaUrl} alt="Post Media" className="max-w-full max-h-[400px] object-contain cursor-pointer" onClick={() => setFullscreenMedia({url: post.mediaUrl, type: 'image'})} />
                                )}
+                               {/* زر تكبير الميديا للبوست المنشور */}
+                               <button onClick={() => setFullscreenMedia({url: post.mediaUrl, type: post.mediaType})} className="absolute top-3 start-3 bg-black/70 text-white p-2.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/90 shadow-xl backdrop-blur-sm z-10" title={lang === 'ar' ? 'تكبير الشاشة' : 'Fullscreen'}>
+                                   <Maximize size={20} />
+                               </button>
                             </div>
                          )}
 
@@ -2391,6 +2403,20 @@ export default function App() {
             </div>
          );
       })()}
+
+      {/* --- 🔴 نافذة تكبير الفيديوهات والصور المنبثقة (Fullscreen Media Modal) --- */}
+      {fullscreenMedia && (
+         <div className="fixed inset-0 z-[2000] bg-black/95 flex flex-col items-center justify-center p-4 animate-fade-in backdrop-blur-md">
+            <button onClick={() => setFullscreenMedia(null)} className="absolute top-6 end-6 text-white hover:text-red-500 bg-gray-800/80 p-3 rounded-full transition-colors z-50 shadow-2xl border border-gray-600">
+               <X size={28} />
+            </button>
+            {fullscreenMedia.type === 'video' ? (
+               <video src={fullscreenMedia.url} controls autoPlay className="max-w-full max-h-[90vh] rounded-2xl shadow-2xl outline-none ring-4 ring-gray-800"></video>
+            ) : (
+               <img src={fullscreenMedia.url} className="max-w-full max-h-[90vh] rounded-2xl shadow-2xl object-contain ring-4 ring-gray-800" />
+            )}
+         </div>
+      )}
 
       <button onClick={() => { if(isAppLoggedIn) setShowComplaintModal(true); else { setAppAlert(lang === 'ar' ? 'يرجى تسجيل الدخول أولاً للتمكن من مراسلة الإدارة.' : 'Please login first to contact admin.'); navigateTo('login'); } }} className="fixed bottom-6 right-6 z-[100] bg-emerald-500 text-white p-4 rounded-full shadow-2xl hover:bg-emerald-600 transition-transform hover:scale-110 flex items-center justify-center group">
          <MessageCircleWarning size={24}/>
