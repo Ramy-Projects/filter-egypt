@@ -1573,8 +1573,9 @@ export default function App() {
                               </div>
                            )}
 
-                           <div className="flex justify-between items-center relative">
-                              <div className="flex gap-2">
+                           {/* 🔴 تم تعديل هذا الجزء ليكون متجاوباً (Responsive) مع شاشات الموبايل الصغيرة */}
+                           <div className="flex flex-col sm:flex-row justify-between items-center relative gap-3 mt-2">
+                              <div className="flex gap-2 w-full justify-center sm:justify-start">
                                  {/* 🔴 فصل زرار الصورة عن الفيديو */}
                                  <label className="bg-gray-800 hover:bg-emerald-500/20 text-gray-300 hover:text-emerald-400 p-2 rounded-full transition-colors cursor-pointer" title={lang === 'ar' ? 'إضافة صورة' : 'Add Image'}>
                                     <ImagePlus size={18} />
@@ -1598,7 +1599,7 @@ export default function App() {
                                  )}
                               </div>
 
-                              <button onClick={handleCreatePost} className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold px-8 py-2.5 rounded-xl shadow-lg transition-transform hover:scale-105 flex items-center gap-2">
+                              <button onClick={handleCreatePost} className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold px-8 py-2.5 rounded-xl shadow-lg transition-transform hover:scale-105 flex items-center justify-center gap-2">
                                 <Send size={18} /> {lang === 'ar' ? 'نشر البوست' : 'Post'}
                               </button>
                            </div>
