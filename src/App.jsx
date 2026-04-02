@@ -1314,7 +1314,7 @@ export default function App() {
                <div className="relative z-50">
                   <button onClick={() => { setShowInbox(!showInbox); setShowNotifications(false); }} className="text-gray-400 hover:text-white relative p-2 bg-[#1f2937] rounded-full border border-gray-700 hover:border-emerald-500 transition-colors"><MessageSquare size={18} /></button>
                   {showInbox && (
-                    <div className="absolute left-0 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 mt-3 w-72 bg-[#1f2937] border border-gray-700 rounded-2xl shadow-2xl z-50 p-2 animate-fade-in max-h-96 overflow-y-auto custom-scrollbar">
+                    <div className="absolute end-0 mt-3 w-[85vw] max-w-[320px] sm:w-80 bg-[#1f2937] border border-gray-700 rounded-2xl shadow-2xl z-50 p-2 animate-fade-in max-h-96 overflow-y-auto custom-scrollbar">
                        <div className="flex justify-between items-center mb-2 px-3 border-b border-gray-700 pb-3 mt-2">
                          <h4 className="text-sm font-bold text-gray-400">{lang === 'ar' ? 'الرسائل (صندوق الوارد)' : 'Inbox'}</h4>
                          {myActiveChats.length > 0 && (
@@ -1333,7 +1333,7 @@ export default function App() {
                                    </span>
                                 )}
                                 
-                                <button onClick={(e) => handleDeleteEntireChat(c.id, e)} className="text-red-500 opacity-0 md:opacity-100 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-red-500/20 rounded-lg shrink-0" title={lang === 'ar' ? 'حذف المحادثة' : 'Delete Chat'}><Trash2 size={16}/></button>
+                                <button onClick={(e) => handleDeleteEntireChat(c.id, e)} className="text-red-500 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity p-1.5 hover:bg-red-500/20 rounded-lg shrink-0" title={lang === 'ar' ? 'حذف المحادثة' : 'Delete Chat'}><Trash2 size={16}/></button>
                              </div>
                           ))
                        )}
@@ -1345,7 +1345,7 @@ export default function App() {
                      <Bell size={18} />{totalUnread > 0 && <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 border-2 border-[#111827] rounded-full animate-ping"></span>}{totalUnread > 0 && <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 border-2 border-[#111827] rounded-full"></span>}
                   </button>
                   {showNotifications && (
-                    <div className="absolute left-0 sm:right-0 mt-3 w-72 bg-[#1f2937] border border-gray-700 rounded-2xl shadow-2xl z-50 p-2 animate-fade-in">
+                    <div className="absolute end-0 mt-3 w-[85vw] max-w-[320px] sm:w-80 bg-[#1f2937] border border-gray-700 rounded-2xl shadow-2xl z-50 p-2 animate-fade-in">
                        <h4 className="text-sm font-bold text-gray-400 mb-2 px-3 border-b border-gray-700 pb-3 mt-2">{lang === 'ar' ? 'الإشعارات الجديدة' : 'New Notifications'}</h4>
                        {globalChats.filter(c => unreadCounts[c.id] > 0).map(c => (
                           <div key={c.id} onClick={() => { if (!openChatIds.includes(c.id)) setOpenChatIds(prev => [...prev, c.id]); setActiveChatId(c.id); setShowNotifications(false); }} className="p-3 hover:bg-gray-800 rounded-xl cursor-pointer flex items-center gap-3 transition-colors">
@@ -1568,7 +1568,7 @@ export default function App() {
                                     <img src={newPostMediaPreview} className="w-full h-full object-cover" />
                                  )}
                                  {/* زر تكبير المعاينة */}
-                                 <button onClick={() => setFullscreenMedia({url: newPostMediaPreview, type: newPostMedia?.type?.startsWith('video/') ? 'video' : 'image'})} className="absolute top-2 start-2 bg-black/60 text-white rounded-md p-1.5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80" title="تكبير الشاشة"><Maximize size={16}/></button>
+                                 <button onClick={() => setFullscreenMedia({url: newPostMediaPreview, type: newPostMedia?.type?.startsWith('video/') ? 'video' : 'image'})} className="absolute top-2 start-2 bg-black/60 text-white rounded-md p-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-black/80" title="تكبير الشاشة"><Maximize size={16}/></button>
                                  <button onClick={() => { setNewPostMedia(null); setNewPostMediaPreview(null); }} className="absolute top-2 end-2 bg-red-500 text-white rounded-full p-1 shadow-lg"><X size={12}/></button>
                               </div>
                            )}
@@ -1653,7 +1653,7 @@ export default function App() {
                                   <img src={post.mediaUrl} alt="Post Media" className="max-w-full max-h-[400px] object-contain cursor-pointer" onClick={() => setFullscreenMedia({url: post.mediaUrl, type: 'image'})} />
                                )}
                                {/* زر تكبير الميديا للبوست المنشور */}
-                               <button onClick={() => setFullscreenMedia({url: post.mediaUrl, type: post.mediaType})} className="absolute top-3 start-3 bg-black/70 text-white p-2.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/90 shadow-xl backdrop-blur-sm z-10" title={lang === 'ar' ? 'تكبير الشاشة' : 'Fullscreen'}>
+                               <button onClick={() => setFullscreenMedia({url: post.mediaUrl, type: post.mediaType})} className="absolute top-3 start-3 bg-black/70 text-white p-2.5 rounded-lg opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-black/90 shadow-xl backdrop-blur-sm z-10" title={lang === 'ar' ? 'تكبير الشاشة' : 'Fullscreen'}>
                                    <Maximize size={20} />
                                </button>
                             </div>
@@ -1706,7 +1706,7 @@ export default function App() {
                                            <div className="flex justify-between items-start">
                                               <h5 className="font-bold text-sm text-gray-300 cursor-pointer hover:text-purple-400 inline-block mb-1" onClick={() => { const prof = allProfiles.find(p => p.uid === comment.authorId); if(prof) { setViewedProfile(prof); navigateTo('user-profile'); } }}>{comment.authorName}</h5>
                                               {(!isAuthor && userProfile?.uid !== comment.authorId) && (
-                                                 <button onClick={() => handleReportContent(comment.id, 'comment')} className="text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" title="إبلاغ"><Flag size={12}/></button>
+                                                 <button onClick={() => handleReportContent(comment.id, 'comment')} className="text-gray-600 hover:text-red-500 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity" title="إبلاغ"><Flag size={12}/></button>
                                               )}
                                            </div>
                                            <p className="text-sm text-white leading-relaxed">{comment.content}</p>
@@ -2382,13 +2382,13 @@ export default function App() {
                    return (
                      <div key={idx} className={`flex w-full group ${isSender ? 'justify-end' : 'justify-start'} items-center gap-2`}>
                         {isSender && (
-                           <button onClick={() => handleDeleteMessage(activeChatId, idx)} className="text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-500/20 rounded-full shrink-0" title={lang === 'ar' ? 'حذف الرسالة' : 'Delete Message'}><X size={14}/></button>
+                           <button onClick={() => handleDeleteMessage(activeChatId, idx)} className="text-red-500 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity p-1 hover:bg-red-500/20 rounded-full shrink-0" title={lang === 'ar' ? 'حذف الرسالة' : 'Delete Message'}><X size={14}/></button>
                         )}
                         <div className={`p-2 rounded-xl text-sm ${isSender ? 'bg-emerald-600 text-white' : 'bg-gray-700 text-gray-100'}`}>
                            {msg.text}
                         </div>
                         {!isSender && (
-                           <button onClick={() => handleDeleteMessage(activeChatId, idx)} className="text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-500/20 rounded-full shrink-0" title={lang === 'ar' ? 'حذف الرسالة' : 'Delete Message'}><X size={14}/></button>
+                           <button onClick={() => handleDeleteMessage(activeChatId, idx)} className="text-red-500 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity p-1 hover:bg-red-500/20 rounded-full shrink-0" title={lang === 'ar' ? 'حذف الرسالة' : 'Delete Message'}><X size={14}/></button>
                         )}
                      </div>
                    );
