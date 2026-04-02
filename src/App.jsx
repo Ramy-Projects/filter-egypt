@@ -110,6 +110,8 @@ export default function App() {
      return (savedView && safeViews.includes(savedView)) ? savedView : 'landing';
   }); 
 
+  const [profileTab, setProfileTab] = useState('ads'); // 🔴 تبويب بروفايل المستخدم (الإعلانات أو المنشورات)
+
   const [deferredPrompt, setDeferredPrompt] = useState(null);
 
   const [pendingUsers, setPendingUsers] = useState([]);
@@ -1891,17 +1893,138 @@ export default function App() {
                 </div>
              </div>
 
-             <div className="w-full flex items-center gap-2 mb-6"><Megaphone className="text-emerald-400"/><h3 className="text-2xl font-bold">{lang === 'ar' ? 'إعلانات هذا البائع' : 'Seller Ads'}</h3></div>
-             
-             <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
-               {globalAds.filter(ad => ad.sellerId === viewedProfile.uid && ad.statusEn === 'Active').map(ad => (
-                 <div key={ad.id} onClick={() => viewAdDetails(ad)} className="bg-[#1f2937] p-4 rounded-2xl border border-gray-700 cursor-pointer hover:border-emerald-500 transition-colors">
-                    <img src={ad.images?.[0]} alt="ad" className="w-full h-40 object-cover rounded-xl mb-3" />
-                    <h4 className="font-bold text-white">{lang === 'ar' ? ad.title : ad.titleEn}</h4><p className="text-gray-400 text-xs mt-1">{translateCategory(ad.category, lang)}</p><p className="text-emerald-400 font-bold mt-2">{ad.price} {lang === 'ar' ? 'ج.م' : 'EGP'}</p>
-                 </div>
-               ))}
-               {globalAds.filter(ad => ad.sellerId === viewedProfile.uid && ad.statusEn === 'Active').length === 0 && <p className="text-gray-500 col-span-2 text-center py-6 bg-[#1f2937] rounded-2xl border border-gray-700">{lang === 'ar' ? 'لا توجد إعلانات نشطة لهذا البائع حالياً.' : 'No active ads for this seller currently.'}</p>}
+             {/* 🔴 التبويبات الجديدة للإعلانات والمنشورات */}
+             <div className="w-full flex mb-6 bg-[#1f2937] rounded-2xl p-1.5 border border-gray-700 shadow-lg max-w-3xl">
+                <button onClick={() => setProfileTab('ads')} className={`flex-1 py-3 text-center font-bold rounded-xl transition-colors flex items-center justify-center gap-2 ${profileTab === 'ads' ? 'bg-[#111827] text-emerald-400 shadow-md border border-gray-700' : 'text-gray-500 hover:text-gray-300 hover:bg-[#111827]/50'}`}>
+                   <Megaphone size={20}/> {lang === 'ar' ? 'الإعلانات' : 'Ads'}
+                </button>
+                <button onClick={() => setProfileTab('posts')} className={`flex-1 py-3 text-center font-bold rounded-xl transition-colors flex items-center justify-center gap-2 ${profileTab === 'posts' ? 'bg-[#111827] text-purple-400 shadow-md border border-gray-700' : 'text-gray-500 hover:text-gray-300 hover:bg-[#111827]/50'}`}>
+                   <Sparkles size={20}/> {lang === 'ar' ? 'المنشورات' : 'Posts'}
+                </button>
              </div>
+
+             {/* 🟢 تبويب الإعلانات */}
+             {profileTab === 'ads' && (
+                 <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in">
+                   {globalAds.filter(ad => ad.sellerId === viewedProfile.uid && ad.statusEn === 'Active').map(ad => (
+                     <div key={ad.id} onClick={() => viewAdDetails(ad)} className="bg-[#1f2937] p-4 rounded-2xl border border-gray-700 cursor-pointer hover:border-emerald-500 transition-colors">
+                        <img src={ad.images?.[0]} alt="ad" className="w-full h-40 object-cover rounded-xl mb-3" />
+                        <h4 className="font-bold text-white">{lang === 'ar' ? ad.title : ad.titleEn}</h4><p className="text-gray-400 text-xs mt-1">{translateCategory(ad.category, lang)}</p><p className="text-emerald-400 font-bold mt-2">{ad.price} {lang === 'ar' ? 'ج.م' : 'EGP'}</p>
+                     </div>
+                   ))}
+                   {globalAds.filter(ad => ad.sellerId === viewedProfile.uid && ad.statusEn === 'Active').length === 0 && <p className="text-gray-500 col-span-2 text-center py-6 bg-[#1f2937] rounded-2xl border border-gray-700">{lang === 'ar' ? 'لا توجد إعلانات نشطة لهذا المشترك حالياً.' : 'No active ads for this user currently.'}</p>}
+                 </div>
+             )}
+
+             {/* 🟣 تبويب المنشورات */}
+             {profileTab === 'posts' && (
+                 <div className="w-full max-w-2xl mx-auto flex flex-col gap-6 animate-fade-in">
+                    {clubPosts.filter(p => p.authorId === viewedProfile.uid).length === 0 && <p className="text-gray-500 text-center py-6 bg-[#1f2937] rounded-2xl border border-gray-700">{lang === 'ar' ? 'لا توجد منشورات لهذا المشترك.' : 'No posts for this user.'}</p>}
+                    
+                    {clubPosts.filter(p => p.authorId === viewedProfile.uid).map(post => {
+                       const isLiked = post.likes?.includes(userProfile?.uid);
+                       const isAuthor = userProfile?.uid === post.authorId;
+                       return (
+                          <div key={post.id} className="bg-[#1f2937] p-5 md:p-6 rounded-3xl shadow-xl border border-gray-800 hover:border-gray-700 transition-colors">
+                             {/* Post Header */}
+                             <div className="flex justify-between items-start mb-4">
+                                <div className="flex items-center gap-3 cursor-pointer group" onClick={() => { const prof = allProfiles.find(p => p.uid === post.authorId); if(prof) { setViewedProfile(prof); navigateTo('user-profile'); } }}>
+                                   {post.authorPhoto ? <img src={post.authorPhoto} className="w-12 h-12 rounded-full object-cover border-2 border-transparent group-hover:border-purple-500 transition-colors" alt="Author" /> : <AvatarFallback size={48} className="border-2 border-transparent group-hover:border-purple-500 transition-colors" />}
+                                   <div>
+                                      <h4 className="font-bold text-white text-lg group-hover:text-purple-400 transition-colors">{post.authorName}</h4>
+                                      <p className="text-gray-500 text-xs">{new Date(post.createdAt).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')}</p>
+                                   </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                   {(isAuthor || isAdmin) ? (
+                                      <button onClick={() => handleDeletePost(post.id)} className="text-gray-500 hover:text-red-500 bg-gray-800 hover:bg-red-500/10 p-2 rounded-full transition-colors" title={lang === 'ar' ? 'حذف البوست' : 'Delete Post'}><Trash2 size={16}/></button>
+                                   ) : (
+                                      <button onClick={() => handleReportContent(post.id, 'post')} className="text-gray-500 hover:text-red-500 bg-gray-800 hover:bg-red-500/10 p-2 rounded-full transition-colors" title={lang === 'ar' ? 'إبلاغ عن محتوى مسيء' : 'Report Content'}><Flag size={16}/></button>
+                                   )}
+                                </div>
+                             </div>
+                             
+                             {/* Post Content */}
+                             {post.content && <p className="text-gray-200 text-base md:text-lg leading-relaxed whitespace-pre-wrap mb-4">{post.content}</p>}
+                             
+                             {/* 🔴 Media Rendering (فيديو أو صورة) بعد النشر */}
+                             {post.mediaUrl && (
+                                <div className="mb-4 rounded-2xl overflow-hidden border border-gray-700 bg-black flex justify-center max-h-[400px] relative group">
+                                   {post.mediaType === 'video' ? (
+                                      <video src={post.mediaUrl} controls preload="metadata" className="max-w-full max-h-[400px] object-contain w-full"></video>
+                                   ) : (
+                                      <img src={post.mediaUrl} alt="Post Media" className="max-w-full max-h-[400px] object-contain cursor-pointer" onClick={() => setFullscreenMedia({url: post.mediaUrl, type: 'image'})} />
+                                   )}
+                                   {/* زر تكبير الميديا للبوست المنشور */}
+                                   <button onClick={() => setFullscreenMedia({url: post.mediaUrl, type: post.mediaType})} className="absolute top-3 start-3 bg-black/70 text-white p-2.5 rounded-lg opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-black/90 shadow-xl backdrop-blur-sm z-10" title={lang === 'ar' ? 'تكبير الشاشة' : 'Fullscreen'}>
+                                       <Maximize size={20} />
+                                   </button>
+                                </div>
+                             )}
+
+                             {/* Optional Link */}
+                             {post.adLink && (
+                                <a href={post.adLink.startsWith('http') ? post.adLink : `https://${post.adLink}`} target="_blank" rel="noreferrer" className="mb-6 bg-purple-500/10 border border-purple-500/30 text-purple-400 px-4 py-3 rounded-xl flex items-center justify-between hover:bg-purple-500/20 transition-colors">
+                                   <span className="font-bold flex items-center gap-2"><Link2 size={18} /> {lang === 'ar' ? 'زيارة الرابط المرفق' : 'Visit Link'}</span>
+                                   <ArrowRight size={18} />
+                                </a>
+                             )}
+                             
+                             {/* Post Actions */}
+                             <div className="flex items-center gap-6 border-t border-gray-800 pt-4">
+                                <button onClick={() => handleLikePost(post.id, post.likes || [])} className={`flex items-center gap-2 font-bold transition-colors ${isLiked ? 'text-pink-500' : 'text-gray-400 hover:text-pink-400'}`}>
+                                   <Heart size={20} className={isLiked ? 'fill-current' : ''} /> {post.likes?.length || 0}
+                                </button>
+                                <button onClick={() => setShowComments(prev => ({...prev, [post.id]: !prev[post.id]}))} className={`flex items-center gap-2 font-bold transition-colors ${showComments[post.id] ? 'text-purple-400' : 'text-gray-400 hover:text-purple-400'}`}>
+                                   <MessageSquare size={20} /> {post.comments?.length || 0} {lang === 'ar' ? 'تعليق' : 'Comments'}
+                                </button>
+                             </div>
+
+                             {/* Comments Section */}
+                             {showComments[post.id] && (
+                                <div className="mt-5 pt-5 border-t border-gray-800 animate-fade-in">
+                                   {/* Comment Input */}
+                                   {isAppLoggedIn ? (
+                                      <div className="flex gap-3 mb-6">
+                                         <div className="cursor-pointer shrink-0" onClick={() => { setViewedProfile(userProfile); navigateTo('user-profile'); }} title={lang === 'ar' ? 'زيارة بروفايلي' : 'View My Profile'}>
+                                            {userProfile?.photoUrl ? <img src={userProfile.photoUrl} className="w-10 h-10 rounded-full object-cover" /> : <AvatarFallback size={40} className="hover:opacity-80" />}
+                                         </div>
+                                         <div className="flex-1 relative">
+                                            <input type="text" value={commentInputs[post.id] || ''} onChange={e => setCommentInputs(prev => ({...prev, [post.id]: e.target.value}))} onKeyDown={e => e.key === 'Enter' && handleAddComment(post.id, post.comments)} placeholder={lang === 'ar' ? "اكتب تعليقاً..." : "Write a comment..."} className="w-full bg-[#111827] border border-gray-700 rounded-full py-3 pr-4 pl-12 text-sm text-white outline-none focus:border-purple-500 shadow-inner" />
+                                            <button onClick={() => handleAddComment(post.id, post.comments)} className="absolute left-2 top-1/2 -translate-y-1/2 bg-purple-600 hover:bg-purple-500 text-white p-2 rounded-full transition-colors"><Send size={14}/></button>
+                                         </div>
+                                      </div>
+                                   ) : (
+                                      <p className="text-sm text-gray-500 text-center mb-6">{lang === 'ar' ? 'سجل دخولك لكتابة تعليق.' : 'Login to comment.'}</p>
+                                   )}
+                                   
+                                   {/* Comments List */}
+                                   <div className="space-y-4">
+                                      {(post.comments || []).map(comment => (
+                                         <div key={comment.id} className="flex gap-3">
+                                            <div className="cursor-pointer shrink-0 mt-1" onClick={() => { const prof = allProfiles.find(p => p.uid === comment.authorId); if(prof) { setViewedProfile(prof); navigateTo('user-profile'); } }}>
+                                               {comment.authorPhoto ? <img src={comment.authorPhoto} className="w-8 h-8 rounded-full object-cover hover:opacity-80 transition-opacity" alt="Commenter" /> : <AvatarFallback size={32} className="hover:opacity-80 transition-opacity" />}
+                                            </div>
+                                            <div className="bg-[#111827] p-3 md:p-4 rounded-2xl rounded-tr-none flex-1 border border-gray-800 relative group">
+                                               <div className="flex justify-between items-start">
+                                                  <h5 className="font-bold text-sm text-gray-300 cursor-pointer hover:text-purple-400 inline-block mb-1" onClick={() => { const prof = allProfiles.find(p => p.uid === comment.authorId); if(prof) { setViewedProfile(prof); navigateTo('user-profile'); } }}>{comment.authorName}</h5>
+                                                  {(!isAuthor && userProfile?.uid !== comment.authorId) && (
+                                                     <button onClick={() => handleReportContent(comment.id, 'comment')} className="text-gray-600 hover:text-red-500 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity" title="إبلاغ"><Flag size={12}/></button>
+                                                  )}
+                                               </div>
+                                               <p className="text-sm text-white leading-relaxed">{comment.content}</p>
+                                               <span className="text-[10px] text-gray-500 mt-2 block">{new Date(comment.createdAt).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')}</span>
+                                            </div>
+                                         </div>
+                                      ))}
+                                   </div>
+                                </div>
+                             )}
+                          </div>
+                       );
+                    })}
+                 </div>
+             )}
            </div>
         )}
 
