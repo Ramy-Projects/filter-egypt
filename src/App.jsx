@@ -12,7 +12,7 @@ import {
   CheckCircle, AlertTriangle, Send, MessageSquareX, Minus, MessageSquare, 
   Megaphone, Edit, Trash2, Save, Activity, Info, Loader, Plus, ChevronDown, Clock,
   Facebook, Youtube, Instagram, Ghost, Music, UserSearch, Ban, MessageCircleWarning, 
-  Link as LinkIcon, Camera, MessageCircle, Heart, Smile, Link2, Flag, Film, Maximize, Sun, Moon
+  Link as LinkIcon, Camera, MessageCircle, Heart, Smile, Link2, Flag, Film, Maximize
 } from 'lucide-react';
 
 // ==========================================
@@ -1761,14 +1761,6 @@ export default function App() {
                <h3 className="text-2xl font-bold mb-6 text-white text-center mt-4">{lang === 'ar' ? 'إعدادات الحساب' : 'Account Settings'}</h3>
 
                <div className="space-y-4 px-8">
-                 {/* 🔴 زر تبديل المظهر (Dark / Light Mode) */}
-                 <div className="flex justify-between items-center bg-[#111827] border border-gray-700 rounded-xl p-4 mb-4">
-                    <span className="text-white font-bold">{lang === 'ar' ? 'المظهر (اللون)' : 'Theme'}</span>
-                    <button onClick={() => setIsLightMode(!isLightMode)} className="flex items-center gap-2 bg-gray-800 px-4 py-2 rounded-lg text-sm font-bold text-gray-300 hover:text-white transition-colors shadow-inner border border-gray-700">
-                       {isLightMode ? <span className="text-yellow-500 flex items-center gap-1"><Sun size={16}/> {lang === 'ar' ? 'فاتح' : 'Light'}</span> : <span className="text-blue-400 flex items-center gap-1"><Moon size={16}/> {lang === 'ar' ? 'داكن' : 'Dark'}</span>}
-                    </button>
-                 </div>
-
                  <div><label className="block text-gray-400 text-sm mb-1">{lang === 'ar' ? 'اسم العرض (البراند)' : 'Display Name (Brand)'}</label><input type="text" value={editName} onChange={e => setEditName(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500" /></div>
                  <div><label className="block text-gray-400 text-sm mb-1">{lang === 'ar' ? 'رقم الهاتف' : 'Phone Number'}</label><input type="tel" value={editPhone} onChange={e => setEditPhone(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500" dir="ltr" /></div>
                  <div><label className="block text-gray-400 text-sm mb-1">{lang === 'ar' ? 'رقم الواتساب (اختياري)' : 'WhatsApp Number'}</label><input type="tel" value={editWhatsapp} onChange={e => setEditWhatsapp(e.target.value)} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-3 text-white outline-none focus:border-emerald-500" dir="ltr" placeholder="+2010..." /></div>
