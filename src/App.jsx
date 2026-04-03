@@ -1316,7 +1316,7 @@ export default function App() {
                <div className="relative z-50">
                   <button onClick={() => { setShowInbox(!showInbox); setShowNotifications(false); }} className="text-gray-400 hover:text-white relative p-2 bg-[#1f2937] rounded-full border border-gray-700 hover:border-emerald-500 transition-colors"><MessageSquare size={18} /></button>
                   {showInbox && (
-                    <div className="absolute end-0 mt-3 w-72 sm:w-80 max-w-[90vw] bg-[#1f2937] border border-gray-700 rounded-2xl shadow-2xl z-50 p-2 animate-fade-in max-h-96 overflow-y-auto custom-scrollbar">
+                    <div className="absolute left-0 sm:left-auto sm:end-0 mt-3 w-[280px] sm:w-80 max-w-[90vw] bg-[#1f2937] border border-gray-700 rounded-2xl shadow-2xl z-50 p-2 animate-fade-in max-h-96 overflow-y-auto custom-scrollbar">
                        <div className="flex justify-between items-center mb-2 px-3 border-b border-gray-700 pb-3 mt-2">
                          <h4 className="text-sm font-bold text-gray-400">{lang === 'ar' ? 'الرسائل (صندوق الوارد)' : 'Inbox'}</h4>
                          {myActiveChats.length > 0 && (
@@ -1347,7 +1347,7 @@ export default function App() {
                      <Bell size={18} />{totalUnread > 0 && <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 border-2 border-[#111827] rounded-full animate-ping"></span>}{totalUnread > 0 && <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 border-2 border-[#111827] rounded-full"></span>}
                   </button>
                   {showNotifications && (
-                    <div className="absolute end-0 mt-3 w-72 sm:w-80 max-w-[90vw] bg-[#1f2937] border border-gray-700 rounded-2xl shadow-2xl z-50 p-2 animate-fade-in">
+                    <div className="absolute left-0 sm:left-auto sm:end-0 mt-3 w-[280px] sm:w-80 max-w-[90vw] bg-[#1f2937] border border-gray-700 rounded-2xl shadow-2xl z-50 p-2 animate-fade-in">
                        <h4 className="text-sm font-bold text-gray-400 mb-2 px-3 border-b border-gray-700 pb-3 mt-2">{lang === 'ar' ? 'الإشعارات الجديدة' : 'New Notifications'}</h4>
                        {globalChats.filter(c => unreadCounts[c.id] > 0).map(c => (
                           <div key={c.id} onClick={() => { if (!openChatIds.includes(c.id)) setOpenChatIds(prev => [...prev, c.id]); setActiveChatId(c.id); setShowNotifications(false); }} className="p-3 hover:bg-gray-800 rounded-xl cursor-pointer flex items-center gap-3 transition-colors">
@@ -1364,17 +1364,17 @@ export default function App() {
           )}
           
           {isAppLoggedIn ? (
-             <div className="flex items-center gap-3">
+             <div className="flex items-center gap-2 sm:gap-3">
                {/* 🔴 تم تعديل هذا الجزء ليناسب النظام الجديد المجاني */}
                {subStatus === 'expired' ? (
-                 <span className="text-red-500 font-bold text-xs md:text-sm hidden sm:flex bg-red-500/10 px-3 py-1.5 rounded-full border border-red-500/20 items-center gap-1.5"><AlertTriangle size={14} className="animate-pulse" /> {lang === 'ar' ? 'انتهت الباقة' : 'Expired'}</span>
+                 <span className="text-red-500 font-bold text-[10px] md:text-sm bg-red-500/10 px-2 sm:px-3 py-1.5 rounded-full border border-red-500/20 flex items-center gap-1.5"><AlertTriangle size={14} className="animate-pulse" /> <span className="hidden sm:inline">{lang === 'ar' ? 'انتهت الباقة' : 'Expired'}</span></span>
                ) : (
-                 <button onClick={() => { setViewedProfile(userProfile); navigateTo('user-profile'); }} className="text-emerald-400 font-bold text-xs md:text-sm hidden sm:flex bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors px-3 py-1.5 rounded-full border border-emerald-500/20 items-center gap-2 cursor-pointer group">
+                 <button onClick={() => { setViewedProfile(userProfile); navigateTo('user-profile'); }} className="text-emerald-400 font-bold text-xs md:text-sm flex bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors px-2 sm:px-3 py-1.5 rounded-full border border-emerald-500/20 items-center gap-1.5 sm:gap-2 cursor-pointer group">
                    {userProfile?.photoUrl ? <img src={userProfile.photoUrl} alt="profile" className="w-6 h-6 rounded-full object-cover group-hover:scale-110 transition-transform" /> : <AvatarFallback size={24} />} 
-                   <span className="group-hover:text-emerald-300 transition-colors">{userProfile?.displayName || (lang === 'ar' ? 'مستخدم' : 'User')}</span>
+                   <span className="hidden sm:inline group-hover:text-emerald-300 transition-colors">{userProfile?.displayName || (lang === 'ar' ? 'مستخدم' : 'User')}</span>
                  </button>
                )}
-               <button onClick={handleLogout} className="text-red-400 hover:text-red-500 hover:bg-red-500/10 px-3 py-1.5 rounded-lg text-xs md:text-sm font-bold">{lang === 'ar' ? 'خروج' : 'Logout'}</button>
+               <button onClick={handleLogout} className="text-red-400 hover:text-red-500 hover:bg-red-500/10 px-2 sm:px-3 py-1.5 rounded-lg text-xs md:text-sm font-bold">{lang === 'ar' ? 'خروج' : 'Logout'}</button>
              </div>
           ) : (
             <div className="flex gap-2">
