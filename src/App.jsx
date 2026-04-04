@@ -94,7 +94,7 @@ const AD_EXPIRATION_DAYS = 30;
 function ActionIcon({ icon, label, highlight }) {
   return (
     <div className="flex flex-col items-center gap-2 group cursor-pointer w-20">
-      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:-translate-y-1 ${highlight === 'red' ? 'bg-red-500/10 text-red-500 border border-red-500/20' : highlight === 'purple' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20 shadow-purple-500/20' : highlight ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-[#1f2937] text-gray-300 border border-gray-700 group-hover:border-emerald-500'}`}>{React.cloneElement(icon, { size: 26 })}</div>
+      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:-translate-y-1 ${highlight === 'red' ? 'bg-red-500/10 text-red-500 border border-red-500/20' : highlight === 'purple' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20 shadow-purple-500/20' : highlight === 'blue' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20 shadow-blue-500/20' : highlight ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-[#1f2937] text-gray-300 border border-gray-700 group-hover:border-emerald-500'}`}>{React.cloneElement(icon, { size: 26 })}</div>
       <span className="text-[11px] text-gray-400 text-center font-bold">{label}</span>
     </div>
   );
@@ -1186,7 +1186,7 @@ export default function App() {
   const totalUnread = Object.values(unreadCounts).reduce((a, b) => a + b, 0);
 
   // --- 🔴 إعدادات الأدمن (Admin Setup) 🔴 ---
-  const ADMIN_EMAILS = ['ramyadnan97@gmail.com', 'admin@filter-egypt.com']; 
+  const ADMIN_EMAILS = ['ramyadnan97@gmail.com']; 
   const checkAdmin = (profile) => {
      if (!profile) return false;
      return profile.email && ADMIN_EMAILS.includes(profile.email.toLowerCase());
@@ -1476,6 +1476,9 @@ export default function App() {
                    <span className="hidden sm:inline group-hover:text-emerald-300 transition-colors">{userProfile?.displayName || (lang === 'ar' ? 'مستخدم' : 'User')}</span>
                  </button>
                )}
+               {isAdmin && (
+                 <button onClick={() => navigateTo('admin-dashboard')} className="text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 px-2 sm:px-3 py-1.5 rounded-lg text-xs md:text-sm font-bold flex items-center gap-1"><ShieldCheck size={16} /> <span className="hidden sm:inline">{lang === 'ar' ? 'الإدارة' : 'Admin'}</span></button>
+               )}
                <button onClick={handleLogout} className="text-red-400 hover:text-red-500 hover:bg-red-500/10 px-2 sm:px-3 py-1.5 rounded-lg text-xs md:text-sm font-bold">{lang === 'ar' ? 'خروج' : 'Logout'}</button>
              </div>
           ) : (
@@ -1632,6 +1635,9 @@ export default function App() {
               <div onClick={() => navigateTo('directory')}><ActionIcon icon={<UserSearch className="text-blue-400" />} label={lang === 'ar' ? "دليل المشتركين" : "Directory"} /></div>
               <div onClick={() => navigateTo('my-ads')}><ActionIcon icon={<Megaphone />} label={lang === 'ar' ? "إعلاناتي" : "My Ads"} /></div>
               <div onClick={() => setShowSettingsModal(true)}><ActionIcon icon={<Settings />} label={lang === 'ar' ? "الإعدادات" : "Settings"} /></div>
+              {isAdmin && (
+                 <div onClick={() => navigateTo('admin-dashboard')}><ActionIcon icon={<ShieldCheck className="text-blue-500" />} label={lang === 'ar' ? "لوحة الإدارة" : "Admin"} highlight="blue" /></div>
+              )}
             </div>
           </div>
         )}
