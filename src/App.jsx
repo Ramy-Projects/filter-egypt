@@ -257,6 +257,7 @@ export default function App() {
   // Admin Search States
   const [adminPendingSearch, setAdminPendingSearch] = useState('');
   const [adminMembersSearch, setAdminMembersSearch] = useState('');
+  const [complaintFilter, setComplaintFilter] = useState('all');
 
   // FILTER EGYPT CLUB States
   const [clubPosts, setClubPosts] = useState([]);
@@ -2472,11 +2473,26 @@ export default function App() {
               </div>
 
               {/* قسم الشكاوى */}
-              <div className="flex flex-col sm:flex-row justify-between items-center border-b border-gray-700 pb-4 mb-6 mt-12"><h2 className="text-2xl font-bold text-blue-400 mb-4 sm:mb-0 flex items-center gap-2"><MessageCircleWarning/> صندوق الشكاوى والإبلاغات</h2></div>
+              <div className="flex flex-col sm:flex-row justify-between items-center border-b border-gray-700 pb-4 mb-6 mt-12">
+                <h2 className="text-2xl font-bold text-blue-400 mb-4 sm:mb-0 flex items-center gap-2"><MessageCircleWarning/> {lang === 'ar' ? 'صندوق الشكاوى والإبلاغات' : 'Complaints & Reports'}</h2>
+                <select value={complaintFilter} onChange={e => setComplaintFilter(e.target.value)} className="bg-[#111827] text-white border border-gray-600 rounded-lg px-4 py-2 outline-none focus:border-blue-500 text-sm font-bold cursor-pointer shadow-lg">
+                   <option value="all">{lang === 'ar' ? 'عرض الكل' : 'All'}</option>
+                   <option value="reports">{lang === 'ar' ? 'إبلاغات المحتوى' : 'Content Reports'}</option>
+                   <option value="general">{lang === 'ar' ? 'شكاوى عامة' : 'General Complaints'}</option>
+                </select>
+              </div>
               <div className="bg-[#1f2937] p-6 rounded-2xl border border-gray-700 shadow-xl max-h-96 overflow-y-auto custom-scrollbar">
-                 {adminComplaints.length === 0 ? ( <p className="text-gray-500 text-center py-4">لا توجد شكاوى أو بلاغات حالياً.</p> ) : (
+                 {adminComplaints.filter(comp => {
+                     if(complaintFilter === 'reports') return comp.type && comp.type.startsWith('report_');
+                     if(complaintFilter === 'general') return !comp.type || !comp.type.startsWith('report_');
+                     return true;
+                 }).length === 0 ? ( <p className="text-gray-500 text-center py-4">{lang === 'ar' ? 'لا توجد شكاوى أو بلاغات في هذا القسم.' : 'No complaints found.'}</p> ) : (
                    <div className="space-y-4">
-                     {adminComplaints.map(comp => (
+                     {adminComplaints.filter(comp => {
+                         if(complaintFilter === 'reports') return comp.type && comp.type.startsWith('report_');
+                         if(complaintFilter === 'general') return !comp.type || !comp.type.startsWith('report_');
+                         return true;
+                     }).map(comp => (
                         <div key={comp.id} className="bg-[#111827] p-4 rounded-xl border border-gray-700">
                            <div className="flex justify-between items-start mb-2 border-b border-gray-800 pb-2">
                               <div>
