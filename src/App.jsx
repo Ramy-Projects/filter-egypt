@@ -110,7 +110,7 @@ export default function App() {
      return (savedView && safeViews.includes(savedView)) ? savedView : 'landing';
   }); 
 
-  const [profileTab, setProfileTab] = useState('ads'); // 🔴 تبويب بروفايل المستخدم (الإعلانات أو المنشورات)
+  const [profileTab, setProfileTab] = useState('ads');
 
   const [deferredPrompt, setDeferredPrompt] = useState(null);
 
@@ -168,6 +168,77 @@ export default function App() {
   const [coverImageFile, setCoverImageFile] = useState(null);
   const [coverImagePreview, setCoverImagePreview] = useState(null);
 
+  // ==========================================
+  // 🔴 متغيرات ودوال أداة قص وتحريك صورة البروفايل
+  // ==========================================
+  const [cropModal, setCropModal] = useState({ isOpen: false, imageSrc: null, type: '' });
+  const [cropZoom, setCropZoom] = useState(1);
+  const [cropPan, setCropPan] = useState({ x: 0, y: 0 });
+  const [isDraggingCrop, setIsDraggingCrop] = useState(false);
+  const cropDragRef = useRef({ startX: 0, startY: 0 });
+  const cropCanvasRef = useRef(null);
+
+  const openCropModal = (e, type) => {
+      if (e.target.files && e.target.files[0]) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+              setCropModal({ isOpen: true, imageSrc: event.target.result, type });
+              setCropZoom(1);
+              setCropPan({ x: 0, y: 0 });
+          };
+          reader.readAsDataURL(e.target.files[0]);
+          e.target.value = ''; 
+      }
+  };
+
+  const drawCropCanvas = () => {
+      const canvas = cropCanvasRef.current;
+      if (!canvas || !cropModal.imageSrc) return;
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      img.src = cropModal.imageSrc;
+      img.onload = () => {
+          const width = canvas.width;
+          const height = canvas.height;
+          ctx.clearRect(0, 0, width, height);
+          ctx.fillStyle = '#1f2937'; 
+          ctx.fillRect(0, 0, width, height);
+
+          const minScale = Math.max(width / img.width, height / img.height);
+          const finalScale = minScale * cropZoom;
+
+          const dx = (width / 2) - (img.width * finalScale / 2) + cropPan.x;
+          const dy = (height / 2) - (img.height * finalScale / 2) + cropPan.y;
+
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, dx, dy, img.width * finalScale, img.height * finalScale);
+      };
+  };
+
+  useEffect(() => {
+      if (cropModal.isOpen) drawCropCanvas();
+  }, [cropModal.isOpen, cropZoom, cropPan]);
+
+  const handleCropSave = () => {
+      const canvas = cropCanvasRef.current;
+      if (!canvas) return;
+      canvas.toBlob((blob) => {
+          const croppedFile = new File([blob], "profile.png", {type: "image/png"});
+          const previewUrl = URL.createObjectURL(blob);
+
+          if (cropModal.type === 'signup') {
+              setSignupProfileImage(croppedFile);
+              setSignupProfilePreview(previewUrl);
+          } else if (cropModal.type === 'settings') {
+              setProfileImageFile(croppedFile);
+              setProfileImagePreview(previewUrl);
+          }
+          setCropModal({ isOpen: false, imageSrc: null, type: '' });
+      }, 'image/png', 1.0);
+  };
+  // ==========================================
+
   // New Features States
   const [viewedProfile, setViewedProfile] = useState(() => {
     try { return JSON.parse(localStorage.getItem('filterEgyptViewedProfile')) || null; } catch(e) { return null; }
@@ -197,6 +268,10 @@ export default function App() {
   const [commentInputs, setCommentInputs] = useState({});
   const [showComments, setShowComments] = useState({});
   const [fullscreenMedia, setFullscreenMedia] = useState(null);
+  
+  // 🔴 متغيرات تعديل بوست النادي
+  const [editingPostId, setEditingPostId] = useState(null);
+  const [editedPostContent, setEditedPostContent] = useState('');
 
   // Categories & Ads
   const [categories, setCategories] = useState(defaultCategoriesList);
@@ -477,10 +552,9 @@ export default function App() {
     }
   }, [showSettingsModal, userProfile]);
 
-  // 🔴 منطق حساب أيام الاشتراك (90 يوم للمسجلين الجدد)
   let subStatus = 'active'; let subDaysLeft = 0;
   if (userProfile?.subscriptionStatus === 'Active' && userProfile.activatedAt) {
-     const packageDays = userProfile.subscriptionDays || 30; // لو مفيش، بيعتبره 30 كافتراضي قديم
+     const packageDays = userProfile.subscriptionDays || 30; 
      const packageMs = packageDays * 24 * 60 * 60 * 1000;
      const timeElapsed = Date.now() - userProfile.activatedAt;
      const timeLeft = packageMs - timeElapsed;
@@ -557,6 +631,29 @@ export default function App() {
     setIsUploading(false);
   };
 
+  // 🔴 دالة حفظ التعديل على البوست
+  const saveEditedPost = async (postId) => {
+    if (!editedPostContent.trim()) return;
+    if (hasProfanity(editedPostContent)) {
+        setAppAlert(lang === 'ar' ? 'عفواً، البوست يحتوي على كلمات مخالفة لسياسة المجتمع.' : 'Post contains inappropriate words.');
+        return;
+    }
+    setIsUploading(true);
+    try {
+        await updateDoc(publicDoc('club_posts', postId), { 
+           content: editedPostContent.trim(), 
+           updatedAt: Date.now() 
+        });
+        setEditingPostId(null);
+        setEditedPostContent('');
+        setAppAlert(lang === 'ar' ? 'تم تعديل البوست بنجاح!' : 'Post updated successfully!');
+    } catch (e) {
+        console.error(e);
+        setAppAlert(lang === 'ar' ? 'حدث خطأ أثناء التعديل.' : 'Error updating post.');
+    }
+    setIsUploading(false);
+  };
+
   const handleLikePost = async (postId, currentLikes) => {
     if (!userProfile) {
        setAppAlert(lang === 'ar' ? 'يرجى تسجيل الدخول أولاً للتفاعل.' : 'Please login first to interact.');
@@ -629,7 +726,6 @@ export default function App() {
       } catch (e) {}
   };
 
-  // Admin Categories
   const handleAddCategory = async () => {
     if (!newCategoryInput.trim()) return;
     const newCat = newCategoryInput.trim();
@@ -651,7 +747,6 @@ export default function App() {
     try { await setDoc(publicDoc('settings', 'legal'), { ...legalTexts, [legalEditModal.type]: legalEditModal.content }, { merge: true }); setLegalEditModal({ isOpen: false, type: '', content: '', title: '' }); setAppAlert(lang === 'ar' ? 'تم تحديث الصفحة بنجاح وحفظها في قاعدة البيانات!' : 'Page updated successfully!'); } catch(err) {} setIsUploading(false);
   };
 
-  // Admin Banners
   const handleAddBanner = async () => {
     if (!newBannerImage) { setAppAlert(lang === 'ar' ? 'يرجى اختيار صورة البنر الإعلاني أولاً.' : 'Please select an ad banner image first.'); return; }
     setIsUploading(true);
@@ -690,7 +785,6 @@ export default function App() {
     });
   };
 
-  // AD EDITING
   const saveAdEdit = async () => {
     if (!adToEdit.title || !adToEdit.price) { setAppAlert(lang === 'ar' ? 'يرجى ملء العنوان والسعر.' : 'Please fill in title and price.'); return; }
     
@@ -717,7 +811,6 @@ export default function App() {
     } catch (err) {} setIsUploading(false);
   };
 
-  // 🔴 SIGNUP (تعديل التسجيل ليكون أوتوماتيك ويمنح 3 شهور مجاناً)
   const handleSignupSubmit = async () => {
     setSignupError(''); setIsUploading(true); 
     try {
@@ -750,9 +843,9 @@ export default function App() {
           phone: cleanPhone, 
           whatsapp: signupData.whatsapp.trim(), 
           password: signupData.password, 
-          subscriptionStatus: 'Active', // 🔴 تفعيل مباشر
-          activatedAt: Date.now(),      // 🔴 يبدأ الآن
-          subscriptionDays: 90,         // 🔴 مجاناً لمدة 90 يوم (3 شهور)
+          subscriptionStatus: 'Active', 
+          activatedAt: Date.now(),      
+          subscriptionDays: 90,         
           createdAt: new Date().toISOString(), 
           receiptUrl: null, 
           photoUrl: photoUrl, 
@@ -928,7 +1021,6 @@ export default function App() {
     if (!openChatIds.includes(chatId)) setOpenChatIds(prev => [...prev, chatId]);
     setActiveChatId(chatId);
 
-    // Center the chat window if it doesn't have a saved position
     if (!chatPositions[chatId]) {
        const chatWidth = window.innerWidth > 768 ? 350 : window.innerWidth * 0.9;
        const chatHeight = 480;
@@ -1037,7 +1129,6 @@ export default function App() {
   const handleImageUpload = (e) => { if (e.target.files && e.target.files.length > 0) { const newImages = Array.from(e.target.files).map(file => ({ file: file, preview: URL.createObjectURL(file) })); setUploadedImages(prev => [...prev, ...newImages]); } };
   const removeUploadedImage = (indexToRemove) => setUploadedImages(prev => prev.filter((_, index) => index !== indexToRemove));
   
-  const handleProfileImageUpload = async (e) => { if (e.target.files && e.target.files[0]) { setProfileImagePreview(URL.createObjectURL(e.target.files[0])); setProfileImageFile(e.target.files[0]); } };
   const handleCoverImageUpload = async (e) => { if (e.target.files && e.target.files[0]) { setCoverImagePreview(URL.createObjectURL(e.target.files[0])); setCoverImageFile(e.target.files[0]); } };
 
   const saveProfileUpdates = async () => {
@@ -1318,15 +1409,20 @@ export default function App() {
                   {showInbox && (
                     <div className="absolute left-0 sm:left-auto sm:end-0 mt-3 w-[280px] sm:w-80 max-w-[90vw] bg-[#1f2937] border border-gray-700 rounded-2xl shadow-2xl z-50 p-2 animate-fade-in max-h-96 overflow-y-auto custom-scrollbar">
                        <div className="flex justify-between items-center mb-2 px-3 border-b border-gray-700 pb-3 mt-2">
-                         <h4 className="text-sm font-bold text-gray-400">{lang === 'ar' ? 'الرسائل (صندوق الوارد)' : 'Inbox'}</h4>
+                         <h4 className="text-sm font-bold text-gray-400">{lang === 'ar' ? 'الرسائل' : 'Inbox'}</h4>
                          {myActiveChats.length > 0 && (
                            <button onClick={handleClearAllChats} className="text-xs text-red-500 hover:text-red-400 bg-red-500/10 hover:bg-red-500/20 px-2 py-1 rounded-lg transition-colors flex items-center gap-1"><Trash2 size={12}/> {lang === 'ar' ? 'حذف الكل' : 'Clear All'}</button>
                          )}
                        </div>
                        {myActiveChats.length === 0 ? (<p className="text-xs text-gray-500 text-center py-6">{lang === 'ar' ? 'لا توجد محادثات سابقة' : 'No previous chats'}</p>) : (
-                          myActiveChats.map(c => (
+                          myActiveChats.map(c => {
+                             const otherUserId = c.participants?.find(id => id !== userProfile?.uid);
+                             const otherUserProfile = allProfiles.find(p => p.uid === otherUserId);
+                             return (
                              <div key={c.id} onClick={() => { if (!openChatIds.includes(c.id)) setOpenChatIds(prev => [...prev, c.id]); setActiveChatId(c.id); setShowInbox(false); }} className="p-3 hover:bg-gray-800 rounded-xl cursor-pointer flex items-center gap-3 transition-colors group">
-                                <div className="w-10 h-10 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center shrink-0"><User size={18} /></div>
+                                <div className="shrink-0">
+                                   {otherUserProfile?.photoUrl ? <img src={otherUserProfile.photoUrl} className="w-10 h-10 rounded-full object-cover border border-gray-700" alt="User" /> : <AvatarFallback size={40} />}
+                                </div>
                                 <div className="flex-1 overflow-hidden" dir={lang === 'ar' ? 'rtl' : 'ltr'}><p className="text-sm text-white font-bold truncate">{lang === 'ar' ? c.adTitle : (c.adTitleEn || c.adTitle)}</p><p className="text-xs text-gray-400 truncate">{c.messages?.[c.messages.length - 1]?.text || (lang === 'ar' ? 'بدء المحادثة...' : 'Start chat...')}</p></div>
                                 
                                 {unreadCounts[c.id] > 0 && (
@@ -1337,7 +1433,8 @@ export default function App() {
                                 
                                 <button onClick={(e) => handleDeleteEntireChat(c.id, e)} className="text-red-500 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity p-1.5 hover:bg-red-500/20 rounded-lg shrink-0" title={lang === 'ar' ? 'حذف المحادثة' : 'Delete Chat'}><Trash2 size={16}/></button>
                              </div>
-                          ))
+                             );
+                          })
                        )}
                     </div>
                   )}
@@ -1347,15 +1444,21 @@ export default function App() {
                      <Bell size={18} />{totalUnread > 0 && <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 border-2 border-[#111827] rounded-full animate-ping"></span>}{totalUnread > 0 && <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 border-2 border-[#111827] rounded-full"></span>}
                   </button>
                   {showNotifications && (
-                    <div className="absolute left-0 sm:left-auto sm:end-0 mt-3 w-[280px] sm:w-80 max-w-[90vw] bg-[#1f2937] border border-gray-700 rounded-2xl shadow-2xl z-50 p-2 animate-fade-in">
+                    <div className="absolute left-0 sm:left-auto sm:end-0 mt-3 w-[280px] sm:w-80 max-w-[90vw] bg-[#1f2937] border border-gray-700 rounded-2xl shadow-2xl z-50 p-2 animate-fade-in max-h-96 overflow-y-auto custom-scrollbar">
                        <h4 className="text-sm font-bold text-gray-400 mb-2 px-3 border-b border-gray-700 pb-3 mt-2">{lang === 'ar' ? 'الإشعارات الجديدة' : 'New Notifications'}</h4>
-                       {globalChats.filter(c => unreadCounts[c.id] > 0).map(c => (
+                       {globalChats.filter(c => unreadCounts[c.id] > 0).map(c => {
+                          const otherUserId = c.participants?.find(id => id !== userProfile?.uid);
+                          const otherUserProfile = allProfiles.find(p => p.uid === otherUserId);
+                          return (
                           <div key={c.id} onClick={() => { if (!openChatIds.includes(c.id)) setOpenChatIds(prev => [...prev, c.id]); setActiveChatId(c.id); setShowNotifications(false); }} className="p-3 hover:bg-gray-800 rounded-xl cursor-pointer flex items-center gap-3 transition-colors">
-                            <div className="w-10 h-10 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center shrink-0"><MessageSquare size={18} /></div>
+                            <div className="shrink-0">
+                               {otherUserProfile?.photoUrl ? <img src={otherUserProfile.photoUrl} className="w-10 h-10 rounded-full object-cover border border-gray-700" alt="User" /> : <AvatarFallback size={40} />}
+                            </div>
                             <div className="flex-1 overflow-hidden"><p className="text-sm text-white font-bold">{lang === 'ar' ? 'رسالة جديدة' : 'New Message'}</p><p className="text-xs text-gray-400 truncate w-full">{lang === 'ar' ? c.adTitle : (c.adTitleEn || c.adTitle)}</p></div>
                             <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-full">{unreadCounts[c.id]}</span>
                           </div>
-                       ))}
+                          );
+                       })}
                        {totalUnread === 0 && <p className="text-xs text-gray-500 text-center py-6">{lang === 'ar' ? 'لا توجد إشعارات جديدة' : 'No new notifications'}</p>}
                     </div>
                   )}
@@ -1365,7 +1468,6 @@ export default function App() {
           
           {isAppLoggedIn ? (
              <div className="flex items-center gap-2 sm:gap-3">
-               {/* 🔴 تم تعديل هذا الجزء ليناسب النظام الجديد المجاني */}
                {subStatus === 'expired' ? (
                  <span className="text-red-500 font-bold text-[10px] md:text-sm bg-red-500/10 px-2 sm:px-3 py-1.5 rounded-full border border-red-500/20 flex items-center gap-1.5"><AlertTriangle size={14} className="animate-pulse" /> <span className="hidden sm:inline">{lang === 'ar' ? 'انتهت الباقة' : 'Expired'}</span></span>
                ) : (
@@ -1396,7 +1498,6 @@ export default function App() {
                 <>Exclusive Community for <span className={accentColor}>Members Only</span></>
               )}
             </h2>
-            {/* 🔴 الجملة التسويقية الجديدة */}
             <p className="text-gray-400 text-base md:text-lg mb-12 max-w-2xl leading-relaxed text-center">
               {lang === 'ar' 
                 ? 'بيئة مميزة للجودة والثقة (مجانية بالكامل لأول 3 شهور كعرض إطلاق). بيع وشراء بأمان بعيداً عن فوضى السوق والتشتت.' 
@@ -1552,10 +1653,11 @@ export default function App() {
                         {userProfile?.photoUrl ? <img src={userProfile.photoUrl} className="w-12 h-12 rounded-full object-cover border-2 border-purple-500/50 hover:scale-105 transition-transform" alt="Avatar" /> : <AvatarFallback size={48} className="border-2 border-purple-500/50 hover:scale-105 transition-transform" />}
                      </div>
                      <div className="flex-1">
-                        <textarea value={newPostContent} onChange={e => setNewPostContent(e.target.value)} placeholder={lang === 'ar' ? "شارك أفكارك، فيديو، أو اطرح سؤالاً للمجتمع..." : "Share your thoughts, video, or ask a question..."} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-4 text-white text-lg outline-none focus:border-purple-500 resize-none custom-scrollbar min-h-[100px]"></textarea>
+                        {/* 🔴 تم زيادة مساحة التكست بوكس هنا */}
+                        <textarea value={newPostContent} onChange={e => setNewPostContent(e.target.value)} placeholder={lang === 'ar' ? "شارك أفكارك، فيديو، أو اطرح سؤالاً للمجتمع..." : "Share your thoughts, video, or ask a question..."} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-4 text-white text-lg outline-none focus:border-purple-500 resize-none custom-scrollbar min-h-[140px]"></textarea>
                         
-                        {/* New Additions: Link, Image/Video, Emoji */}
-                        <div className="mt-3 flex flex-col gap-3 border-t border-gray-800 pt-3">
+                        {/* 🔴 تم تقليل المساحات العلوية والجانبية هنا */}
+                        <div className="mt-2 flex flex-col gap-2 border-t border-gray-800 pt-2">
                            <div className="flex items-center gap-3 bg-[#111827] rounded-xl px-3 py-2 border border-gray-700 focus-within:border-purple-500">
                               <Link2 size={18} className="text-gray-400 shrink-0" />
                               <input type="url" value={newPostLink} onChange={e => setNewPostLink(e.target.value)} placeholder={lang === 'ar' ? "رابط إعلانك أو موقعك (اختياري)" : "Link to your ad/site (optional)"} className="w-full bg-transparent text-white text-sm outline-none" />
@@ -1569,26 +1671,24 @@ export default function App() {
                                  ) : (
                                     <img src={newPostMediaPreview} className="w-full h-full object-cover" />
                                  )}
-                                 {/* زر تكبير المعاينة */}
                                  <button onClick={() => setFullscreenMedia({url: newPostMediaPreview, type: newPostMedia?.type?.startsWith('video/') ? 'video' : 'image'})} className="absolute top-2 start-2 bg-black/60 text-white rounded-md p-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-black/80" title="تكبير الشاشة"><Maximize size={16}/></button>
                                  <button onClick={() => { setNewPostMedia(null); setNewPostMediaPreview(null); }} className="absolute top-2 end-2 bg-red-500 text-white rounded-full p-1 shadow-lg"><X size={12}/></button>
                               </div>
                            )}
 
-                           {/* 🔴 تم تعديل هذا الجزء ليكون متجاوباً (Responsive) مع شاشات الموبايل الصغيرة */}
-                           <div className="flex flex-col sm:flex-row justify-between items-center relative gap-3 mt-2">
-                              <div className="flex gap-2 w-full justify-center sm:justify-start">
-                                 {/* 🔴 فصل زرار الصورة عن الفيديو */}
-                                 <label className="bg-gray-800 hover:bg-emerald-500/20 text-gray-300 hover:text-emerald-400 p-2 rounded-full transition-colors cursor-pointer" title={lang === 'ar' ? 'إضافة صورة' : 'Add Image'}>
+                           <div className="flex flex-col sm:flex-row justify-between items-center relative gap-2 mt-1">
+                              {/* 🔴 تصغير مسافات زراير الميديا */}
+                              <div className="flex gap-1.5 w-full justify-center sm:justify-start">
+                                 <label className="bg-gray-800 hover:bg-emerald-500/20 text-gray-300 hover:text-emerald-400 p-1.5 rounded-full transition-colors cursor-pointer" title={lang === 'ar' ? 'إضافة صورة' : 'Add Image'}>
                                     <ImagePlus size={18} />
                                     <input type="file" className="hidden" accept="image/*" onChange={handlePostMediaChange} />
                                  </label>
-                                 <label className="bg-gray-800 hover:bg-purple-500/20 text-gray-300 hover:text-purple-400 p-2 rounded-full transition-colors cursor-pointer" title={lang === 'ar' ? 'إضافة فيديو' : 'Add Video'}>
+                                 <label className="bg-gray-800 hover:bg-purple-500/20 text-gray-300 hover:text-purple-400 p-1.5 rounded-full transition-colors cursor-pointer" title={lang === 'ar' ? 'إضافة فيديو' : 'Add Video'}>
                                     <Film size={18} />
                                     <input type="file" className="hidden" accept="video/*" onChange={handlePostMediaChange} />
                                  </label>
 
-                                 <button onClick={() => setShowPostEmojiPicker(!showPostEmojiPicker)} className="bg-gray-800 hover:bg-yellow-500/20 text-gray-300 hover:text-yellow-400 p-2 rounded-full transition-colors" title={lang === 'ar' ? 'إضافة إيموجي' : 'Add Emoji'}>
+                                 <button onClick={() => setShowPostEmojiPicker(!showPostEmojiPicker)} className="bg-gray-800 hover:bg-yellow-500/20 text-gray-300 hover:text-yellow-400 p-1.5 rounded-full transition-colors" title={lang === 'ar' ? 'إضافة إيموجي' : 'Add Emoji'}>
                                     <Smile size={18} />
                                  </button>
                                  
@@ -1601,8 +1701,9 @@ export default function App() {
                                  )}
                               </div>
 
-                              <button onClick={handleCreatePost} className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold px-8 py-2.5 rounded-xl shadow-lg transition-transform hover:scale-105 flex items-center justify-center gap-2">
-                                <Send size={18} /> {lang === 'ar' ? 'نشر البوست' : 'Post'}
+                              {/* 🔴 زرار النشر الجديد (مستطيل وصغير نسبياً) */}
+                              <button onClick={handleCreatePost} className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold px-6 py-2 rounded-md shadow-md transition-transform hover:scale-105 flex items-center justify-center gap-1.5 text-sm">
+                                <Send size={16} /> {lang === 'ar' ? 'نشر' : 'Post'}
                               </button>
                            </div>
                         </div>
@@ -1634,17 +1735,33 @@ export default function App() {
                                   <p className="text-gray-500 text-xs">{new Date(post.createdAt).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')}</p>
                                </div>
                             </div>
+                            {/* 🔴 أزرار الأكشن (إضافة زر التعديل) */}
                             <div className="flex items-center gap-2">
                                {(isAuthor || isAdmin) ? (
-                                  <button onClick={() => handleDeletePost(post.id)} className="text-gray-500 hover:text-red-500 bg-gray-800 hover:bg-red-500/10 p-2 rounded-full transition-colors" title={lang === 'ar' ? 'حذف البوست' : 'Delete Post'}><Trash2 size={16}/></button>
+                                  <>
+                                    {isAuthor && (
+                                      <button onClick={() => { setEditingPostId(post.id); setEditedPostContent(post.content || ''); }} className="text-gray-500 hover:text-blue-500 bg-gray-800 hover:bg-blue-500/10 p-2 rounded-full transition-colors" title={lang === 'ar' ? 'تعديل البوست' : 'Edit Post'}><Edit size={16}/></button>
+                                    )}
+                                    <button onClick={() => handleDeletePost(post.id)} className="text-gray-500 hover:text-red-500 bg-gray-800 hover:bg-red-500/10 p-2 rounded-full transition-colors" title={lang === 'ar' ? 'حذف البوست' : 'Delete Post'}><Trash2 size={16}/></button>
+                                  </>
                                ) : (
                                   <button onClick={() => handleReportContent(post.id, 'post')} className="text-gray-500 hover:text-red-500 bg-gray-800 hover:bg-red-500/10 p-2 rounded-full transition-colors" title={lang === 'ar' ? 'إبلاغ عن محتوى مسيء' : 'Report Content'}><Flag size={16}/></button>
                                )}
                             </div>
                          </div>
                          
-                         {/* Post Content */}
-                         {post.content && <p className="text-gray-200 text-base md:text-lg leading-relaxed whitespace-pre-wrap mb-4">{post.content}</p>}
+                         {/* 🔴 Post Content (مع ميزة التعديل الداخلي Inline Edit) */}
+                         {editingPostId === post.id ? (
+                            <div className="mb-4 animate-fade-in">
+                               <textarea value={editedPostContent} onChange={e => setEditedPostContent(e.target.value)} className="w-full bg-[#111827] border border-purple-500 rounded-xl p-3 text-white outline-none focus:ring-1 focus:ring-purple-500 resize-none custom-scrollbar min-h-[100px]"></textarea>
+                               <div className="flex gap-2 mt-2 justify-end">
+                                  <button onClick={() => { setEditingPostId(null); setEditedPostContent(''); }} className="px-4 py-1.5 text-sm rounded-md text-gray-300 hover:bg-gray-700 transition-colors">{lang === 'ar' ? 'إلغاء' : 'Cancel'}</button>
+                                  <button onClick={() => saveEditedPost(post.id)} className="px-4 py-1.5 text-sm rounded-md bg-purple-600 hover:bg-purple-500 text-white font-bold shadow-md transition-colors">{lang === 'ar' ? 'حفظ التعديل' : 'Save'}</button>
+                               </div>
+                            </div>
+                         ) : (
+                            post.content && <p className="text-gray-200 text-base md:text-lg leading-relaxed whitespace-pre-wrap mb-4">{post.content}</p>
+                         )}
                          
                          {/* 🔴 Media Rendering (فيديو أو صورة) بعد النشر */}
                          {post.mediaUrl && (
@@ -1694,7 +1811,7 @@ export default function App() {
                                      </div>
                                   </div>
                                ) : (
-                                  <p className="text-sm text-gray-500 text-center mb-6">سجل دخولك لكتابة تعليق.</p>
+                                  <p className="text-sm text-gray-500 text-center mb-6">{lang === 'ar' ? 'سجل دخولك لكتابة تعليق.' : 'Login to comment.'}</p>
                                )}
                                
                                {/* Comments List */}
@@ -1754,7 +1871,7 @@ export default function App() {
                   )}
                   <label className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
                      <Camera className="text-white" size={20}/>
-                     <input type="file" className="hidden" accept="image/*" onChange={handleProfileImageUpload} />
+                     <input type="file" className="hidden" accept="image/*" onChange={(e) => openCropModal(e, 'settings')} />
                   </label>
                </div>
 
@@ -1935,17 +2052,33 @@ export default function App() {
                                       <p className="text-gray-500 text-xs">{new Date(post.createdAt).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')}</p>
                                    </div>
                                 </div>
+                                {/* 🔴 أزرار الأكشن (إضافة زر التعديل) */}
                                 <div className="flex items-center gap-2">
                                    {(isAuthor || isAdmin) ? (
-                                      <button onClick={() => handleDeletePost(post.id)} className="text-gray-500 hover:text-red-500 bg-gray-800 hover:bg-red-500/10 p-2 rounded-full transition-colors" title={lang === 'ar' ? 'حذف البوست' : 'Delete Post'}><Trash2 size={16}/></button>
+                                      <>
+                                        {isAuthor && (
+                                          <button onClick={() => { setEditingPostId(post.id); setEditedPostContent(post.content || ''); }} className="text-gray-500 hover:text-blue-500 bg-gray-800 hover:bg-blue-500/10 p-2 rounded-full transition-colors" title={lang === 'ar' ? 'تعديل البوست' : 'Edit Post'}><Edit size={16}/></button>
+                                        )}
+                                        <button onClick={() => handleDeletePost(post.id)} className="text-gray-500 hover:text-red-500 bg-gray-800 hover:bg-red-500/10 p-2 rounded-full transition-colors" title={lang === 'ar' ? 'حذف البوست' : 'Delete Post'}><Trash2 size={16}/></button>
+                                      </>
                                    ) : (
                                       <button onClick={() => handleReportContent(post.id, 'post')} className="text-gray-500 hover:text-red-500 bg-gray-800 hover:bg-red-500/10 p-2 rounded-full transition-colors" title={lang === 'ar' ? 'إبلاغ عن محتوى مسيء' : 'Report Content'}><Flag size={16}/></button>
                                    )}
                                 </div>
                              </div>
                              
-                             {/* Post Content */}
-                             {post.content && <p className="text-gray-200 text-base md:text-lg leading-relaxed whitespace-pre-wrap mb-4">{post.content}</p>}
+                             {/* 🔴 Post Content (مع ميزة التعديل الداخلي Inline Edit) */}
+                             {editingPostId === post.id ? (
+                                <div className="mb-4 animate-fade-in">
+                                   <textarea value={editedPostContent} onChange={e => setEditedPostContent(e.target.value)} className="w-full bg-[#111827] border border-purple-500 rounded-xl p-3 text-white outline-none focus:ring-1 focus:ring-purple-500 resize-none custom-scrollbar min-h-[100px]"></textarea>
+                                   <div className="flex gap-2 mt-2 justify-end">
+                                      <button onClick={() => { setEditingPostId(null); setEditedPostContent(''); }} className="px-4 py-1.5 text-sm rounded-md text-gray-300 hover:bg-gray-700 transition-colors">{lang === 'ar' ? 'إلغاء' : 'Cancel'}</button>
+                                      <button onClick={() => saveEditedPost(post.id)} className="px-4 py-1.5 text-sm rounded-md bg-purple-600 hover:bg-purple-500 text-white font-bold shadow-md transition-colors">{lang === 'ar' ? 'حفظ التعديل' : 'Save'}</button>
+                                   </div>
+                                </div>
+                             ) : (
+                                post.content && <p className="text-gray-200 text-base md:text-lg leading-relaxed whitespace-pre-wrap mb-4">{post.content}</p>
+                             )}
                              
                              {/* 🔴 Media Rendering (فيديو أو صورة) بعد النشر */}
                              {post.mediaUrl && (
@@ -2193,7 +2326,7 @@ export default function App() {
                  </div>
                  <label className="bg-[#111827] text-emerald-400 px-4 py-2 rounded-lg cursor-pointer text-sm font-bold border border-gray-700 hover:border-emerald-500 transition-colors shadow-md">
                     <span className="flex items-center gap-2"><ImagePlus size={16} /> {lang === 'ar' ? 'أضف صورة للبروفايل (اختياري)' : 'Add Profile Picture (Optional)'}</span>
-                    <input type="file" className="hidden" accept="image/*" onChange={(e) => { if(e.target.files && e.target.files[0]) { setSignupProfilePreview(URL.createObjectURL(e.target.files[0])); setSignupProfileImage(e.target.files[0]); } }} />
+                    <input type="file" className="hidden" accept="image/*" onChange={(e) => openCropModal(e, 'signup')} />
                  </label>
                </div>
 
@@ -2265,7 +2398,6 @@ export default function App() {
                          {u.photoUrl ? <img src={u.photoUrl} alt="User" className="w-14 h-14 rounded-full object-cover border border-gray-600" /> : <AvatarFallback size={56} />}
                          <div><p className="text-xl text-white font-bold">{u.fullName}</p><p className="text-sm text-gray-400 mt-1">الإيميل: {u.email} | الهاتف: {u.phone}</p><a href={u.receiptUrl} target="_blank" rel="noreferrer" className="text-emerald-400 text-sm hover:underline mt-2 inline-block font-bold">👀 عرض إيصال التجديد (نافذة جديدة)</a></div>
                       </div>
-                      {/* 🔴 زرار التجديد بيدي 30 يوم بس للمشتركين القدام */}
                       <button onClick={async () => { setIsUploading(true); try { const activationTime = Date.now(); await updateDoc(publicDoc('users', u.uid), { subscriptionStatus: 'Active', activatedAt: activationTime, subscriptionDays: 30 }); await updateDoc(publicDoc('profiles', u.uid), { subscriptionStatus: 'Active', activatedAt: activationTime, subscriptionDays: 30 }); setPendingUsers(pendingUsers.filter(user => user.uid !== u.uid)); setAppAlert('تم تفعيل الحساب وتجديد الباقة (30 يوم) بنجاح!'); } catch(err) { setAppAlert('خطأ: تم رفض الإذن من قاعدة البيانات.'); } setIsUploading(false); }} className="bg-emerald-500 text-white px-6 py-3 rounded-lg hover:bg-emerald-600 font-bold w-full sm:w-auto shrink-0">تجديد الباقة (30 يوم)</button>
                     </div>
                   ))}
@@ -2424,7 +2556,9 @@ export default function App() {
                   هذه الإعلانات لم تعد تظهر للمستخدمين لأن مدة صلاحيتها قد انتهت.<br/> يُفضل حذفها نهائياً لتوفير المساحة.
                 </p>
                 <div className="flex flex-col items-center justify-center gap-3">
-                  <div className="w-24 h-24 rounded-full bg-red-500/10 border-4 border-red-500/20 flex items-center justify-center mb-2"><span className="text-4xl font-black text-red-500">{expiredAdminAds.length}</span></div>
+                  <div className="w-24 h-24 rounded-full bg-red-500/10 border-4 border-red-500/20 flex items-center justify-center mb-2">
+                    <span className="text-4xl font-black text-red-500">{expiredAdminAds.length}</span>
+                  </div>
                   <p className="text-gray-400 text-sm font-bold mb-4">إعلان منتهي الصلاحية</p>
                   <button onClick={async () => { if(expiredAdminAds.length === 0) { setAppAlert('المساحة نظيفة! لا توجد إعلانات منتهية حالياً.'); return; } setConfirmModal({ isOpen: true, title: 'تحذير: مسح نهائي', message: `هل أنت متأكد من مسح ${expiredAdminAds.length} إعلان نهائياً؟`, confirmText: 'نعم، مسح', type: 'danger', onConfirm: async () => { setConfirmModal({...confirmModal, isOpen: false}); setIsUploading(true); try { for(const ad of expiredAdminAds) { await deleteDoc(publicDoc('ads', ad.id)); } setAppAlert('تم تنظيف قاعدة البيانات بنجاح!'); } catch(e) {} setIsUploading(false); } }); }} className={`bg-red-500 text-white font-bold px-8 py-4 rounded-xl transition-all shadow-lg shadow-red-500/20 flex items-center justify-center gap-2 w-full sm:w-auto ${expiredAdminAds.length === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-red-600'}`} disabled={expiredAdminAds.length === 0}>
                     <Trash2 size={20} /> حذف وتفريغ المساحة الآن
@@ -2449,7 +2583,7 @@ export default function App() {
             <div className="bg-[#1f2937] rounded-3xl p-6 w-full max-w-4xl h-[85vh] flex flex-col relative shadow-2xl">
                <button onClick={() => setLegalEditModal({...legalEditModal, isOpen: false})} className="absolute top-4 left-4 text-gray-400 hover:text-white"><X size={28}/></button>
                <h3 className="text-2xl font-bold mb-2 text-emerald-400 text-center">تعديل: {legalEditModal.title}</h3>
-               <textarea className="flex-1 w-full bg-[#111827] border border-gray-700 rounded-xl p-6 text-white text-lg outline-none focus:border-emerald-500 resize-none mb-4 leading-loose" value={legalEditModal.content} onChange={(e) => setLegalEditModal({...legalEditModal, content: e.target.value})} dir="rtl" />
+               <textarea className="flex-1 w-full bg-[#111827] border border-gray-700 rounded-xl p-6 text-white text-lg outline-none focus:border-emerald-500 resize-none mb-4 leading-loose custom-scrollbar" value={legalEditModal.content} onChange={(e) => setLegalEditModal({...legalEditModal, content: e.target.value})} dir="rtl" />
                <div className="flex gap-4"><button onClick={() => setLegalEditModal({...legalEditModal, isOpen: false})} className="flex-1 bg-gray-700 text-white font-bold py-4 rounded-xl hover:bg-gray-600 text-lg">إلغاء</button><button onClick={saveLegalDocument} className="flex-[2] bg-emerald-500 text-white font-bold py-4 rounded-xl hover:bg-emerald-600 text-lg">حفظ التعديلات ونشرها</button></div>
             </div>
           </div>
@@ -2459,6 +2593,68 @@ export default function App() {
         {activeView === 'terms' && ( <div className="w-full max-w-4xl mx-auto animate-fade-in text-right px-4"><button onClick={goBack} className="mb-6 text-gray-400 hover:text-white flex items-center gap-2"><ArrowRight size={20} /> {lang === 'ar' ? 'رجوع' : 'Back'}</button><div className={`${cardBg} p-8 md:p-12 rounded-3xl shadow-xl border border-gray-700`}><div className="flex items-center gap-4 mb-8 border-b border-gray-700 pb-6"><FileText size={40} className="text-emerald-400" /><h2 className="text-3xl font-bold text-white">{lang === 'ar' ? 'شروط الاستخدام' : 'Terms of Use'}</h2></div><div className="text-gray-300 leading-relaxed text-lg" dir="auto">{renderLegalText(legalTexts.terms)}</div></div></div> )}
         {activeView === 'privacy' && ( <div className="w-full max-w-4xl mx-auto animate-fade-in text-right px-4"><button onClick={goBack} className="mb-6 text-gray-400 hover:text-white flex items-center gap-2"><ArrowRight size={20} /> {lang === 'ar' ? 'رجوع' : 'Back'}</button><div className={`${cardBg} p-8 md:p-12 rounded-3xl shadow-xl border border-gray-700`}><div className="flex items-center gap-4 mb-8 border-b border-gray-700 pb-6"><ShieldCheck size={40} className="text-emerald-400" /><h2 className="text-3xl font-bold text-white">{lang === 'ar' ? 'سياسة الخصوصية' : 'Privacy Policy'}</h2></div><div className="text-gray-300 leading-relaxed text-lg" dir="auto">{renderLegalText(legalTexts.privacy)}</div></div></div> )}
         {activeView === 'ip' && ( <div className="w-full max-w-4xl mx-auto animate-fade-in text-right px-4"><button onClick={goBack} className="mb-6 text-gray-400 hover:text-white flex items-center gap-2"><ArrowRight size={20} /> {lang === 'ar' ? 'رجوع' : 'Back'}</button><div className={`${cardBg} p-8 md:p-12 rounded-3xl shadow-xl border border-gray-700`}><div className="flex items-center gap-4 mb-8 border-b border-gray-700 pb-6"><Sparkles size={40} className="text-emerald-400" /><h2 className="text-3xl font-bold text-white">{lang === 'ar' ? 'حقوق الملكية الفكرية' : 'Intellectual Property'}</h2></div><div className="text-gray-300 leading-relaxed text-lg" dir="auto">{renderLegalText(legalTexts.ip)}</div></div></div> )}
+
+        {/* --- 🔴 نافذة أداة ضبط وقص الصورة (Cropper Modal) --- */}
+        {cropModal.isOpen && (
+           <div className="fixed inset-0 z-[2500] bg-black/95 flex flex-col items-center justify-center p-4 animate-fade-in touch-none backdrop-blur-sm">
+              <div className="bg-[#1f2937] p-6 md:p-8 rounded-3xl w-full max-w-sm relative shadow-2xl border border-gray-700 text-center">
+                 <button onClick={() => setCropModal({ isOpen: false, imageSrc: null, type: '' })} className="absolute top-4 end-4 text-gray-400 hover:text-white bg-gray-800 p-2 rounded-full transition-colors"><X size={20}/></button>
+                 
+                 <h3 className="text-2xl font-bold text-emerald-400 mb-2">{lang === 'ar' ? 'ضبط الصورة' : 'Adjust Picture'}</h3>
+                 <p className="text-gray-400 text-xs mb-6">{lang === 'ar' ? 'اسحب الصورة لتظبيطها داخل الدائرة' : 'Drag to reposition inside the circle'}</p>
+                 
+                 {/* منطقة الـ Canvas التفاعلية */}
+                 <div className="relative mx-auto mb-8 w-64 h-64 rounded-full overflow-hidden border-4 border-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.2)] touch-none cursor-move bg-[#111827]">
+                    <canvas 
+                       ref={cropCanvasRef} 
+                       width="400" 
+                       height="400" 
+                       className="w-full h-full"
+                       onMouseDown={(e) => { setIsDraggingCrop(true); cropDragRef.current = { startX: e.clientX - cropPan.x, startY: e.clientY - cropPan.y }; }}
+                       onMouseMove={(e) => { if(isDraggingCrop) setCropPan({ x: e.clientX - cropDragRef.current.startX, y: e.clientY - cropDragRef.current.startY }); }}
+                       onMouseUp={() => setIsDraggingCrop(false)}
+                       onMouseLeave={() => setIsDraggingCrop(false)}
+                       onTouchStart={(e) => { setIsDraggingCrop(true); cropDragRef.current = { startX: e.touches[0].clientX - cropPan.x, startY: e.touches[0].clientY - cropPan.y }; }}
+                       onTouchMove={(e) => { if(isDraggingCrop) setCropPan({ x: e.touches[0].clientX - cropDragRef.current.startX, y: e.touches[0].clientY - cropDragRef.current.startY }); }}
+                       onTouchEnd={() => setIsDraggingCrop(false)}
+                    ></canvas>
+                    {/* طبقة تظليل للحواف لإعطاء إحساس الإطار الحقيقي */}
+                    <div className="absolute inset-0 pointer-events-none rounded-full shadow-[inset_0_0_20px_rgba(0,0,0,0.6)]"></div>
+                 </div>
+
+                 {/* شريط التكبير والتصغير */}
+                 <div className="mb-8 text-right bg-[#111827] p-4 rounded-2xl border border-gray-700">
+                    <label className="block text-sm font-bold text-gray-300 mb-3 flex justify-between items-center">
+                       <span>🔍 {lang === 'ar' ? 'تقريب (Zoom)' : 'Zoom'}</span>
+                       <span className="text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-lg">{Math.round(cropZoom * 100)}%</span>
+                    </label>
+                    <input type="range" min="1" max="4" step="0.05" value={cropZoom} onChange={(e) => setCropZoom(parseFloat(e.target.value))} className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-emerald-500" />
+                 </div>
+
+                 {/* أزرار الحفظ والإلغاء */}
+                 <div className="flex gap-3">
+                    <button onClick={() => {setCropZoom(1); setCropPan({x:0, y:0});}} className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-3.5 rounded-xl transition-colors text-sm">{lang === 'ar' ? 'إعادة ضبط' : 'Reset'}</button>
+                    <button onClick={handleCropSave} className="flex-[2] bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3.5 rounded-xl transition-colors shadow-lg shadow-emerald-500/20 text-sm">{lang === 'ar' ? 'اعتماد الصورة' : 'Save Picture'}</button>
+                 </div>
+              </div>
+           </div>
+        )}
+
+        {/* --- 🔴 نافذة تكبير الفيديوهات والصور المنبثقة (Fullscreen Media Modal) --- */}
+        {fullscreenMedia && (
+           <div className="fixed inset-0 z-[2000] bg-black/95 flex flex-col items-center justify-center p-4 animate-fade-in backdrop-blur-md">
+              <button onClick={() => setFullscreenMedia(null)} className="absolute top-4 end-4 text-white bg-black/50 p-2 rounded-full hover:bg-red-500 transition-colors z-50">
+                 <X size={24} />
+              </button>
+              <div className="w-full max-w-4xl max-h-[90vh] flex items-center justify-center relative">
+                 {fullscreenMedia.type === 'video' ? (
+                    <video src={fullscreenMedia.url} controls autoPlay className="max-w-full max-h-[90vh] rounded-2xl shadow-2xl border border-gray-800"></video>
+                 ) : (
+                    <img src={fullscreenMedia.url} alt="Fullscreen Media" className="max-w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl border border-gray-800" />
+                 )}
+              </div>
+           </div>
+        )}
 
       </main>
 
@@ -2518,59 +2714,24 @@ export default function App() {
                  })}
                  <div ref={chatMessagesEndRef} />
               </div>
-              <div className="p-2 flex flex-col gap-2 bg-[#1f2937] relative">
+              <div className="p-2 flex flex-col gap-2 bg-[#1f2937] relative border-t border-gray-800">
                  {showChatEmojiPicker[activeChatId] && (
-                    <div className="absolute bottom-full left-2 mb-2 z-50 bg-[#111827] border border-gray-700 rounded-xl p-2 grid grid-cols-5 gap-2 shadow-2xl">
+                    <div className="absolute bottom-full left-2 mb-2 z-50 bg-[#111827] border border-gray-700 rounded-xl p-2 grid grid-cols-5 gap-2 shadow-2xl animate-fade-in">
                        {EMOJI_LIST.map(emoji => (
-                          <button key={emoji} onClick={() => setChatInputs(prev => ({...prev, [activeChatId]: (prev[activeChatId] || '') + emoji}))} className="hover:bg-gray-700 p-1.5 rounded-lg text-lg transition-colors">{emoji}</button>
+                          <button key={emoji} onClick={() => { setChatInputs(prev => ({...prev, [activeChatId]: (prev[activeChatId]||'') + emoji})); setShowChatEmojiPicker(prev => ({...prev, [activeChatId]: false})); }} className="hover:bg-gray-700 p-1.5 rounded-lg text-lg transition-colors">{emoji}</button>
                        ))}
                     </div>
                  )}
-                 <div className="flex gap-2">
-                    <button onClick={() => setShowChatEmojiPicker(prev => ({...prev, [activeChatId]: !prev[activeChatId]}))} className="bg-[#111827] text-yellow-500 p-2 rounded-full hover:bg-gray-800 transition-colors shrink-0">
-                       <Smile size={20}/>
-                    </button>
-                    <input type="text" value={chatInputs[activeChatId] || ''} onChange={(e) => setChatInputs(prev => ({...prev, [activeChatId]: e.target.value}))} onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()} className="flex-1 bg-[#111827] rounded-full px-4 text-white text-sm outline-none border border-transparent focus:border-emerald-500 transition-colors" placeholder={lang === 'ar' ? "اكتب رسالة..." : "Type a message..."} />
-                    <button onClick={handleSendMessage} className="bg-emerald-500 text-white p-2 rounded-full hover:bg-emerald-600 transition-colors shrink-0"><Send size={20}/></button>
+                 <div className="flex items-center gap-2">
+                    <button onClick={() => setShowChatEmojiPicker(prev => ({...prev, [activeChatId]: !prev[activeChatId]}))} className="text-gray-400 hover:text-yellow-400 transition-colors p-1.5"><Smile size={20}/></button>
+                    <input type="text" value={chatInputs[activeChatId] || ''} onChange={e => setChatInputs(prev => ({...prev, [activeChatId]: e.target.value}))} onKeyDown={e => e.key === 'Enter' && handleSendMessage()} placeholder={lang === 'ar' ? "اكتب رسالة..." : "Type a message..."} className="flex-1 bg-[#111827] border border-gray-700 rounded-full py-2 px-4 text-sm text-white outline-none focus:border-emerald-500" />
+                    <button onClick={handleSendMessage} className="bg-emerald-500 text-white p-2 rounded-full hover:bg-emerald-600 transition-colors shrink-0"><Send size={16}/></button>
                  </div>
               </div>
             </div>
          );
       })()}
 
-      {/* --- 🔴 نافذة تكبير الفيديوهات والصور المنبثقة (Fullscreen Media Modal) --- */}
-      {fullscreenMedia && (
-         <div className="fixed inset-0 z-[2000] bg-black/95 flex flex-col items-center justify-center p-4 animate-fade-in backdrop-blur-md">
-            <button onClick={() => setFullscreenMedia(null)} className="absolute top-6 end-6 text-white hover:text-red-500 bg-gray-800/80 p-3 rounded-full transition-colors z-50 shadow-2xl border border-gray-600">
-               <X size={28} />
-            </button>
-            {fullscreenMedia.type === 'video' ? (
-               <video src={fullscreenMedia.url} controls autoPlay className="max-w-full max-h-[90vh] rounded-2xl shadow-2xl outline-none ring-4 ring-gray-800"></video>
-            ) : (
-               <img src={fullscreenMedia.url} className="max-w-full max-h-[90vh] rounded-2xl shadow-2xl object-contain ring-4 ring-gray-800" />
-            )}
-         </div>
-      )}
-
-      <button onClick={() => { if(isAppLoggedIn) setShowComplaintModal(true); else { setAppAlert(lang === 'ar' ? 'يرجى تسجيل الدخول أولاً للتمكن من مراسلة الإدارة.' : 'Please login first to contact admin.'); navigateTo('login'); } }} className="fixed bottom-6 right-6 z-[100] bg-emerald-500 text-white p-4 rounded-full shadow-2xl hover:bg-emerald-600 transition-transform hover:scale-110 flex items-center justify-center group">
-         <MessageCircleWarning size={24}/>
-         <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-2 transition-all duration-300 font-bold">{lang === 'ar' ? 'تواصل مع الإدارة (شكاوى)' : 'Contact Admin'}</span>
-      </button>
-
-      <footer className="w-full mt-auto border-t border-gray-800 bg-[#111827] pt-8 pb-4 relative z-10">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col items-center gap-6">
-          <div className="flex flex-wrap justify-center gap-6 md:gap-10 text-gray-400 font-semibold text-sm">
-            <button onClick={() => navigateTo('terms')} className="hover:text-emerald-400 transition-colors">{lang === 'ar' ? 'شروط الاستخدام' : 'Terms of Use'}</button>
-            <button onClick={() => navigateTo('privacy')} className="hover:text-emerald-400 transition-colors">{lang === 'ar' ? 'سياسة الخصوصية' : 'Privacy Policy'}</button>
-            <button onClick={() => navigateTo('ip')} className="hover:text-emerald-400 transition-colors">{lang === 'ar' ? 'حقوق الملكية الفكرية' : 'Intellectual Property'}</button>
-          </div>
-          <div className="w-16 h-px bg-gray-700"></div>
-          <p className="text-gray-600 text-xs">© {new Date().getFullYear()} {lang === 'ar' ? 'فلتر إيجيبت. جميع الحقوق محفوظة.' : 'Filter Egypt. All rights reserved.'}</p>
-          {isAdmin && (
-             <button onClick={() => navigateTo('admin-dashboard')} className="text-gray-700 hover:text-emerald-500 text-xs transition-colors font-bold">{lang === 'ar' ? 'لوحة الإدارة (Admin)' : 'Admin Dashboard'}</button>
-          )}
-        </div>
-      </footer>
     </div>
   );
 }
