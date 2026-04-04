@@ -1200,7 +1200,7 @@ export default function App() {
   );
 
   return (
-    <div dir={lang === 'ar' ? 'rtl' : 'ltr'} className={`min-h-screen ${bgColor} text-gray-100 font-sans flex flex-col items-center justify-between relative`}>
+    <div dir={lang === 'ar' ? 'rtl' : 'ltr'} className={`min-h-screen ${bgColor} text-gray-100 font-sans flex flex-col justify-between relative`}>
       
       {/* شاشة الترحيب */}
       {showSplash && (
@@ -2664,7 +2664,7 @@ export default function App() {
             <div key={chat.id} className="h-14 pr-2 pl-4 rounded-2xl bg-[#1f2937] border border-gray-700 text-white flex items-center shadow-2xl relative gap-3 group">
                <button onClick={() => setActiveChatId(chat.id)} className="flex items-center gap-3 flex-1 text-right hover:text-emerald-400 transition-colors"><MessageSquare size={20} className="text-emerald-400 shrink-0" /><span className="font-bold text-sm max-w-[140px] truncate" dir="rtl">{chat.adTitle}</span></button>
                <div className="w-px h-6 bg-gray-700 mx-1"></div>
-               <button onClick={() => { setOpenChatIds(prev => prev.filter(id => id !== chat.id)); if (activeChatId === chat.id) setActiveChatId(null); }} className="text-gray-500 hover:text-red-400 p-2" title="إغلاق المحادثة"><X size={16}/></button>
+               <button onClick={() => { setOpenChatIds(prev => prev.filter(id => id !== chat.id)); if (activeChatId === chat.id) setActiveChatId(null); }} className="text-gray-500 hover:text-red-400 p-2" title={lang === 'ar' ? 'إغلاق المحادثة' : 'Close Chat'}><X size={16}/></button>
                {unreadCounts[chat.id] > 0 && <span className="absolute -top-2 -left-2 bg-red-500 text-white w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center border-2 border-[#1f2937]">{unreadCounts[chat.id]}</span>}
             </div>
          ))}
@@ -2690,8 +2690,8 @@ export default function App() {
 
                 <div className="flex items-center gap-1 shrink-0">
                   <button onClick={() => handleClearChat(activeChatId)} className="text-gray-400 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-500/20 transition-colors" title={lang === 'ar' ? 'مسح المحادثة' : 'Clear Chat'}><Trash2 size={18}/></button>
-                  <button onClick={() => setActiveChatId(null)} className="text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-gray-700 transition-colors" title="تصغير"><Minus size={18}/></button>
-                  <button onClick={() => { setOpenChatIds(prev => prev.filter(id => id !== activeChatId)); setActiveChatId(null); }} className="text-gray-400 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-500/20 transition-colors" title="إغلاق المحادثة"><X size={18}/></button>
+                  <button onClick={() => setActiveChatId(null)} className="text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-gray-700 transition-colors" title={lang === 'ar' ? 'تصغير' : 'Minimize'}><Minus size={18}/></button>
+                  <button onClick={() => { setOpenChatIds(prev => prev.filter(id => id !== activeChatId)); setActiveChatId(null); }} className="text-gray-400 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-500/20 transition-colors" title={lang === 'ar' ? 'إغلاق المحادثة' : 'Close Chat'}><X size={18}/></button>
                 </div>
               </div>
               <div className="bg-yellow-500/10 border-b border-yellow-500/20 px-3 py-2 text-center"><p className="text-yellow-500 text-[10px] font-bold leading-relaxed">⚠️ تنبيه: الموقع غير مسؤول عن أي تحويلات مالية خارج المنصة. يُمنع استخدام ألفاظ خارجة.</p></div>
@@ -2731,6 +2731,41 @@ export default function App() {
             </div>
          );
       })()}
+
+      {/* --- FOOTER --- */}
+      <footer className="w-full bg-[#0a0a0a] border-t border-gray-800 py-8 mt-auto z-10 relative">
+        <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+          
+          <div className="flex flex-col items-center md:items-start">
+            <div className="flex items-center gap-2 mb-2">
+              <Filter className="text-emerald-500" size={24} />
+              <h2 className="text-xl font-black text-white">فلتر إيجيبت</h2>
+            </div>
+            <p className="text-gray-500 text-sm text-center md:text-start max-w-xs">
+              {lang === 'ar' ? 'المنصة الأولى لبيع وشراء فلاتر المياه والتواصل المباشر مع أفضل الفنيين في مصر.' : 'The first platform for buying and selling water filters and direct communication with technicians in Egypt.'}
+            </p>
+          </div>
+
+          <div className="flex gap-6 text-sm font-bold text-gray-400">
+            <button onClick={() => navigateTo('terms')} className="hover:text-emerald-400 transition-colors">{lang === 'ar' ? 'شروط الاستخدام' : 'Terms of Use'}</button>
+            <button onClick={() => navigateTo('privacy')} className="hover:text-emerald-400 transition-colors">{lang === 'ar' ? 'سياسة الخصوصية' : 'Privacy Policy'}</button>
+            <button onClick={() => navigateTo('ip')} className="hover:text-emerald-400 transition-colors">{lang === 'ar' ? 'حقوق الملكية' : 'Intellectual Property'}</button>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <a href="https://wa.me/201024059955" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-emerald-500 hover:text-white transition-all shadow-lg hover:-translate-y-1">
+              <MessageCircle size={20} />
+            </a>
+            <button onClick={() => setShowComplaintModal(true)} className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-blue-500 hover:text-white transition-all shadow-lg hover:-translate-y-1">
+              <MessageCircleWarning size={20} />
+            </button>
+          </div>
+
+        </div>
+        <div className="w-full text-center border-t border-gray-800 mt-6 pt-6">
+          <p className="text-gray-600 text-xs font-mono">© {new Date().getFullYear()} Filter Egypt. All rights reserved.</p>
+        </div>
+      </footer>
 
     </div>
   );
