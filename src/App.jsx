@@ -1200,7 +1200,7 @@ export default function App() {
   );
 
   return (
-    <div dir={lang === 'ar' ? 'rtl' : 'ltr'} className={`min-h-screen ${bgColor} text-gray-100 font-sans flex flex-col justify-between relative`}>
+    <div dir={lang === 'ar' ? 'rtl' : 'ltr'} className={`min-h-screen ${bgColor} text-gray-100 font-sans flex flex-col items-center justify-between relative w-full overflow-x-hidden`}>
       
       {/* شاشة الترحيب */}
       {showSplash && (
@@ -1487,7 +1487,8 @@ export default function App() {
         </div>
       </header>
 
-      <main className="flex-1 w-full max-w-4xl flex flex-col justify-center items-center px-4 mt-8 md:mt-0 pb-10">
+      {/* 🔴 تم إضافة mx-auto لضمان التوسيط الأفقي للمحتوى الرئيسي */}
+      <main className="flex-1 w-full max-w-4xl mx-auto flex flex-col justify-center items-center px-4 mt-8 md:mt-0 pb-10">
         
         {activeView === 'landing' && (
           <div className="w-full animate-fade-in flex flex-col items-center mt-6">
@@ -1653,10 +1654,8 @@ export default function App() {
                         {userProfile?.photoUrl ? <img src={userProfile.photoUrl} className="w-12 h-12 rounded-full object-cover border-2 border-purple-500/50 hover:scale-105 transition-transform" alt="Avatar" /> : <AvatarFallback size={48} className="border-2 border-purple-500/50 hover:scale-105 transition-transform" />}
                      </div>
                      <div className="flex-1">
-                        {/* 🔴 تم زيادة مساحة التكست بوكس هنا */}
                         <textarea value={newPostContent} onChange={e => setNewPostContent(e.target.value)} placeholder={lang === 'ar' ? "شارك أفكارك، فيديو، أو اطرح سؤالاً للمجتمع..." : "Share your thoughts, video, or ask a question..."} className="w-full bg-[#111827] border border-gray-700 rounded-xl p-4 text-white text-lg outline-none focus:border-purple-500 resize-none custom-scrollbar min-h-[140px]"></textarea>
                         
-                        {/* 🔴 تم تقليل المساحات العلوية والجانبية هنا */}
                         <div className="mt-2 flex flex-col gap-2 border-t border-gray-800 pt-2">
                            <div className="flex items-center gap-3 bg-[#111827] rounded-xl px-3 py-2 border border-gray-700 focus-within:border-purple-500">
                               <Link2 size={18} className="text-gray-400 shrink-0" />
@@ -1677,7 +1676,6 @@ export default function App() {
                            )}
 
                            <div className="flex flex-col sm:flex-row justify-between items-center relative gap-2 mt-1">
-                              {/* 🔴 تصغير مسافات زراير الميديا */}
                               <div className="flex gap-1.5 w-full justify-center sm:justify-start">
                                  <label className="bg-gray-800 hover:bg-emerald-500/20 text-gray-300 hover:text-emerald-400 p-1.5 rounded-full transition-colors cursor-pointer" title={lang === 'ar' ? 'إضافة صورة' : 'Add Image'}>
                                     <ImagePlus size={18} />
@@ -1701,7 +1699,6 @@ export default function App() {
                                  )}
                               </div>
 
-                              {/* 🔴 زرار النشر الجديد (مستطيل وصغير نسبياً) */}
                               <button onClick={handleCreatePost} className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold px-6 py-2 rounded-md shadow-md transition-transform hover:scale-105 flex items-center justify-center gap-1.5 text-sm">
                                 <Send size={16} /> {lang === 'ar' ? 'نشر' : 'Post'}
                               </button>
@@ -1735,7 +1732,6 @@ export default function App() {
                                   <p className="text-gray-500 text-xs">{new Date(post.createdAt).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')}</p>
                                </div>
                             </div>
-                            {/* 🔴 أزرار الأكشن (إضافة زر التعديل) */}
                             <div className="flex items-center gap-2">
                                {(isAuthor || isAdmin) ? (
                                   <>
@@ -1771,7 +1767,6 @@ export default function App() {
                                ) : (
                                   <img src={post.mediaUrl} alt="Post Media" className="max-w-full max-h-[400px] object-contain cursor-pointer" onClick={() => setFullscreenMedia({url: post.mediaUrl, type: 'image'})} />
                                )}
-                               {/* زر تكبير الميديا للبوست المنشور */}
                                <button onClick={() => setFullscreenMedia({url: post.mediaUrl, type: post.mediaType})} className="absolute top-3 start-3 bg-black/70 text-white p-2.5 rounded-lg opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-black/90 shadow-xl backdrop-blur-sm z-10" title={lang === 'ar' ? 'تكبير الشاشة' : 'Fullscreen'}>
                                    <Maximize size={20} />
                                </button>
@@ -2659,9 +2654,9 @@ export default function App() {
       </main>
 
       {/* --- CHATS DOCK --- */}
-      <div className="fixed z-[50] left-4 bottom-4 flex flex-col gap-3 max-h-[80vh] overflow-y-auto">
+      <div className="fixed z-[50] left-4 bottom-4 flex flex-col gap-3 max-h-[80vh] overflow-y-auto pointer-events-none">
          {dockedChats.map(chat => (
-            <div key={chat.id} className="h-14 pr-2 pl-4 rounded-2xl bg-[#1f2937] border border-gray-700 text-white flex items-center shadow-2xl relative gap-3 group">
+            <div key={chat.id} className="h-14 pr-2 pl-4 rounded-2xl bg-[#1f2937] border border-gray-700 text-white flex items-center shadow-2xl relative gap-3 group pointer-events-auto">
                <button onClick={() => setActiveChatId(chat.id)} className="flex items-center gap-3 flex-1 text-right hover:text-emerald-400 transition-colors"><MessageSquare size={20} className="text-emerald-400 shrink-0" /><span className="font-bold text-sm max-w-[140px] truncate" dir="rtl">{chat.adTitle}</span></button>
                <div className="w-px h-6 bg-gray-700 mx-1"></div>
                <button onClick={() => { setOpenChatIds(prev => prev.filter(id => id !== chat.id)); if (activeChatId === chat.id) setActiveChatId(null); }} className="text-gray-500 hover:text-red-400 p-2" title={lang === 'ar' ? 'إغلاق المحادثة' : 'Close Chat'}><X size={16}/></button>
@@ -2733,39 +2728,28 @@ export default function App() {
       })()}
 
       {/* --- FOOTER --- */}
-      <footer className="w-full bg-[#0a0a0a] border-t border-gray-800 py-8 mt-auto z-10 relative">
-        <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
-          
-          <div className="flex flex-col items-center md:items-start">
-            <div className="flex items-center gap-2 mb-2">
-              <Filter className="text-emerald-500" size={24} />
-              <h2 className="text-xl font-black text-white">فلتر إيجيبت</h2>
-            </div>
-            <p className="text-gray-500 text-sm text-center md:text-start max-w-xs">
-              {lang === 'ar' ? 'المنصة الأول للبيع والشراء والتواصل الاجتماعي بين المشتركين في مصر.' : 'The first platform for buying, selling, and social communication among subscribers in Egypt..'}
-            </p>
-          </div>
-
-          <div className="flex gap-6 text-sm font-bold text-gray-400">
+      <footer className="w-full bg-[#111827] border-t border-gray-800 py-6 mt-auto z-10 relative">
+        <div className="max-w-6xl mx-auto px-6 flex flex-col items-center justify-center gap-4">
+          <div className="flex flex-wrap justify-center gap-6 text-sm font-bold text-gray-400">
             <button onClick={() => navigateTo('terms')} className="hover:text-emerald-400 transition-colors">{lang === 'ar' ? 'شروط الاستخدام' : 'Terms of Use'}</button>
             <button onClick={() => navigateTo('privacy')} className="hover:text-emerald-400 transition-colors">{lang === 'ar' ? 'سياسة الخصوصية' : 'Privacy Policy'}</button>
             <button onClick={() => navigateTo('ip')} className="hover:text-emerald-400 transition-colors">{lang === 'ar' ? 'حقوق الملكية' : 'Intellectual Property'}</button>
           </div>
-
-          <div className="flex items-center gap-4">
-            <a href="https://wa.me/201024059955" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-emerald-500 hover:text-white transition-all shadow-lg hover:-translate-y-1">
-              <MessageCircle size={20} />
-            </a>
-            <button onClick={() => setShowComplaintModal(true)} className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-blue-500 hover:text-white transition-all shadow-lg hover:-translate-y-1">
-              <MessageCircleWarning size={20} />
-            </button>
-          </div>
-
-        </div>
-        <div className="w-full text-center border-t border-gray-800 mt-6 pt-6">
-          <p className="text-gray-600 text-xs font-mono">© {new Date().getFullYear()} Filter Egypt. All rights reserved.</p>
+          <p className="text-gray-600 text-xs font-mono mt-2">© {new Date().getFullYear()} Filter Egypt. All rights reserved.</p>
         </div>
       </footer>
+
+      {/* --- FLOATING CONTACT BUTTON (WhatsApp & Complaints) --- */}
+      <button 
+         onClick={() => setShowComplaintModal(true)}
+         className="fixed bottom-6 right-6 z-[90] bg-emerald-500 text-white p-4 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.5)] hover:bg-emerald-600 hover:scale-110 transition-all flex items-center justify-center group"
+         title={lang === 'ar' ? 'تواصل معنا' : 'Contact Us'}
+      >
+         <MessageCircle size={28} />
+         <span className="absolute right-full mr-4 bg-gray-800 text-white text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+            {lang === 'ar' ? 'تواصل معنا (واتساب / رسائل)' : 'Contact Us (WhatsApp / Chat)'}
+         </span>
+      </button>
 
     </div>
   );
