@@ -2742,7 +2742,7 @@ export default function App() {
               <h2 className="text-xl font-black text-white">فلتر إيجيبت</h2>
             </div>
             <p className="text-gray-500 text-sm text-center md:text-start max-w-xs">
-              {lang === 'ar' ? 'المنصة الأولى لبيع وشراء فلاتر المياه والتواصل المباشر مع أفضل الفنيين في مصر.' : 'The first platform for buying and selling water filters and direct communication with technicians in Egypt.'}
+              {lang === 'ar' ? 'المنصة الأول للبيع والشراء والتواصل الاجتماعي بين المشتركين في مصر.' : 'The first platform for buying, selling, and social communication among subscribers in Egypt.'}
             </p>
           </div>
 
